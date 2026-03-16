@@ -1198,3 +1198,10 @@ exports.api = functions
   .https.onRequest((req, res) => {
     appInstance(req, res);
   });
+
+// ===== START SERVER FOR RENDER =====
+const PORT = process.env.PORT || 3000;
+
+appInstance.listen(PORT, () => {
+  console.log("Server running on port " + PORT);
+});
