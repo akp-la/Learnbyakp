@@ -1,1 +1,1200 @@
 
+// ================== IMPORTS ==================
+const functions = require("firebase-functions/v1"); // v1 import
+const admin = require("firebase-admin");
+const cors = require("cors");
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+const axios = require("axios");
+
+// Use node-fetch via dynamic import (for proxy routes)
+const fetchFn = (...args) =>
+  import("node-fetch").then(({ default: fetch }) => fetch(...args));
+
+// ================== FIREBASE INIT ==================
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+
+const db = admin.firestore();
+const COL = db.collection("studyData");
+const ADMIN_PWD = "992jaan";
+
+// ================== CORS HELPER FOR /data ==================
+const corsFn = cors({ origin: true });
+
+// ================== DATA HELPER (DELETE COLLECTION) ==================
+async function deleteCollection(db, collectionPath, batchSize = 300) {
+  const collectionRef = db.collection(collectionPath);
+  const query = collectionRef.orderBy("__name__").limit(batchSize);
+
+  return new Promise((resolve, reject) => {
+    deleteQueryBatch(db, query, resolve).catch(reject);
+  });
+}
+
+async function deleteQueryBatch(db, query, resolve) {
+  const snapshot = await query.get();
+  const batchSize = snapshot.size;
+  if (batchSize === 0) {
+    resolve();
+    return;
+  }
+
+  const batch = db.batch();
+  snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+  await batch.commit();
+
+  process.nextTick(() => {
+    deleteQueryBatch(db, query, resolve);
+  });
+}
+
+// ================== SIMPLE HTTP FUNCTION: /data ==================
+exports.data = functions.https.onRequest((req, res) => {
+  corsFn(req, res, async () => {
+    if (req.method === "OPTIONS") {
+      return res.status(204).send("");
+    }
+
+    if (req.method === "GET") {
+      try {
+        const snapshot = await COL.get();
+        const rows = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        return res.status(200).json(rows);
+      } catch (err) {
+        console.error("GET /data error", err);
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+    }
+
+    if (req.method === "POST") {
+      try {
+        const body = req.body || {};
+        if (body.pwd !== ADMIN_PWD) {
+          return res.status(403).json({ error: "Unauthorized" });
+        }
+
+        const newRecord = {
+          batch: body.batch || "",
+          className: body.className || "",
+          subject: body.subject || "",
+          category: body.category || "",
+          title: body.title || "Untitled",
+          thumbnail: body.thumbnail || "",
+          link: body.link || "",
+          createdAt: new Date().toISOString(),
+        };
+
+        const docRef = await COL.add(newRecord);
+        return res.status(200).json({ success: true, id: docRef.id });
+      } catch (err) {
+        console.error("POST /data error", err);
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+    }
+
+    if (req.method === "PUT") {
+      try {
+        const body = req.body || {};
+        const id = body.id;
+
+        if (body.pwd !== ADMIN_PWD) {
+          return res.status(403).json({ error: "Unauthorized" });
+        }
+        if (!id) {
+          return res.status(400).json({ error: "Missing id" });
+        }
+
+        const docRef = COL.doc(id);
+        await docRef.update({
+          batch: body.batch || "",
+          className: body.className || "",
+          subject: body.subject || "",
+          category: body.category || "",
+          title: body.title || "Untitled",
+          thumbnail: body.thumbnail || "",
+          link: body.link || "",
+        });
+
+        return res.status(200).json({ success: true });
+      } catch (err) {
+        console.error("PUT /data error", err);
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+    }
+
+    if (req.method === "DELETE") {
+      try {
+        const id = req.query.id || (req.body && req.body.id);
+        const pwd = req.query.pwd || (req.body && req.body.pwd);
+        const all = req.query.all || (req.body && req.body.all);
+
+        if (pwd !== ADMIN_PWD) {
+          return res.status(403).json({ error: "Unauthorized" });
+        }
+
+        if (all === "1" || all === true) {
+          const ALLOWED_IPS = ["YOUR_HOME_IP", "YOUR_MOBILE_IP"];
+          const clientIp =
+            (req.headers["x-forwarded-for"] &&
+              req.headers["x-forwarded-for"].split(",")[0].trim()) ||
+            req.ip;
+
+          if (!ALLOWED_IPS.includes(clientIp)) {
+            console.log("BLOCKED bulk delete from IP:", clientIp);
+            return res.status(403).json({ error: "Bulk delete disabled" });
+          }
+
+          console.log(
+            "🚨 FULL DELETE by IP:",
+            clientIp,
+            "UA:",
+            req.headers["user-agent"]
+          );
+          await deleteCollection(db, "studyData", 300);
+          return res.status(200).json({
+            success: true,
+            mode: "all",
+            warning: "Full delete executed",
+          });
+        }
+
+        if (!id) {
+          return res.status(400).json({ error: "Missing id" });
+        }
+
+        await COL.doc(id).delete();
+        return res
+          .status(200)
+          .json({ success: true, mode: "single", id: id });
+      } catch (err) {
+        console.error("DELETE /data error", err);
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+    }
+
+    return res.status(405).json({ error: "Method Not Allowed" });
+  });
+});
+
+// ================== AUTH / EXPRESS APP ==================
+const JWT_SECRET = process.env.JWT_SECRET || "SUPER_SECRET_CHANGE_ME";
+const TWOFACTOR_API_KEY =
+  process.env.TWOFACTOR_API_KEY || "40cc9d6e-cc55-11f0-a6b2-0200cd936042";
+const EMAIL_SERVICE_API_KEY =
+  process.env.EMAIL_SERVICE_API_KEY ||
+  "re_4GdgW5h3_5u8fTxA1oeQv4PxGZprdcLTJ";
+
+const users = new Map();
+const emailOtpStore = new Map();
+const OTP_EXPIRY_MS = 5 * 60 * 1000;
+
+// Helpers
+function generateToken(payload) {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+}
+function generateOtp() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// Auth middlewares
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    return res
+      .status(401)
+      .json({ success: false, message: "Access token required" });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Invalid/expired token" });
+    }
+    req.user = user;
+    next();
+  });
+}
+
+function authenticateAdmin(req, res, next) {
+  authenticateToken(req, res, () => {
+    if (req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ success: false, message: "Admin access required" });
+    }
+    next();
+  });
+}
+
+// ================== EMAIL HTML HELPERS ==================
+function emailOtpHtml(otp) {
+  return `
+  <div style="
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background:#0f172a;
+    padding:24px;
+  ">
+    <div style="
+      max-width:480px;
+      margin:0 auto;
+      background:#020617;
+      border-radius:18px;
+      padding:24px 24px 28px;
+      border:1px solid rgba(148,163,184,0.2);
+      box-shadow:0 18px 40px rgba(15,23,42,0.8);
+      color:#e5e7eb;
+    ">
+      <div style="text-align:center;margin-bottom:20px;">
+        <div style="
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          width:52px;
+          height:52px;
+          border-radius:999px;
+          background:radial-gradient(circle at 30% 30%, #22c55e, #0f172a);
+          box-shadow:0 0 20px rgba(34,197,94,0.7);
+          font-size:26px;
+        ">✉️</div>
+      </div>
+      <h1 style="
+        font-size:22px;
+        margin:0 0 8px;
+        text-align:center;
+        letter-spacing:-0.02em;
+        background:linear-gradient(135deg,#22c55e,#4ade80);
+        -webkit-background-clip:text;
+        -webkit-text-fill-color:transparent;
+      ">
+        Email verification
+      </h1>
+      <p style="
+        font-size:14px;
+        line-height:1.6;
+        color:#9ca3af;
+        text-align:center;
+        margin:0 0 18px;
+      ">
+        Use this one‑time code to verify your email on
+        <strong style="color:#e5e7eb;">LearnByAKP.online</strong>.
+      </p>
+      <div style="
+        margin:18px 0 20px;
+        padding:14px 16px;
+        border-radius:14px;
+        background:rgba(15,23,42,0.9);
+        border:1px solid rgba(34,197,94,0.5);
+        text-align:center;
+      ">
+        <div style="font-size:12px;color:#9ca3af;margin-bottom:6px;">
+          Your verification code
+        </div>
+        <div style="
+          font-size:28px;
+          letter-spacing:0.35em;
+          font-weight:700;
+          color:#e5e7eb;
+        ">
+          ${otp}
+        </div>
+      </div>
+      <p style="
+        font-size:13px;
+        color:#9ca3af;
+        margin:0 0 4px;
+      ">
+        This code is valid for <strong style="color:#e5e7eb;">5 minutes</strong>.
+      </p>
+      <p style="
+        font-size:12px;
+        color:#6b7280;
+        margin:0 0 18px;
+      ">
+        If you did not request this, you can safely ignore this email.
+      </p>
+      <hr style="border:none;border-top:1px solid rgba(31,41,55,0.9);margin:18px 0 12px;">
+      <p style="
+        font-size:11px;
+        color:#4b5563;
+        text-align:center;
+      ">
+        Learn by AKP · Account Verification
+      </p>
+    </div>
+  </div>
+  `;
+}
+
+// Registration email template
+function registerOtpHtml(otp) {
+  return `
+  <div style="
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background:#020617;
+    padding:24px;
+  ">
+    <div style="
+      max-width:480px;
+      margin:0 auto;
+      background:radial-gradient(circle at top, rgba(55,65,81,0.9), #020617);
+      border-radius:18px;
+      padding:24px 24px 28px;
+      border:1px solid rgba(148,163,184,0.3);
+      box-shadow:0 20px 45px rgba(15,23,42,0.9);
+      color:#e5e7eb;
+    ">
+      <div style="text-align:center;margin-bottom:18px;">
+        <div style="
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          width:52px;
+          height:52px;
+          border-radius:999px;
+          background:radial-gradient(circle at 30% 30%, #22c55e, #15803d);
+          box-shadow:0 0 22px rgba(34,197,94,0.8);
+          font-size:26px;
+        ">✅</div>
+      </div>
+      <h1 style="
+        font-size:22px;
+        margin:0 0 6px;
+        text-align:center;
+        letter-spacing:-0.02em;
+        background:linear-gradient(135deg,#22c55e,#4ade80,#a3e635);
+        -webkit-background-clip:text;
+        -webkit-text-fill-color:transparent;
+      ">
+        Verify your email
+      </h1>
+      <p style="
+        font-size:14px;
+        line-height:1.7;
+        color:#cbd5f5;
+        text-align:center;
+        margin:0 0 18px;
+      ">
+        Complete your registration on
+        <strong style="color:#e5e7eb;">LearnByAKP.online</strong> using the
+        one‑time code below.
+      </p>
+      <div style="
+        margin:18px 0 20px;
+        padding:16px 18px;
+        border-radius:16px;
+        background:rgba(15,23,42,0.95);
+        border:1px solid rgba(34,197,94,0.6);
+        text-align:center;
+      ">
+        <div style="font-size:12px;color:#9ca3af;margin-bottom:6px;">
+          Your verification code
+        </div>
+        <div style="
+          font-size:30px;
+          letter-spacing:0.35em;
+          font-weight:700;
+          color:#f9fafb;
+        ">
+          ${otp}
+        </div>
+      </div>
+      <p style="
+        font-size:13px;
+        color:#9ca3af;
+        margin:0 0 4px;
+      ">
+        Code is valid for <strong style="color:#e5e7eb;">5 minutes</strong>.
+      </p>
+      <p style="
+        font-size:12px;
+        color:#6b7280;
+        margin:0 0 18px;
+      ">
+        If you did not try to sign up, you can ignore this email and your address will not be used.
+      </p>
+      <hr style="border:none;border-top:1px solid rgba(31,41,55,0.9);margin:18px 0 12px;">
+      <p style="
+        font-size:11px;
+        color:#4b5563;
+        text-align:center;
+      ">
+        Learn by AKP · Account Registration
+      </p>
+    </div>
+  </div>
+  `;
+}
+
+// Reset password email template
+function resetOtpHtml(otp) {
+  return `
+  <div style="
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background:#0f172a;
+    padding:24px;
+  ">
+    <div style="
+      max-width:480px;
+      margin:0 auto;
+      background:#020617;
+      border-radius:18px;
+      padding:24px 24px 28px;
+      border:1px solid rgba(148,163,184,0.2);
+      box-shadow:0 18px 40px rgba(15,23,42,0.8);
+      color:#e5e7eb;
+    ">
+      <div style="text-align:center;margin-bottom:20px;">
+        <div style="
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          width:52px;
+          height:52px;
+          border-radius:999px;
+          background:radial-gradient(circle at 30% 30%, #4f46e5, #0f172a);
+          box-shadow:0 0 20px rgba(79,70,229,0.7);
+          font-size:26px;
+        ">🔐</div>
+      </div>
+      <h1 style="
+        font-size:22px;
+        margin:0 0 8px;
+        text-align:center;
+        letter-spacing:-0.02em;
+        background:linear-gradient(135deg,#a855f7,#6366f1);
+        -webkit-background-clip:text;
+        -webkit-text-fill-color:transparent;
+      ">
+        Reset your password
+      </h1>
+      <p style="
+        font-size:14px;
+        line-height:1.6;
+        color:#9ca3af;
+        text-align:center;
+        margin:0 0 18px;
+      ">
+        Use the one‑time verification code below to complete your password reset.
+      </p>
+      <div style="
+        margin:18px 0 20px;
+        padding:14px 16px;
+        border-radius:14px;
+        background:rgba(15,23,42,0.9);
+        border:1px solid rgba(129,140,248,0.4);
+        text-align:center;
+      ">
+        <div style="font-size:12px;color:#9ca3af;margin-bottom:6px;">
+          Your 6‑digit reset code
+        </div>
+        <div style="
+          font-size:28px;
+          letter-spacing:0.35em;
+          font-weight:700;
+          color:#e5e7eb;
+        ">
+          ${otp}
+        </div>
+      </div>
+      <p style="
+        font-size:13px;
+        color:#9ca3af;
+        margin:0 0 4px;
+      ">
+        This code is valid for <strong style="color:#e5e7eb;">5 minutes</strong>.
+      </p>
+      <p style="
+        font-size:12px;
+        color:#6b7280;
+        margin:0 0 18px;
+      ">
+        If you did not request this, you can safely ignore this email.
+      </p>
+      <hr style="border:none;border-top:1px solid rgba(31,41,55,0.9);margin:18px 0 12px;">
+      <p style="
+        font-size:11px;
+        color:#4b5563;
+        text-align:center;
+      ">
+        Learn by AKP · Secure Access System
+      </p>
+    </div>
+  </div>
+  `;
+}
+
+// ================== CREATE EXPRESS APP ==================
+function createApp() {
+  const app = express();
+  const corsMiddleware = cors({ origin: true });
+
+  app.use(corsMiddleware);
+  app.use(express.json());
+
+  // HEALTH CHECK
+  app.get("/api/health", (req, res) => {
+    res.json({ ok: true, env: process.env.NODE_ENV || "dev" });
+  });
+
+  // ========= YOUR TWO PROXY ROUTES =========
+
+  // Endpoint for /api/batches
+  app.get("/api/batches", async (req, res) => {
+    try {
+      const r = await fetchFn(
+        "https://delta-pw.onrender.com/api/batches/all"
+      );
+      const data = await r.json();
+      res.json(data);
+    } catch (e) {
+      console.error("/api/batches error:", e);
+      res.json({ error: e.toString() });
+    }
+  });
+
+  // Endpoint for /api/nexttoppers/batches
+  app.get("/api/nexttoppers/batches", async (req, res) => {
+    try {
+      const r = await fetchFn(
+        "https://apiserver-jwex.onrender.com/api/nexttoppers/batches"
+      );
+      const data = await r.json();
+      res.json(data);
+    } catch (e) {
+      console.error("/api/nexttoppers/batches error:", e);
+      res.json({ error: e.toString() });
+    }
+  });
+
+  // ========== EMAIL OTP (GENERIC) ==========
+  app.post("/api/send-email-otp", async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Email required" });
+      }
+
+      const otp = generateOtp();
+      const expiresAt = Date.now() + OTP_EXPIRY_MS;
+      emailOtpStore.set(email, { otp, expiresAt });
+
+      if (EMAIL_SERVICE_API_KEY) {
+        await axios.post(
+          "https://api.resend.com/emails",
+          {
+            from: "no-reply@learnbyakp.online",
+            to: email,
+            subject: "✅ Your Verification Code – Learn by AKP",
+            html: emailOtpHtml(otp),
+          },
+          {
+            headers: { Authorization: `Bearer ${EMAIL_SERVICE_API_KEY}` },
+          }
+        );
+      } else {
+        console.log(`EMAIL OTP for ${email}: ${otp}`);
+      }
+
+      return res.json({
+        success: true,
+        message: "Verification code sent to email, please check",
+        emailSent: !!EMAIL_SERVICE_API_KEY,
+      });
+    } catch (e) {
+      console.error("send-email-otp error:", e);
+      return res
+        .status(500)
+        .json({ success: false, message: "Server error" });
+    }
+  });
+
+  app.post("/api/verify-email-otp", async (req, res) => {
+    try {
+      const { email, otp } = req.body;
+      const stored = emailOtpStore.get(email);
+
+      if (!stored || stored.expiresAt < Date.now()) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid or expired OTP" });
+      }
+
+      if (stored.otp !== otp) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Wrong OTP" });
+      }
+
+      emailOtpStore.delete(email);
+      return res.json({ success: true, verified: true });
+    } catch (e) {
+      console.error("verify-email-otp error:", e);
+      return res
+        .status(500)
+        .json({ success: false, message: "Server error" });
+    }
+  });
+
+  // ========== PHONE OTP via 2FACTOR ==========
+  app.post("/api/send-otp", async (req, res) => {
+    try {
+      const { phone } = req.body;
+
+      if (!phone || phone.length !== 10) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid phone (10 digit required)",
+        });
+      }
+
+      const url = `https://2factor.in/API/V1/${TWOFACTOR_API_KEY}/SMS/${phone}/AUTOGEN`;
+      const apiRes = await axios.get(url);
+
+      if (!apiRes.data || apiRes.data.Status !== "Success") {
+        console.error("2Factor send error:", apiRes.data);
+        return res
+          .status(500)
+          .json({ success: false, message: "OTP send failed" });
+      }
+
+      const sessionId = apiRes.data.Details;
+      return res.json({
+        success: true,
+        message: "OTP sent via SMS",
+        sessionId,
+      });
+    } catch (e) {
+      console.error("send-otp error:", e);
+      return res
+        .status(500)
+        .json({ success: false, message: "Server error" });
+    }
+  });
+
+  app.post("/api/verify-otp", async (req, res) => {
+    try {
+      const { sessionId, otp, phone } = req.body;
+
+      if (!sessionId || !otp) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Missing sessionId/otp" });
+      }
+
+      const url = `https://2factor.in/API/V1/${TWOFACTOR_API_KEY}/SMS/VERIFY/${sessionId}/${otp}`;
+      const apiRes = await axios.get(url);
+
+      if (!apiRes.data || apiRes.data.Status !== "Success") {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid or expired OTP" });
+      }
+
+      const userPhone = phone || "91" + sessionId;
+
+      const user = {
+        id: "phone-" + (userPhone || "unknown"),
+        name: "Student",
+        phone: userPhone,
+        loginType: "phone",
+        role: "user",
+        active: true,
+        createdAt: new Date().toISOString(),
+      };
+
+      const token = generateToken({
+        userId: user.id,
+        phone: user.phone,
+        role: user.role,
+      });
+
+      return res.json({
+        success: true,
+        token,
+        user,
+      });
+    } catch (e) {
+      console.error("verify-otp error:", e);
+      return res
+        .status(500)
+        .json({ success: false, message: "Server error" });
+    }
+  });
+
+  // ========== EMAIL REGISTER + VERIFY ==========
+  app.post("/api/register-email", async (req, res) => {
+    try {
+      const { email, password, name } = req.body;
+
+      if (!email || !password) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Missing email/password" });
+      }
+
+      if (password.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: "Password must be at least 6 characters",
+        });
+      }
+
+      if (users.has(email)) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Email already registered(Bhai aapka email pahle se he registred hai",
+        });
+      }
+
+      const otp = generateOtp();
+      const expiresAt = Date.now() + OTP_EXPIRY_MS;
+
+      emailOtpStore.set(email, {
+        otp,
+        expiresAt,
+        action: "register",
+        tempData: { password, name },
+      });
+
+      if (EMAIL_SERVICE_API_KEY) {
+        await axios.post(
+          "https://api.resend.com/emails",
+          {
+            from: "no-reply@learnbyakp.online",
+            to: email,
+            subject: "✨ Verify your email – Learn by AKP",
+            html: registerOtpHtml(otp),
+          },
+          {
+            headers: { Authorization: `Bearer ${EMAIL_SERVICE_API_KEY}` },
+          }
+        );
+      } else {
+        console.log(`REGISTER OTP for ${email}: ${otp}`);
+      }
+
+      return res.json({
+        success: true,
+        message:
+          "Verification code sent to your registrated email. Enter OTP to complete registration.",
+        nextStep: "verify-email",
+      });
+    } catch (e) {
+      console.error("register-email error:", e);
+      return res
+        .status(500)
+        .json({ success: false, message: "Server error" });
+    }
+  });
+
+  app.post("/api/complete-registration", async (req, res) => {
+    try {
+      const { email, otp } = req.body;
+      const stored = emailOtpStore.get(email);
+
+      if (
+        !stored ||
+        stored.action !== "register" ||
+        stored.expiresAt < Date.now()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid/expired verification",
+        });
+      }
+
+      if (stored.otp !== otp) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Wrong OTP" });
+      }
+
+      const { password, name } = stored.tempData;
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      const user = {
+        id: "email-" + Date.now(),
+        email,
+        passwordHash,
+        name: name || email.split("@")[0],
+        loginType: "email",
+        role: "user",
+        createdAt: new Date().toISOString(),
+        active: true,
+      };
+
+      users.set(email, user);
+      emailOtpStore.delete(email);
+
+      const token = generateToken({
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+      });
+
+      return res.json({
+        success: true,
+        message: "Registration completed",
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
+      });
+    } catch (e) {
+      console.error("complete-registration error:", e);
+      return res
+        .status(500)
+        .json({ success: false, message: "Server error" });
+    }
+  });
+
+  // ========== EMAIL LOGIN ==========
+  app.post("/api/login-email", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Missing email/password" });
+      }
+
+      const user = users.get(email);
+      if (!user) {
+        return res
+          .status(400)
+          .json({ success: false, message: "User not found" });
+      }
+
+      if (!user.active) {
+        return res
+          .status(403)
+          .json({ success: false, message: "User disabled" });
+      }
+
+      const ok = await bcrypt.compare(password, user.passwordHash);
+      if (!ok) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Wrong password" });
+      }
+
+      const token = generateToken({
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+      });
+
+      return res.json({
+        success: true,
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          loginType: user.loginType,
+        },
+      });
+    } catch (e) {
+      console.error("login-email error:", e);
+      return res
+        .status(500)
+        .json({ success: false, message: "Server error" });
+    }
+  });
+
+  // ========== FORGOT / RESET PASSWORD ==========
+  app.post("/api/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      const user = users.get(email);
+
+      if (!user) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Email not found" });
+      }
+
+      const otp = generateOtp();
+      const expiresAt = Date.now() + OTP_EXPIRY_MS;
+
+      emailOtpStore.set(email, {
+        otp,
+        expiresAt,
+        action: "reset-password",
+      });
+
+      if (EMAIL_SERVICE_API_KEY) {
+        await axios.post(
+          "https://api.resend.com/emails",
+          {
+            from: "no-reply@learnbyakp.online",
+            to: email,
+            subject: "🔐 Password Reset Code – Learn by AKP",
+            html: resetOtpHtml(otp),
+          },
+          {
+            headers: { Authorization: `Bearer ${EMAIL_SERVICE_API_KEY}` },
+          }
+        );
+      } else {
+        console.log(`RESET OTP for ${email}: ${otp}`);
+      }
+
+      return res.json({
+        success: true,
+        message: "Reset code sent to email",
+      });
+    } catch (e) {
+      console.error("forgot-password error:", e);
+      return res
+        .status(500)
+        .json({ success: false, message: "Server error" });
+    }
+  });
+
+  app.post("/api/reset-password", async (req, res) => {
+    try {
+      const { email, otp, newPassword } = req.body;
+      const stored = emailOtpStore.get(email);
+
+      if (
+        !stored ||
+        stored.action !== "reset-password" ||
+        stored.expiresAt < Date.now()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid/expired reset code",
+        });
+      }
+
+      if (stored.otp !== otp) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Wrong OTP" });
+      }
+
+      const user = users.get(email);
+      if (!user) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
+      }
+
+      const newPasswordHash = await bcrypt.hash(newPassword, 10);
+      user.passwordHash = newPasswordHash;
+      users.set(email, user);
+      emailOtpStore.delete(email);
+
+      return res.json({
+        success: true,
+        message: "Password reset successful",
+      });
+    } catch (e) {
+      console.error("reset-password error:", e);
+      return res
+        .status(500)
+        .json({ success: false, message: "Server error" });
+    }
+  });
+
+  // ========== GOOGLE OAUTH ==========
+  app.get("/api/auth/google", (req, res) => {
+    const redirectUri = encodeURIComponent(
+      `${req.protocol}://${req.get("host")}/api/auth/google/callback`
+    );
+    const clientId =
+      "847746135637-lb9hik8u8ae10204sp9d0cj40ds2a755.apps.googleusercontent.com";
+    const scope = encodeURIComponent("profile email");
+
+    const googleAuthUrl =
+      `https://accounts.google.com/o/oauth2/v2/auth` +
+      `?client_id=${clientId}` +
+      `&redirect_uri=${redirectUri}` +
+      `&response_type=code` +
+      `&scope=${scope}`;
+
+    res.redirect(googleAuthUrl);
+  });
+
+  app.get("/api/auth/google/callback", async (req, res) => {
+    try {
+      const code = req.query.code;
+      if (!code) {
+        return res.status(400).json({ error: "No code received" });
+      }
+
+      const redirectUri = `${req.protocol}://${req.get(
+        "host"
+      )}/api/auth/google/callback`;
+
+      const tokenResponse = await axios.post(
+        "https://oauth2.googleapis.com/token",
+        {
+          code,
+          client_id:
+            "847746135637-lb9hik8u8ae10204sp9d0cj40ds2a755.apps.googleusercontent.com",
+          client_secret: "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",
+          redirect_uri: redirectUri,
+          grant_type: "authorization_code",
+        }
+      );
+
+      const { access_token } = tokenResponse.data;
+
+      const userInfo = await axios.get(
+        "https://www.googleapis.com/oauth2/v2/userinfo",
+        {
+          headers: { Authorization: `Bearer ${access_token}` },
+        }
+      );
+
+      const { email, name, picture } = userInfo.data;
+      let user = users.get(email);
+
+      if (!user) {
+        user = {
+          id: "google-" + Date.now(),
+          email,
+          name,
+          picture,
+          loginType: "google",
+          role: "user",
+          active: true,
+          createdAt: new Date().toISOString(),
+        };
+        users.set(email, user);
+      }
+
+      if (!user.active) {
+        return res
+          .status(403)
+          .json({ success: false, message: "User disabled" });
+      }
+
+      const token = generateToken({
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+      });
+
+      res.redirect(
+        `https://learnbyakp.online/login.html?token=${encodeURIComponent(
+          token
+        )}&user=${encodeURIComponent(JSON.stringify(user))}`
+      );
+    } catch (e) {
+      console.error("Google callback error:", e.response?.data || e);
+      res.status(500).json({ error: "Google auth failed" });
+    }
+  });
+
+  // ========== PROTECTED ROUTES ==========
+  app.get("/api/check-login", authenticateToken, (req, res) => {
+    res.json({
+      success: true,
+      loggedIn: true,
+      user: req.user,
+      message: "User verified successfully",
+    });
+  });
+
+  app.get("/api/user-profile", authenticateToken, (req, res) => {
+    res.json({
+      success: true,
+      user: req.user,
+      features: ["Watch videos", "Save progress", "Premium content"],
+    });
+  });
+
+  // ========== ADMIN USER MANAGEMENT ==========
+  app.get("/api/admin/users", authenticateAdmin, (req, res) => {
+    const allUsers = Array.from(users.values());
+    res.json({
+      success: true,
+      users: allUsers.map((u) => ({
+        id: u.id,
+        email: u.email,
+        name: u.name,
+        role: u.role,
+        active: u.active,
+        loginType: u.loginType,
+        createdAt: u.createdAt,
+      })),
+    });
+  });
+
+  app.post("/api/admin/users/:action", authenticateAdmin, (req, res) => {
+    const { email } = req.body;
+    const user = users.get(email);
+    const action = req.params.action;
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    switch (action) {
+      case "delete":
+        users.delete(email);
+        break;
+      case "disable":
+        user.active = false;
+        break;
+      case "enable":
+        user.active = true;
+        break;
+      case "promote":
+        user.role = "admin";
+        break;
+      case "demote":
+        user.role = "user";
+        break;
+      default:
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid action" });
+    }
+
+    if (action !== "delete") {
+      users.set(email, user);
+    }
+
+    return res.json({ success: true, message: `User ${action}d` });
+  });
+
+  // ========== LOGOUT ==========
+  app.post("/api/logout", (req, res) => {
+    return res.json({ success: true, message: "Logged out" });
+  });
+
+  return app;
+}
+
+// Express app instance (reuse)
+const appInstance = createApp();
+
+// Single Express function
+exports.api = functions
+  .runWith({ memory: "512MB", timeoutSeconds: 120 })
+  .https.onRequest((req, res) => {
+    appInstance(req, res);
+  });
