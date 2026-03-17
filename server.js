@@ -562,18 +562,19 @@ function createApp() {
   //ddfddfdfdf=======
 app.get("/api/nexttoppers/all-content", async (req, res) => {
   try {
-    const courseid = req.query.r;   // r = courseid
-    const id       = req.query.e;   // e = id (optional)
+    // Support both old (r/e) and new (courseid/id) param formats
+    const courseid = req.query.r || req.query.courseid;
+    const id = req.query.e || req.query.id;
 
     if (!courseid) {
-      return res.status(400).json({ error: "Missing courseid (r)" });
+      return res.status(400).json({ error: "Missing courseid (r or courseid)" });
     }
 
     const url = new URL("https://apiserverpro.onrender.com/api/nexttoppers/all-content");
     url.searchParams.set("courseid", courseid);
 
     if (id) {
-      url.searchParams.set("id", id);   // agar id aaya ho toh hi daalna
+      url.searchParams.set("id", id);
     }
 
     const response = await fetch(url.toString());
@@ -581,7 +582,7 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
 
     res.json(data);
   } catch (err) {
-    console.error("/api/nexttoppers/batches error:", err);
+    console.error("/api/nexttoppers/all-content error:", err);
     res.status(500).json({ error: err.toString() });
   }
 });
@@ -609,16 +610,16 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
   }
 });
 //tetyryr ytyu========
-  app.get("/api/nexttoppers/content-details", async (req, res) => {
+ app.get("/api/nexttoppers/content-details", async (req, res) => {
   try {
-    const entityId = req.query.entity_id;   // e.entity_id
-    const courseId = req.query.course_id;   // e.course_id
+    const entityId = req.query.content_id;    // frontend se content_id
+    const courseId = req.query.courseid;      // frontend se courseid
 
     if (!entityId || !courseId) {
-      return res.status(400).json({ error: "Missing entity_id or course_id" });
+      return res.status(400).json({ error: "Missing content_id or courseid" });
     }
 
-    const url = `https://apiserverpro.onrender.com/api/nexttoppers/content-details?content_id=${entityId}&courseid=${courseId}`;
+    const url = `https://learnbyakp.onrender.com/api/nexttoppers/content-details?content_id=${entityId}&courseid=${courseId}`;
     
     const response = await fetch(url);
     const data = await response.json();
@@ -632,7 +633,7 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
 
 
   // Endpoint for /api/nexttoppers/batches
-  app.get("/api/nexttoppers/all-content", async (req, res) => {
+  app.get("/api/nexttoppers/batches", async (req, res) => {
     try {
       const r = await fetchFn(
         "https://apiserverpro.onrender.com/api/nexttoppers/batches"
