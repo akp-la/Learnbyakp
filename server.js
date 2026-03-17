@@ -551,7 +551,7 @@ function createApp() {
   app.get("/api/batches", async (req, res) => {
     try {
       const r = await fetchFn(
-        "https://apiserver-jwex.onrender/api/batches/all"
+        "https://apiserver-jwex.onrender.com/api/batches"
       );
       const data = await r.json();
       res.json(data);
