@@ -610,7 +610,7 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
   }
 });
 //tetyryr ytyu========
- app.get("/api/nexttoppers/content-details", async (req, res) => {
+app.get("/api/nexttoppers/content-details", async (req, res) => {
   try {
     const entityId = req.query.content_id;    // frontend se content_id
     const courseId = req.query.courseid;      // frontend se courseid
@@ -619,15 +619,25 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
       return res.status(400).json({ error: "Missing content_id or courseid" });
     }
 
-    const url = `https://learnbyakp.onrender.com/api/nexttoppers/content-details?content_id=${entityId}&courseid=${courseId}`;
+    // Encode query parameters to handle special characters
+    const encodedEntityId = encodeURIComponent(entityId);
+    const encodedCourseId = encodeURIComponent(courseId);
+    
+    const url = `https://learnbyakp.onrender.com/api/nexttoppers/content-details?content_id=${encodedEntityId}&courseid=${encodedCourseId}`;
+    
+    console.log("Proxy URL:", url); // Debug log
     
     const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Upstream API error: ${response.status} ${response.statusText}`);
+    }
+    
     const data = await response.json();
-
     res.json(data);
   } catch (err) {
     console.error("/api/nexttoppers/content-details error:", err);
-    res.status(500).json({ error: err.toString() });
+    res.status(500).json({ error: err.message || err.toString() });
   }
 });
 
