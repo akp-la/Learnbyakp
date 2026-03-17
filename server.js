@@ -7,7 +7,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
 
-// Use node-fetch via dynamic import (for proxy routes)
+//  Use node-fetch via dynamic import (for proxy routes)
 const fetchFn = (...args) =>
   import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
