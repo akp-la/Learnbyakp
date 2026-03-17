@@ -597,7 +597,7 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
     }
 
     // External API call
-    const url = `https://learnbyakp.onrender.com/api/nexttoppers/course-details?courseid=${courseid}`;
+    const url = `https://apiserverpro.onrender.com/api/nexttoppers/course-details?courseid=${courseid}`;
     
     const response = await fetch(url);
     const data = await response.json();
@@ -618,7 +618,7 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
       return res.status(400).json({ error: "Missing entity_id or course_id" });
     }
 
-    const url = `https://learnbyakp.onrender.com/api/nexttoppers/content-details?content_id=${entityId}&courseid=${courseId}`;
+    const url = `https://apiserverpro.onrender.com/api/nexttoppers/content-details?content_id=${entityId}&courseid=${courseId}`;
     
     const response = await fetch(url);
     const data = await response.json();
