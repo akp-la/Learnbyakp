@@ -559,9 +559,80 @@ function createApp() {
       res.json({ error: e.toString() });
     }
   });
+  //ddfddfdfdf=======
+app.get("/api/nexttoppers/all-content", async (req, res) => {
+  try {
+    const courseid = req.query.r;   // r = courseid
+    const id       = req.query.e;   // e = id (optional)
+
+    if (!courseid) {
+      return res.status(400).json({ error: "Missing courseid (r)" });
+    }
+
+    const url = new URL("https://apiserverpro.onrender.com/api/nexttoppers/all-content");
+    url.searchParams.set("courseid", courseid);
+
+    if (id) {
+      url.searchParams.set("id", id);   // agar id aaya ho toh hi daalna
+    }
+
+    const response = await fetch(url.toString());
+    const data = await response.json();
+
+    res.json(data);
+  } catch (err) {
+    console.error("/api/nexttoppers/batches error:", err);
+    res.status(500).json({ error: err.toString() });
+  }
+});
+
+
+//jkdsyututyt======
+  app.get("/api/nexttoppers/course-details", async (req, res) => {
+  try {
+    const courseid = req.query.courseid;
+
+    if (!courseid) {
+      return res.status(400).json({ error: "Missing courseid" });
+    }
+
+    // External API call
+    const url = `https://learnbyakp.onrender.com/api/nexttoppers/course-details?courseid=${courseid}`;
+    
+    const response = await fetch(url);
+    const data = await response.json();
+
+    res.json(data);
+  } catch (err) {
+    console.error("/api/nexttoppers/course-details error:", err);
+    res.status(500).json({ error: err.toString() });
+  }
+});
+//tetyryr ytyu========
+  app.get("/api/nexttoppers/content-details", async (req, res) => {
+  try {
+    const entityId = req.query.entity_id;   // e.entity_id
+    const courseId = req.query.course_id;   // e.course_id
+
+    if (!entityId || !courseId) {
+      return res.status(400).json({ error: "Missing entity_id or course_id" });
+    }
+
+    const url = `https://learnbyakp.onrender.com/api/nexttoppers/content-details?content_id=${entityId}&courseid=${courseId}`;
+    
+    const response = await fetch(url);
+    const data = await response.json();
+
+    res.json(data);
+  } catch (err) {
+    console.error("/api/nexttoppers/content-details error:", err);
+    res.status(500).json({ error: err.toString() });
+  }
+});
+
 
   // Endpoint for /api/nexttoppers/batches
-  app.get("/api/nexttoppers/batches", async (req, res) => {
+  app.get("/api/nexttoppers/all-content", async (req, res) => {
     try {
       const r = await fetchFn(
         "https://apiserverpro.onrender.com/api/nexttoppers/batches"
