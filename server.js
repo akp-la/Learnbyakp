@@ -1,4 +1,3 @@
-
 // ================== IMPORTS ==================
 const functions = require("firebase-functions/v1"); // v1 import
 const admin = require("firebase-admin");
@@ -551,7 +550,7 @@ function createApp() {
   app.get("/api/batches", async (req, res) => {
     try {
       const r = await fetchFn(
-        "https://apiserver-jwex.onrender.com/api/batches"
+        "https://delta-pw.onrender.com/api/batches/all"
       );
       const data = await r.json();
       res.json(data);
@@ -1199,7 +1198,7 @@ exports.api = functions
     appInstance(req, res);
   });
 
-// ===== START SERVER FOR RENDER =====
+  // ===== START SERVER FOR RENDER =====
 const PORT = process.env.PORT || 3000;
 
 appInstance.listen(PORT, () => {
