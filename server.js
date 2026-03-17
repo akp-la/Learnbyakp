@@ -550,7 +550,7 @@ function createApp() {
   app.get("/api/batches", async (req, res) => {
     try {
       const r = await fetchFn(
-        "https://delta-pw.onrender.com/api/batches/all"
+        "https://apiserverpro.onrender.com/api/pw/batches"
       );
       const data = await r.json();
       res.json(data);
@@ -564,7 +564,7 @@ function createApp() {
   app.get("/api/nexttoppers/batches", async (req, res) => {
     try {
       const r = await fetchFn(
-        "https://apiserver-jwex.onrender.com/api/nexttoppers/batches"
+        "https://apiserverpro.onrender.com/api/nexttoppers/batches"
       );
       const data = await r.json();
       res.json(data);
