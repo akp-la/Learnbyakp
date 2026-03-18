@@ -11,7 +11,7 @@ const axios = require("axios");
 const fetchFn = (...args) =>
   import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
-// ================== FIREBASE INIT ==================
+// ================== FIREBASE INIT ================== 
 if (!admin.apps.length) {
   admin.initializeApp();
 }
