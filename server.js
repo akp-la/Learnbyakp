@@ -619,7 +619,7 @@ app.get("/api/nexttoppers/content-details", async (req, res) => {
       return res.status(400).json({ error: "Missing content_id or courseid" });
     }
 
-    const url = `https://learnbyakp.onrender.com/api/nexttoppers/content-details?content_id=${entityId}&courseid=${courseId}`;
+    const url = `https://apiserverpro.onrender.com/api/nexttoppers/content-details?content_id=${entityId}&courseid=${courseId}`;
 
     const response = await fetch(url);
 
