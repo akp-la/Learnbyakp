@@ -736,6 +736,19 @@ app.get("/api/nexttoppers/content-details", async (req, res) => {
       res.json({ error: e.toString() });
     }
   });
+// Endpoint for /api/jeet/batches
+  app.get("/api/missionjeet/batches", async (req, res) => {
+    try {
+      const r = await fetchFn(
+        "https://apiserverpro.onrender.com/api/missionjeet/batches"
+      );
+      const data = await r.json();
+      res.json(data);
+    } catch (e) {
+      console.error("/api/missionjeet/batches error:", e);
+      res.json({ error: e.toString() });
+    }
+  });
 
   // ========== EMAIL OTP (GENERIC) ==========
   app.post("/api/send-email-otp", async (req, res) => {
