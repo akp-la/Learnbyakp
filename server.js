@@ -543,7 +543,89 @@ function createApp() {
   app.get("/api/health", (req, res) => {
     res.json({ ok: true, env: process.env.NODE_ENV || "dev" });
   });
+  //===========api start==
+ app.get("/api/missionjeet/content-details", async (req, res) => {
+  try {
+    const entityId = req.query.content_id;
+    const courseId = req.query.courseid;
 
+    if (!entityId || !courseId) {
+      return res.status(400).json({ error: "Missing content_id or courseid" });
+    }
+
+    const url = `https://apiserverpro.onrender.com/api/missionjeet/content-details?content_id=${entityId}&course_id=${courseId}`;
+
+    const response = await fetch(url);
+
+    // ✅ check response ok or not
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: `External API error: ${response.status}`
+      });
+    }
+
+    const data = await response.json();
+
+    res.json(data);
+
+  } catch (err) {
+    console.error("/api/missionjeet/content-details error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+//======== rtrtrrttt=====
+
+ app.get("/api/missionjeet/course-details", async (req, res) => {
+  try {
+    const courseid = req.query.courseid;
+
+    if (!courseid) {
+      return res.status(400).json({ error: "Missing courseid" });
+    }
+
+    // External API call
+    const url = `https://apiserverpro.onrender.com/api/missionjeet/course-details?courseid=${courseid}`;
+    
+    const response = await fetch(url);
+    const data = await response.json();
+
+    res.json(data);
+  } catch (err) {
+    console.error("/api/missionjeet/course-details error:", err);
+    res.status(500).json({ error: err.toString() });
+  }
+});
+//============ attttttttt======
+app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
+  try {
+    const { courseid } = req.params;
+    const id = req.query.id || courseid;  // Default id to courseid if missing
+
+    if (!courseid) {
+      return res.status(400).json({ error: "Missing :courseid param" });
+    }
+
+    // Build external URL matching exact path pattern
+    let externalUrl;
+    if (id && id !== courseid) {
+      externalUrl = `https://apiserverpro.onrender.com/api/missionjeet/all-content/${courseid}?id=${id}`;
+    } else {
+      externalUrl = `https://apiserverpro.onrender.com/api/missionjeet/all-content/${courseid}`;
+    }
+
+    const response = await fetch(externalUrl);
+    if (!response.ok) {
+      throw new Error(`External: ${response.status}`);
+    }
+    const data = await response.json();
+
+    res.json(data);
+  } catch (err) {
+    console.error("/api/missionjeet/all-content error:", err);
+    res.status(500).json({ error: err.toString() });
+  }
+});
   // ========= YOUR TWO PROXY ROUTES =========
 
   // Endpoint for /api/batches
