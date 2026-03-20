@@ -736,6 +736,35 @@ app.get("/api/nexttoppers/content-details", async (req, res) => {
       res.json({ error: e.toString() });
     }
   });
+  app.get("/api/pw/topics", async (req, res) => {
+  try {
+    // 🔥 multiple param support (old + new)
+    const BatchId = req.query.bid || req.query.BatchId;
+    const SubjectId = req.query.su || req.query.SubjectId;
+
+    // ❗ validation
+    if (!BatchId || !SubjectId) {
+      return res.status(400).json({
+        error: "Missing BatchId (bid/BatchId) or SubjectId (su/SubjectId)"
+      });
+    }
+
+    // 🔥 target API (apiserverpro)
+    const url = new URL("https://apiserverpro.onrender.com/api/pw/topics");
+    url.searchParams.set("BatchId", BatchId);
+    url.searchParams.set("SubjectId", SubjectId);
+
+    // 🔥 fetch data
+    const response = await fetch(url.toString());
+    const data = await response.json();
+
+    res.json(data);
+
+  } catch (err) {
+    console.error("/api/pw/topics error:", err);
+    res.status(500).json({ error: err.toString() });
+  }
+});
 // Endpoint for /api/jeet/batches
   app.get("/api/missionjeet/batches", async (req, res) => {
     try {
@@ -749,6 +778,177 @@ app.get("/api/nexttoppers/content-details", async (req, res) => {
       res.json({ error: e.toString() });
     }
   });
+
+  // Endpoint for /api/pw/li
+  app.get("/api/pw/live", async (req, res) => {
+    try {
+      const r = await fetchFn(
+        "https://apiserverpro.onrender.com/api/pw/lives"
+      );
+      const data = await r.json();
+      res.json(data);
+    } catch (e) {
+      console.error("/api/pw/live error:", e);
+      res.json({ error: e.toString() });
+    }
+  });
+
+  // Endpoint for /api/pw/topics
+  app.get("/api/pw/topics", async (req, res) => {
+    try {
+      const r = await fetchFn(
+        "https://apiserverpro.onrender.com/api/pw/topics"
+      );
+      const data = await r.json();
+      res.json(data);
+    } catch (e) {
+      console.error("/api/pw/topics error:", e);
+      res.json({ error: e.toString() });
+    }
+  });
+  //========================================
+  const BASE = "https://apiserverpro.onrender.com";
+
+// ================= DATACONTENT =================
+app.get("/api/pw/datacontent", async (req, res) => {
+  try {
+    const { batchId, subjectSlug, topicSlug, contentType } = req.query;
+
+    if (!batchId || !subjectSlug || !topicSlug || !contentType) {
+      return res.status(400).json({ error: "Missing params" });
+    }
+
+    const url = new URL(BASE + "/api/pw/datacontent");
+    url.searchParams.set("batchId", batchId);
+    url.searchParams.set("subjectSlug", subjectSlug);
+    url.searchParams.set("topicSlug", topicSlug);
+    url.searchParams.set("contentType", contentType);
+
+    const response = await fetch(url);
+    res.json(await response.json());
+  } catch (err) {
+    res.status(500).json({ error: err.toString() });
+  }
+});
+
+// ================= VIDEO NEW =================
+app.get("/api/pw/videonew", async (req, res) => {
+  try {
+    const { batchId, subjectId, childId } = req.query;
+
+    const url = new URL(BASE + "/api/pw/videonew");
+    url.searchParams.set("batchId", batchId);
+    url.searchParams.set("subjectId", subjectId);
+    url.searchParams.set("childId", childId);
+
+    const response = await fetch(url);
+    res.json(await response.json());
+  } catch (err) {
+    res.status(500).json({ error: err.toString() });
+  }
+});
+
+// ================= VIDEO =================
+app.get("/api/pw/video", async (req, res) => {
+  try {
+    const { batchId, subjectId, childId } = req.query;
+
+    const url = new URL(BASE + "/api/pw/video");
+    url.searchParams.set("batchId", batchId);
+    url.searchParams.set("subjectId", subjectId);
+    url.searchParams.set("childId", childId);
+
+    const response = await fetch(url);
+    res.json(await response.json());
+  } catch (err) {
+    res.status(500).json({ error: err.toString() });
+  }
+});
+
+// ================= VIDEO SUPER =================
+app.get("/api/pw/videosuper", async (req, res) => {
+  try {
+    const { batchId, childId } = req.query;
+
+    const url = new URL(BASE + "/api/pw/videosuper");
+    url.searchParams.set("batchId", batchId);
+    url.searchParams.set("childId", childId);
+
+    const response = await fetch(url);
+    res.json(await response.json());
+  } catch (err) {
+    res.status(500).json({ error: err.toString() });
+  }
+});
+
+// ================= VIDEO PLAY =================
+app.get("/api/pw/videoplay", async (req, res) => {
+  try {
+    const { batchId, childId } = req.query;
+
+    const url = new URL(BASE + "/api/pw/videoplay");
+    url.searchParams.set("batchId", batchId);
+    url.searchParams.set("childId", childId);
+
+    const response = await fetch(url);
+    res.json(await response.json());
+  } catch (err) {
+    res.status(500).json({ error: err.toString() });
+  }
+});
+
+// ================= ATTACHMENTS =================
+app.get("/api/pw/attachments-url", async (req, res) => {
+  try {
+    const { BatchId, SubjectId, ContentId } = req.query;
+
+    const url = new URL(BASE + "/api/pw/attachments-url");
+    url.searchParams.set("BatchId", BatchId);
+    url.searchParams.set("SubjectId", SubjectId);
+    url.searchParams.set("ContentId", ContentId);
+
+    const response = await fetch(url);
+    res.json(await response.json());
+  } catch (err) {
+    res.status(500).json({ error: err.toString() });
+  }
+});
+
+// ================= ATTACHMENT LINK =================
+app.get("/api/pw/attachment-link", async (req, res) => {
+  try {
+    const { batchId, subjectId, scheduleId } = req.query;
+
+    const url = new URL(BASE + "/api/pw/attachment-link");
+    url.searchParams.set("batchId", batchId);
+    url.searchParams.set("subjectId", subjectId);
+    url.searchParams.set("scheduleId", scheduleId);
+
+    const response = await fetch(url);
+    res.json(await response.json());
+  } catch (err) {
+    res.status(500).json({ error: err.toString() });
+  }
+});
+
+// ================= VIEW =================
+app.get("/api/pw/view", (req, res) => {
+  const { url, filename } = req.query;
+
+  if (!url) return res.status(400).send("Missing URL");
+
+  res.redirect(url);
+});
+
+// ================= DOWNLOAD =================
+app.get("/api/pw/download", (req, res) => {
+  const { url, filename } = req.query;
+
+  if (!url) return res.status(400).send("Missing URL");
+
+  res.setHeader("Content-Disposition", `attachment; filename="${filename || "file"}"`);
+  res.redirect(url);
+});
 
   // ========== EMAIL OTP (GENERIC) ==========
   app.post("/api/send-email-otp", async (req, res) => {
@@ -858,28 +1058,52 @@ app.get("/api/nexttoppers/content-details", async (req, res) => {
   });
 
   app.post("/api/verify-otp", async (req, res) => {
-    try {
-      const { sessionId, otp, phone } = req.body;
+  try {
+    const { sessionId, otp, phone } = req.body;
 
-      if (!sessionId || !otp) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Missing sessionId/otp" });
-      }
+    if (!sessionId || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing sessionId/otp",
+      });
+    }
 
-      const url = `https://2factor.in/API/V1/${TWOFACTOR_API_KEY}/SMS/VERIFY/${sessionId}/${otp}`;
-      const apiRes = await axios.get(url);
+    // 🔐 Verify OTP from 2Factor
+    const url = `https://2factor.in/API/V1/${TWOFACTOR_API_KEY}/SMS/VERIFY/${sessionId}/${otp}`;
+    const apiRes = await axios.get(url);
 
-      if (!apiRes.data || apiRes.data.Status !== "Success") {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid or expired OTP" });
-      }
+    if (!apiRes.data || apiRes.data.Status !== "Success") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired OTP",
+      });
+    }
 
-      const userPhone = phone || "91" + sessionId;
+    // 📱 Normalize phone (ensure 91 prefix)
+    let userPhone = phone;
+    if (userPhone && !userPhone.startsWith("91")) {
+      userPhone = "91" + userPhone;
+    }
 
-      const user = {
-        id: "phone-" + (userPhone || "unknown"),
+    // fallback (rare case)
+    if (!userPhone) {
+      userPhone = "91" + sessionId;
+    }
+
+    // 🔍 Check if user already exists
+    let existingUser = Array.from(users.values()).find(
+      (u) => u.phone === userPhone
+    );
+
+    let user;
+
+    if (existingUser) {
+      // ✅ Existing user login
+      user = existingUser;
+    } else {
+      // 🆕 New user create
+      user = {
+        id: "phone-" + userPhone,
         name: "Student",
         phone: userPhone,
         loginType: "phone",
@@ -888,24 +1112,31 @@ app.get("/api/nexttoppers/content-details", async (req, res) => {
         createdAt: new Date().toISOString(),
       };
 
-      const token = generateToken({
-        userId: user.id,
-        phone: user.phone,
-        role: user.role,
-      });
-
-      return res.json({
-        success: true,
-        token,
-        user,
-      });
-    } catch (e) {
-      console.error("verify-otp error:", e);
-      return res
-        .status(500)
-        .json({ success: false, message: "Server error" });
+      // 💾 SAVE USER (IMPORTANT FIX)
+      users.set(userPhone, user);
     }
-  });
+
+    // 🎟️ Generate token
+    const token = generateToken({
+      userId: user.id,
+      phone: user.phone,
+      role: user.role,
+    });
+
+    return res.json({
+      success: true,
+      token,
+      user,
+      isNewUser: !existingUser,
+    });
+  } catch (e) {
+    console.error("verify-otp error:", e);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+});
 
   // ========== EMAIL REGISTER + VERIFY ==========
   app.post("/api/register-email", async (req, res) => {
@@ -1292,12 +1523,49 @@ app.get("/api/nexttoppers/content-details", async (req, res) => {
   });
 
   app.get("/api/user-profile", authenticateToken, (req, res) => {
-    res.json({
+  try {
+    let fullUser = null;
+
+    // 🔍 find user from memory (email users)
+    if (req.user.email) {
+      fullUser = users.get(req.user.email);
+    }
+
+    // 🔍 find user from phone users
+    if (!fullUser && req.user.phone) {
+      fullUser = Array.from(users.values()).find(
+        (u) => u.phone === req.user.phone
+      );
+    }
+
+    // ⚡ अगर user नहीं मिला तो token वाला return कर
+    const userData = fullUser || req.user;
+
+    return res.json({
       success: true,
-      user: req.user,
-      features: ["Watch videos", "Save progress", "Premium content"],
+      user: {
+        id: userData.id || req.user.userId,
+        name: userData.name || "Student",
+        email: userData.email || null,
+        phone: userData.phone || null,
+        role: userData.role || "user",
+        loginType: userData.loginType || "unknown",
+        createdAt: userData.createdAt || null,
+      },
+      features: [
+        "📺 Watch videos",
+        "💾 Save progress",
+        "⭐ Premium content",
+      ],
     });
-  });
+  } catch (err) {
+    console.error("/api/user-profile error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+});
 
   // ========== ADMIN USER MANAGEMENT ==========
   app.get("/api/admin/users", authenticateAdmin, (req, res) => {
