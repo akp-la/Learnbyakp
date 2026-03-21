@@ -596,7 +596,7 @@ if (!response.ok) {
   });
 }
 
-]
+
 
     // ✅ check response ok or not
     if (!response.ok) {
