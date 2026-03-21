@@ -6,9 +6,12 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
-
+const BASE = "https://apiserverpro.onrender.com";
+const rateLimit = require("express-rate-limit");
+const app = express();
+app.use(rateLimit({ windowMs: 60 * 1000, max: 30 }));
 //  Use node-fetch via dynamic import (for proxy routes)
-const fetchFn = (...args) =>
+const fetchfn = (...args) =>
   import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
 // ================== FIREBASE INIT ================== 
@@ -18,7 +21,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 const COL = db.collection("studyData");
-const ADMIN_PWD = "992jaan";
+const ADMIN_PWD = process.env.ADMIN_PWD || "992jaa";
 
 // ================== CORS HELPER FOR /data ==================
 const corsFn = cors({ origin: true });
@@ -50,136 +53,6 @@ async function deleteQueryBatch(db, query, resolve) {
   });
 }
 
-// ================== SIMPLE HTTP FUNCTION: /data ==================
-exports.data = functions.https.onRequest((req, res) => {
-  corsFn(req, res, async () => {
-    if (req.method === "OPTIONS") {
-      return res.status(204).send("");
-    }
-
-    if (req.method === "GET") {
-      try {
-        const snapshot = await COL.get();
-        const rows = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        return res.status(200).json(rows);
-      } catch (err) {
-        console.error("GET /data error", err);
-        return res.status(500).json({ error: "Internal Server Error" });
-      }
-    }
-
-    if (req.method === "POST") {
-      try {
-        const body = req.body || {};
-        if (body.pwd !== ADMIN_PWD) {
-          return res.status(403).json({ error: "Unauthorized" });
-        }
-
-        const newRecord = {
-          batch: body.batch || "",
-          className: body.className || "",
-          subject: body.subject || "",
-          category: body.category || "",
-          title: body.title || "Untitled",
-          thumbnail: body.thumbnail || "",
-          link: body.link || "",
-          createdAt: new Date().toISOString(),
-        };
-
-        const docRef = await COL.add(newRecord);
-        return res.status(200).json({ success: true, id: docRef.id });
-      } catch (err) {
-        console.error("POST /data error", err);
-        return res.status(500).json({ error: "Internal Server Error" });
-      }
-    }
-
-    if (req.method === "PUT") {
-      try {
-        const body = req.body || {};
-        const id = body.id;
-
-        if (body.pwd !== ADMIN_PWD) {
-          return res.status(403).json({ error: "Unauthorized" });
-        }
-        if (!id) {
-          return res.status(400).json({ error: "Missing id" });
-        }
-
-        const docRef = COL.doc(id);
-        await docRef.update({
-          batch: body.batch || "",
-          className: body.className || "",
-          subject: body.subject || "",
-          category: body.category || "",
-          title: body.title || "Untitled",
-          thumbnail: body.thumbnail || "",
-          link: body.link || "",
-        });
-
-        return res.status(200).json({ success: true });
-      } catch (err) {
-        console.error("PUT /data error", err);
-        return res.status(500).json({ error: "Internal Server Error" });
-      }
-    }
-
-    if (req.method === "DELETE") {
-      try {
-        const id = req.query.id || (req.body && req.body.id);
-        const pwd = req.query.pwd || (req.body && req.body.pwd);
-        const all = req.query.all || (req.body && req.body.all);
-
-        if (pwd !== ADMIN_PWD) {
-          return res.status(403).json({ error: "Unauthorized" });
-        }
-
-        if (all === "1" || all === true) {
-          const ALLOWED_IPS = ["YOUR_HOME_IP", "YOUR_MOBILE_IP"];
-          const clientIp =
-            (req.headers["x-forwarded-for"] &&
-              req.headers["x-forwarded-for"].split(",")[0].trim()) ||
-            req.ip;
-
-          if (!ALLOWED_IPS.includes(clientIp)) {
-            console.log("BLOCKED bulk delete from IP:", clientIp);
-            return res.status(403).json({ error: "Bulk delete disabled" });
-          }
-
-          console.log(
-            "🚨 FULL DELETE by IP:",
-            clientIp,
-            "UA:",
-            req.headers["user-agent"]
-          );
-          await deleteCollection(db, "studyData", 300);
-          return res.status(200).json({
-            success: true,
-            mode: "all",
-            warning: "Full delete executed",
-          });
-        }
-
-        if (!id) {
-          return res.status(400).json({ error: "Missing id" });
-        }
-
-        await COL.doc(id).delete();
-        return res
-          .status(200)
-          .json({ success: true, mode: "single", id: id });
-      } catch (err) {
-        console.error("DELETE /data error", err);
-        return res.status(500).json({ error: "Internal Server Error" });
-      }
-    }
-
-    return res.status(405).json({ error: "Method Not Allowed" });
-  });
-});
 
 // ================== AUTH / EXPRESS APP ==================
 const JWT_SECRET = process.env.JWT_SECRET || "SUPER_SECRET_CHANGE_ME";
@@ -555,7 +428,7 @@ function createApp() {
 
     const url = `https://apiserverpro.onrender.com/api/missionjeet/content-details?content_id=${entityId}&course_id=${courseId}`;
 
-    const response = await fetch(url);
+    const response = await fetchfn(url);
 
     // ✅ check response ok or not
     if (!response.ok) {
@@ -587,10 +460,16 @@ function createApp() {
     // External API call
     const url = `https://apiserverpro.onrender.com/api/missionjeet/course-details?courseid=${courseid}`;
     
-    const response = await fetch(url);
-    const data = await response.json();
+    const response = await fetchfn(url);
 
-    res.json(data);
+if (!response.ok) {
+  return res.status(response.status).json({
+    error: "External API failed"
+  });
+}
+
+const data = await response.json();
+res.json(data);
   } catch (err) {
     console.error("/api/missionjeet/course-details error:", err);
     res.status(500).json({ error: err.toString() });
@@ -614,7 +493,7 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
       externalUrl = `https://apiserverpro.onrender.com/api/missionjeet/all-content/${courseid}`;
     }
 
-    const response = await fetch(externalUrl);
+    const response = await fetchfn(externalUrl);
     if (!response.ok) {
       throw new Error(`External: ${response.status}`);
     }
@@ -631,7 +510,7 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
   // Endpoint for /api/batches
   app.get("/api/batches", async (req, res) => {
     try {
-      const r = await fetchFn(
+      const r = await fetchfn(
         "https://apiserverpro.onrender.com/api/pw/batches"
       );
       const data = await r.json();
@@ -659,7 +538,7 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
       url.searchParams.set("id", id);
     }
 
-    const response = await fetch(url.toString());
+    const response = await fetchfn(url.toString());
     const data = await response.json();
 
     res.json(data);
@@ -682,10 +561,16 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
     // External API call
     const url = `https://apiserverpro.onrender.com/api/nexttoppers/course-details?courseid=${courseid}`;
     
-    const response = await fetch(url);
-    const data = await response.json();
+   const response = await fetchfn(url);
 
-    res.json(data);
+if (!response.ok) {
+  return res.status(response.status).json({
+    error: "External API failed"
+  });
+}
+
+const data = await response.json();
+res.json(data);
   } catch (err) {
     console.error("/api/nexttoppers/course-details error:", err);
     res.status(500).json({ error: err.toString() });
@@ -703,7 +588,15 @@ app.get("/api/nexttoppers/content-details", async (req, res) => {
 
     const url = `https://apiserverpro.onrender.com/api/nexttoppers/content-details?content_id=${entityId}&courseid=${courseId}`;
 
-    const response = await fetch(url);
+    const response = await fetchfn(url);
+
+if (!response.ok) {
+  return res.status(response.status).json({
+    error: "External API failed"
+  });
+}
+
+]
 
     // ✅ check response ok or not
     if (!response.ok) {
@@ -726,7 +619,7 @@ app.get("/api/nexttoppers/content-details", async (req, res) => {
   // Endpoint for /api/nexttoppers/batches
   app.get("/api/nexttoppers/batches", async (req, res) => {
     try {
-      const r = await fetchFn(
+      const r = await fetchfn(
         "https://apiserverpro.onrender.com/api/nexttoppers/batches"
       );
       const data = await r.json();
@@ -736,39 +629,11 @@ app.get("/api/nexttoppers/content-details", async (req, res) => {
       res.json({ error: e.toString() });
     }
   });
-  app.get("/api/pw/topics", async (req, res) => {
-  try {
-    // 🔥 multiple param support (old + new)
-    const BatchId = req.query.bid || req.query.BatchId;
-    const SubjectId = req.query.su || req.query.SubjectId;
-
-    // ❗ validation
-    if (!BatchId || !SubjectId) {
-      return res.status(400).json({
-        error: "Missing BatchId (bid/BatchId) or SubjectId (su/SubjectId)"
-      });
-    }
-
-    // 🔥 target API (apiserverpro)
-    const url = new URL("https://apiserverpro.onrender.com/api/pw/topics");
-    url.searchParams.set("BatchId", BatchId);
-    url.searchParams.set("SubjectId", SubjectId);
-
-    // 🔥 fetch data
-    const response = await fetch(url.toString());
-    const data = await response.json();
-
-    res.json(data);
-
-  } catch (err) {
-    console.error("/api/pw/topics error:", err);
-    res.status(500).json({ error: err.toString() });
-  }
-});
+ 
 // Endpoint for /api/jeet/batches
   app.get("/api/missionjeet/batches", async (req, res) => {
     try {
-      const r = await fetchFn(
+      const r = await fetchfn(
         "https://apiserverpro.onrender.com/api/missionjeet/batches"
       );
       const data = await r.json();
@@ -780,9 +645,9 @@ app.get("/api/nexttoppers/content-details", async (req, res) => {
   });
 
   // Endpoint for /api/pw/li
-  app.get("/api/pw/live", async (req, res) => {
+  app.get("/api/pw/lives", async (req, res) => {
     try {
-      const r = await fetchFn(
+      const r = await fetchfn(
         "https://apiserverpro.onrender.com/api/pw/lives"
       );
       const data = await r.json();
@@ -794,21 +659,45 @@ app.get("/api/nexttoppers/content-details", async (req, res) => {
   });
 
   // Endpoint for /api/pw/topics
-  app.get("/api/pw/topics", async (req, res) => {
-    try {
-      const r = await fetchFn(
-        "https://apiserverpro.onrender.com/api/pw/topics"
-      );
-      const data = await r.json();
-      res.json(data);
-    } catch (e) {
-      console.error("/api/pw/topics error:", e);
-      res.json({ error: e.toString() });
-    }
-  });
- // ================= PW ALL APIs =================
+app.get("/api/pw/topics", async (req, res) => {
+  try {
+    // 🔥 support both formats
+    const batchId = req.query.bid || req.query.BatchId;
+    const subjectId = req.query.su || req.query.SubjectId;
 
-// 🔥 DATACONTENT
+    let url = new URL("https://apiserverpro.onrender.com/api/pw/topics");
+
+    // ✅ agar params aaye to add karo
+    if (batchId && subjectId) {
+      url.searchParams.set("BatchId", batchId);
+      url.searchParams.set("SubjectId", subjectId);
+    }
+
+    // 🔥 IMPORTANT: always use fetchfn (same name)
+    const response = await fetchfn(url.toString());
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: `External API error: ${response.status}`
+      });
+    }
+
+    const data = await response.json();
+    res.json(data);
+
+  } catch (err) {
+    console.error("/api/pw/topics error:", err);
+    res.status(500).json({ error: err.toString() });
+  }
+});
+// ================= HELPER =================
+const safeFetch = async (url) => {
+  const res = await fetchfn(url);
+  if (!res.ok) throw new Error(`API Error: ${res.status}`);
+  return res.json();
+};
+
+// ================= DATACONTENT =================
 app.get("/api/pw/datacontent", async (req, res) => {
   try {
     const { batchId, subjectSlug, topicSlug, contentType } = req.query;
@@ -817,22 +706,17 @@ app.get("/api/pw/datacontent", async (req, res) => {
       return res.status(400).json({ error: "Missing params" });
     }
 
-    const url = new URL("https://apiserverpro.onrender.com/api/pw/datacontent");
-    url.searchParams.set("batchId", batchId);
-    url.searchParams.set("subjectSlug", subjectSlug);
-    url.searchParams.set("topicSlug", topicSlug);
-    url.searchParams.set("contentType", contentType);
+    const url = `${BASE}/api/pw/datacontent?batchId=${batchId}&subjectSlug=${subjectSlug}&topicSlug=${encodeURIComponent(topicSlug)}&contentType=${contentType}`;
 
-    const response = await fetch(url);
-    res.json(await response.json());
+    res.json(await safeFetch(url));
 
   } catch (err) {
-    res.status(500).json({ error: err.toString() });
+    res.status(500).json({ error: err.message });
   }
 });
 
 
-// 🔥 VIDEO (fallback combine किया)
+// ================= VIDEO COMBINED =================
 app.get("/api/pw/video-combined", async (req, res) => {
   try {
     const { batchId, subjectId, childId } = req.query;
@@ -850,25 +734,24 @@ app.get("/api/pw/video-combined", async (req, res) => {
 
     for (let ep of endpoints) {
       try {
-        const url = `https://apiserverpro.onrender.com/api/pw${ep}`;
-        const r = await fetch(url);
-        const data = await r.json();
+        const url = `${BASE}/api/pw${ep}`;
+        const data = await safeFetch(url);
 
         if (data?.data || data?.success) {
           return res.json(data);
         }
-      } catch (e) {}
+      } catch {}
     }
 
     res.status(404).json({ error: "No video source found" });
 
   } catch (err) {
-    res.status(500).json({ error: err.toString() });
+    res.status(500).json({ error: err.message });
   }
 });
 
 
-// 🔥 ATTACHMENTS (combined)
+// ================= ATTACHMENTS =================
 app.get("/api/pw/attachments", async (req, res) => {
   try {
     const { batchId, subjectId, scheduleId } = req.query;
@@ -878,112 +761,113 @@ app.get("/api/pw/attachments", async (req, res) => {
     }
 
     const urls = [
-      `https://apiserverpro.onrender.com/api/pw/attachments-url?BatchId=${batchId}&SubjectId=${subjectId}&ContentId=${scheduleId}`,
-      `https://apiserverpro.onrender.com/api/pw/attachment-link?batchId=${batchId}&subjectId=${subjectId}&scheduleId=${scheduleId}`
+      `${BASE}/api/pw/attachments-url?BatchId=${batchId}&SubjectId=${subjectId}&ContentId=${scheduleId}`,
+      `${BASE}/api/pw/attachment-link?batchId=${batchId}&subjectId=${subjectId}&scheduleId=${scheduleId}`
     ];
 
     for (let u of urls) {
       try {
-        const r = await fetch(u);
-        const data = await r.json();
+        const data = await safeFetch(u);
 
         if (data?.data || data?.success) {
           return res.json(data);
         }
-      } catch (e) {}
+      } catch {}
     }
 
     res.status(404).json({ error: "No attachment found" });
 
   } catch (err) {
-    res.status(500).json({ error: err.toString() });
+    res.status(500).json({ error: err.message });
   }
 });
 
 
-// 🔥 VIEW PDF
-app.get("/api/pw/view", async (req, res) => {
-  try {
-    const { url, filename } = req.query;
+// ================= VIEW =================
+app.get("/api/pw/view", (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).send("Missing URL");
 
-    if (!url) {
-      return res.status(400).send("Missing URL");
-    }
-
-    res.redirect(url); // direct open
-
-  } catch (err) {
-    res.status(500).send(err.toString());
-  }
+  res.redirect(url);
 });
 
 
-// 🔥 DOWNLOAD FILE
+// ================= DOWNLOAD =================
 app.get("/api/pw/download", async (req, res) => {
   try {
     const { url, filename } = req.query;
 
-    if (!url) {
-      return res.status(400).send("Missing URL");
-    }
+    if (!url) return res.status(400).send("Missing URL");
 
-    const response = await fetch(url);
-    res.setHeader("Content-Disposition", `attachment; filename="${filename || "file"}"`);
-    response.body.pipe(res);
+    const response = await fetchfn(url);
+
+if (!response.ok) {
+  return res.status(response.status).json({
+    error: "External API failed"
+  });
+}
+
+
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${filename || "file"}"`
+    );
+
+   const buffer = await response.arrayBuffer();
+res.send(Buffer.from(buffer));
 
   } catch (err) {
-    res.status(500).send(err.toString());
+    res.status(500).send(err.message);
   }
 });
 
 
-// 🔥 ATTACHMENT LINKS (extra)
+// ================= ATTACHMENT LINKS =================
 app.get("/api/pw/contents/attachment-links", async (req, res) => {
   try {
     const { batchId, subjectId, scheduleId } = req.query;
 
-    const url = `https://apiserverpro.onrender.com/api/pw/contents/attachment-links?batchId=${batchId}&subjectId=${subjectId}&scheduleId=${scheduleId}`;
-
-    const response = await fetch(url);
-    res.json(await response.json());
+    const url = `${BASE}/api/pw/contents/attachment-links?batchId=${batchId}&subjectId=${subjectId}&scheduleId=${scheduleId}`;
+     if (!batchId || !subjectId || !scheduleId) {
+  return res.status(400).json({ error: "Missing params" });
+}
+    res.json(await safeFetch(url));
 
   } catch (err) {
-    res.status(500).json({ error: err.toString() });
+    res.status(500).json({ error: err.message });
   }
 });
 
 
-// 🔥 OTP
+// ================= OTP =================
 app.get("/api/pw/otp", async (req, res) => {
   try {
     const { kid } = req.query;
 
-    const url = `https://apiserverpro.onrender.com/api/pw/otp?kid=${kid}`;
-    const response = await fetch(url);
+    const url = `${BASE}/api/pw/otp?kid=${kid}`;
 
-    res.json(await response.json());
+    res.json(await safeFetch(url));
 
   } catch (err) {
-    res.status(500).json({ error: err.toString() });
+    res.status(500).json({ error: err.message });
   }
 });
 
 
-// 🔥 KID (MPD)
+// ================= KID =================
 app.get("/api/pw/kid", async (req, res) => {
   try {
     const { mpdUrl } = req.query;
 
-    const url = `https://apiserverpro.onrender.com/api/pw/kid?mpdUrl=${encodeURIComponent(mpdUrl)}`;
-    const response = await fetch(url);
+    const url = `${BASE}/api/pw/kid?mpdUrl=${encodeURIComponent(mpdUrl)}`;
 
-    res.json(await response.json());
+    res.json(await safeFetch(url));
 
   } catch (err) {
-    res.status(500).json({ error: err.toString() });
+    res.status(500).json({ error: err.message });
   }
-});
-  // ========== EMAIL OTP (GENERIC) ==========
+});  // ========== EMAIL OTP (GENERIC) ==========
   app.post("/api/send-email-otp", async (req, res) => {
     try {
       const { email } = req.body;
@@ -1669,11 +1553,6 @@ app.get("/api/pw/kid", async (req, res) => {
 const appInstance = createApp();
 
 // Single Express function
-exports.api = functions
-  .runWith({ memory: "512MB", timeoutSeconds: 120 })
-  .https.onRequest((req, res) => {
-    appInstance(req, res);
-  });
 
   // ===== START SERVER FOR RENDER =====
 const PORT = process.env.PORT || 3000;
