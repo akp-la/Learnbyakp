@@ -661,24 +661,24 @@ if (!response.ok) {
   // Endpoint for /api/pw/topics
 app.get("/api/pw/topics", async (req, res) => {
   try {
-    // 🔥 support both formats
     const batchId = req.query.bid || req.query.BatchId;
     const subjectId = req.query.su || req.query.SubjectId;
 
     let url = new URL("https://apiserverpro.onrender.com/api/pw/topics");
 
-    // ✅ agar params aaye to add karo
-    if (batchId && subjectId) {
-      url.searchParams.set("BatchId", batchId);
-      url.searchParams.set("SubjectId", subjectId);
-    }
+    // ✅ individually add karo
+    if (batchId) url.searchParams.set("BatchId", batchId);
+    if (subjectId) url.searchParams.set("SubjectId", subjectId);
 
-    // 🔥 IMPORTANT: always use fetchfn (same name)
+    console.log("Final URL:", url.toString()); // debug
+
     const response = await fetchfn(url.toString());
 
     if (!response.ok) {
+      const text = await response.text(); // 🔥 better debugging
       return res.status(response.status).json({
-        error: `External API error: ${response.status}`
+        error: `External API error: ${response.status}`,
+        details: text
       });
     }
 
@@ -702,15 +702,32 @@ app.get("/api/pw/datacontent", async (req, res) => {
   try {
     const { batchId, subjectSlug, topicSlug, contentType } = req.query;
 
-    if (!batchId || !subjectSlug || !topicSlug || !contentType) {
-      return res.status(400).json({ error: "Missing params" });
+    let url = new URL(`${BASE}/api/pw/datacontent`);
+
+    // ✅ only add if present
+    if (batchId) url.searchParams.set("id", batchId);
+    if (subjectSlug) url.searchParams.set("su", subjectSlug);
+    if (topicSlug) url.searchParams.set("tslu", topicSlug);
+    if (contentType) url.searchParams.set("type", contentType);
+
+    console.log("Final URL:", url.toString());
+
+    const response = await fetchfn(url.toString());
+
+    if (!response.ok) {
+      const text = await response.text();
+      return res.status(response.status).json({
+        error: "External API error",
+        status: response.status,
+        details: text
+      });
     }
 
-    const url = `${BASE}/api/pw/datacontent?batchId=${batchId}&subjectSlug=${subjectSlug}&topicSlug=${encodeURIComponent(topicSlug)}&contentType=${contentType}`;
-
-    res.json(await safeFetch(url));
+    const data = await response.json();
+    res.json(data);
 
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -719,10 +736,27 @@ app.get("/api/pw/datacontent", async (req, res) => {
 // ================= VIDEO COMBINED =================
 app.get("/api/pw/video-combined", async (req, res) => {
   try {
-    const { batchId, subjectId, childId } = req.query;
+    // 🔥 multi-format support (auto pickup)
+    const batchId =
+      req.query.batchId ||
+      req.query.bid ||
+      req.query.BatchId;
+
+    const subjectId =
+      req.query.subjectId ||
+      req.query.sid ||
+      req.query.SubjectId;
+
+    const childId =
+      req.query.childId ||
+      req.query.cid ||
+      req.query.ChildId;
 
     if (!batchId || !childId) {
-      return res.status(400).json({ error: "Missing params" });
+      return res.status(400).json({
+        error: "Missing params",
+        received: { batchId, subjectId, childId }
+      });
     }
 
     const endpoints = [
@@ -732,32 +766,65 @@ app.get("/api/pw/video-combined", async (req, res) => {
       `/videoplay?batchId=${batchId}&childId=${childId}`
     ];
 
+    let debug = [];
+
     for (let ep of endpoints) {
+      const url = `${BASE}/api/pw${ep}`;
+
       try {
-        const url = `${BASE}/api/pw${ep}`;
+        console.log("Trying:", url);
+
         const data = await safeFetch(url);
 
         if (data?.data || data?.success) {
-          return res.json(data);
+          return res.json({
+            source: ep,
+            result: data
+          });
         }
-      } catch {}
+
+        debug.push({ url, status: "no data" });
+
+      } catch (err) {
+        debug.push({ url, error: err.message });
+      }
     }
 
-    res.status(404).json({ error: "No video source found" });
+    res.status(404).json({
+      error: "No video source found",
+      tried: debug
+    });
 
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-
 // ================= ATTACHMENTS =================
 app.get("/api/pw/attachments", async (req, res) => {
   try {
-    const { batchId, subjectId, scheduleId } = req.query;
+    // 🔥 auto लेने वाला (multiple formats support)
+    const batchId =
+      req.query.batchId ||
+      req.query.bid ||
+      req.query.BatchId;
+
+    const subjectId =
+      req.query.subjectId ||
+      req.query.sid ||
+      req.query.SubjectId;
+
+    const scheduleId =
+      req.query.scheduleId ||
+      req.query.cid ||
+      req.query.ContentId ||
+      req.query.schedule_id;
 
     if (!batchId || !subjectId || !scheduleId) {
-      return res.status(400).json({ error: "Missing params" });
+      return res.status(400).json({
+        error: "Missing params",
+        received: { batchId, subjectId, scheduleId }
+      });
     }
 
     const urls = [
@@ -765,17 +832,32 @@ app.get("/api/pw/attachments", async (req, res) => {
       `${BASE}/api/pw/attachment-link?batchId=${batchId}&subjectId=${subjectId}&scheduleId=${scheduleId}`
     ];
 
+    let debug = [];
+
     for (let u of urls) {
       try {
+        console.log("Trying:", u);
+
         const data = await safeFetch(u);
 
         if (data?.data || data?.success) {
-          return res.json(data);
+          return res.json({
+            source: u,
+            result: data
+          });
         }
-      } catch {}
+
+        debug.push({ url: u, status: "no data" });
+
+      } catch (err) {
+        debug.push({ url: u, error: err.message });
+      }
     }
 
-    res.status(404).json({ error: "No attachment found" });
+    res.status(404).json({
+      error: "No attachment found",
+      tried: debug
+    });
 
   } catch (err) {
     res.status(500).json({ error: err.message });
