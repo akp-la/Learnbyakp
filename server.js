@@ -806,10 +806,9 @@ app.get("/api/nexttoppers/content-details", async (req, res) => {
       res.json({ error: e.toString() });
     }
   });
-  //========================================
-  const BASE = "https://apiserverpro.onrender.com";
+ // ================= PW ALL APIs =================
 
-// ================= DATACONTENT =================
+// 🔥 DATACONTENT
 app.get("/api/pw/datacontent", async (req, res) => {
   try {
     const { batchId, subjectSlug, topicSlug, contentType } = req.query;
@@ -818,7 +817,7 @@ app.get("/api/pw/datacontent", async (req, res) => {
       return res.status(400).json({ error: "Missing params" });
     }
 
-    const url = new URL(BASE + "/api/pw/datacontent");
+    const url = new URL("https://apiserverpro.onrender.com/api/pw/datacontent");
     url.searchParams.set("batchId", batchId);
     url.searchParams.set("subjectSlug", subjectSlug);
     url.searchParams.set("topicSlug", topicSlug);
@@ -826,130 +825,164 @@ app.get("/api/pw/datacontent", async (req, res) => {
 
     const response = await fetch(url);
     res.json(await response.json());
+
   } catch (err) {
     res.status(500).json({ error: err.toString() });
   }
 });
 
-// ================= VIDEO NEW =================
-app.get("/api/pw/videonew", async (req, res) => {
+
+// 🔥 VIDEO (fallback combine किया)
+app.get("/api/pw/video-combined", async (req, res) => {
   try {
     const { batchId, subjectId, childId } = req.query;
 
-    const url = new URL(BASE + "/api/pw/videonew");
-    url.searchParams.set("batchId", batchId);
-    url.searchParams.set("subjectId", subjectId);
-    url.searchParams.set("childId", childId);
+    if (!batchId || !childId) {
+      return res.status(400).json({ error: "Missing params" });
+    }
 
-    const response = await fetch(url);
-    res.json(await response.json());
+    const endpoints = [
+      `/videonew?batchId=${batchId}&subjectId=${subjectId}&childId=${childId}`,
+      `/video?batchId=${batchId}&subjectId=${subjectId}&childId=${childId}`,
+      `/videosuper?batchId=${batchId}&childId=${childId}`,
+      `/videoplay?batchId=${batchId}&childId=${childId}`
+    ];
+
+    for (let ep of endpoints) {
+      try {
+        const url = `https://apiserverpro.onrender.com/api/pw${ep}`;
+        const r = await fetch(url);
+        const data = await r.json();
+
+        if (data?.data || data?.success) {
+          return res.json(data);
+        }
+      } catch (e) {}
+    }
+
+    res.status(404).json({ error: "No video source found" });
+
   } catch (err) {
     res.status(500).json({ error: err.toString() });
   }
 });
 
-// ================= VIDEO =================
-app.get("/api/pw/video", async (req, res) => {
-  try {
-    const { batchId, subjectId, childId } = req.query;
 
-    const url = new URL(BASE + "/api/pw/video");
-    url.searchParams.set("batchId", batchId);
-    url.searchParams.set("subjectId", subjectId);
-    url.searchParams.set("childId", childId);
-
-    const response = await fetch(url);
-    res.json(await response.json());
-  } catch (err) {
-    res.status(500).json({ error: err.toString() });
-  }
-});
-
-// ================= VIDEO SUPER =================
-app.get("/api/pw/videosuper", async (req, res) => {
-  try {
-    const { batchId, childId } = req.query;
-
-    const url = new URL(BASE + "/api/pw/videosuper");
-    url.searchParams.set("batchId", batchId);
-    url.searchParams.set("childId", childId);
-
-    const response = await fetch(url);
-    res.json(await response.json());
-  } catch (err) {
-    res.status(500).json({ error: err.toString() });
-  }
-});
-
-// ================= VIDEO PLAY =================
-app.get("/api/pw/videoplay", async (req, res) => {
-  try {
-    const { batchId, childId } = req.query;
-
-    const url = new URL(BASE + "/api/pw/videoplay");
-    url.searchParams.set("batchId", batchId);
-    url.searchParams.set("childId", childId);
-
-    const response = await fetch(url);
-    res.json(await response.json());
-  } catch (err) {
-    res.status(500).json({ error: err.toString() });
-  }
-});
-
-// ================= ATTACHMENTS =================
-app.get("/api/pw/attachments-url", async (req, res) => {
-  try {
-    const { BatchId, SubjectId, ContentId } = req.query;
-
-    const url = new URL(BASE + "/api/pw/attachments-url");
-    url.searchParams.set("BatchId", BatchId);
-    url.searchParams.set("SubjectId", SubjectId);
-    url.searchParams.set("ContentId", ContentId);
-
-    const response = await fetch(url);
-    res.json(await response.json());
-  } catch (err) {
-    res.status(500).json({ error: err.toString() });
-  }
-});
-
-// ================= ATTACHMENT LINK =================
-app.get("/api/pw/attachment-link", async (req, res) => {
+// 🔥 ATTACHMENTS (combined)
+app.get("/api/pw/attachments", async (req, res) => {
   try {
     const { batchId, subjectId, scheduleId } = req.query;
 
-    const url = new URL(BASE + "/api/pw/attachment-link");
-    url.searchParams.set("batchId", batchId);
-    url.searchParams.set("subjectId", subjectId);
-    url.searchParams.set("scheduleId", scheduleId);
+    if (!batchId || !subjectId || !scheduleId) {
+      return res.status(400).json({ error: "Missing params" });
+    }
 
-    const response = await fetch(url);
-    res.json(await response.json());
+    const urls = [
+      `https://apiserverpro.onrender.com/api/pw/attachments-url?BatchId=${batchId}&SubjectId=${subjectId}&ContentId=${scheduleId}`,
+      `https://apiserverpro.onrender.com/api/pw/attachment-link?batchId=${batchId}&subjectId=${subjectId}&scheduleId=${scheduleId}`
+    ];
+
+    for (let u of urls) {
+      try {
+        const r = await fetch(u);
+        const data = await r.json();
+
+        if (data?.data || data?.success) {
+          return res.json(data);
+        }
+      } catch (e) {}
+    }
+
+    res.status(404).json({ error: "No attachment found" });
+
   } catch (err) {
     res.status(500).json({ error: err.toString() });
   }
 });
 
-// ================= VIEW =================
-app.get("/api/pw/view", (req, res) => {
-  const { url, filename } = req.query;
 
-  if (!url) return res.status(400).send("Missing URL");
+// 🔥 VIEW PDF
+app.get("/api/pw/view", async (req, res) => {
+  try {
+    const { url, filename } = req.query;
 
-  res.redirect(url);
+    if (!url) {
+      return res.status(400).send("Missing URL");
+    }
+
+    res.redirect(url); // direct open
+
+  } catch (err) {
+    res.status(500).send(err.toString());
+  }
 });
 
-// ================= DOWNLOAD =================
-app.get("/api/pw/download", (req, res) => {
-  const { url, filename } = req.query;
 
-  if (!url) return res.status(400).send("Missing URL");
+// 🔥 DOWNLOAD FILE
+app.get("/api/pw/download", async (req, res) => {
+  try {
+    const { url, filename } = req.query;
 
-  res.setHeader("Content-Disposition", `attachment; filename="${filename || "file"}"`);
-  res.redirect(url);
+    if (!url) {
+      return res.status(400).send("Missing URL");
+    }
+
+    const response = await fetch(url);
+    res.setHeader("Content-Disposition", `attachment; filename="${filename || "file"}"`);
+    response.body.pipe(res);
+
+  } catch (err) {
+    res.status(500).send(err.toString());
+  }
 });
 
+
+// 🔥 ATTACHMENT LINKS (extra)
+app.get("/api/pw/contents/attachment-links", async (req, res) => {
+  try {
+    const { batchId, subjectId, scheduleId } = req.query;
+
+    const url = `https://apiserverpro.onrender.com/api/pw/contents/attachment-links?batchId=${batchId}&subjectId=${subjectId}&scheduleId=${scheduleId}`;
+
+    const response = await fetch(url);
+    res.json(await response.json());
+
+  } catch (err) {
+    res.status(500).json({ error: err.toString() });
+  }
+});
+
+
+// 🔥 OTP
+app.get("/api/pw/otp", async (req, res) => {
+  try {
+    const { kid } = req.query;
+
+    const url = `https://apiserverpro.onrender.com/api/pw/otp?kid=${kid}`;
+    const response = await fetch(url);
+
+    res.json(await response.json());
+
+  } catch (err) {
+    res.status(500).json({ error: err.toString() });
+  }
+});
+
+
+// 🔥 KID (MPD)
+app.get("/api/pw/kid", async (req, res) => {
+  try {
+    const { mpdUrl } = req.query;
+
+    const url = `https://apiserverpro.onrender.com/api/pw/kid?mpdUrl=${encodeURIComponent(mpdUrl)}`;
+    const response = await fetch(url);
+
+    res.json(await response.json());
+
+  } catch (err) {
+    res.status(500).json({ error: err.toString() });
+  }
+});
   // ========== EMAIL OTP (GENERIC) ==========
   app.post("/api/send-email-otp", async (req, res) => {
     try {
