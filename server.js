@@ -666,24 +666,28 @@ app.get("/api/pw/topics", async (req, res) => {
 
     let url = new URL("https://apiserverpro.onrender.com/api/pw/topics");
 
-    // ✅ individually add karo
     if (batchId) url.searchParams.set("BatchId", batchId);
     if (subjectId) url.searchParams.set("SubjectId", subjectId);
 
-    console.log("Final URL:", url.toString()); // debug
+    console.log("Final URL:", url.toString());
 
-    const response = await fetchfn(url.toString());
+    const response = await fetchfn(url.toString(), {
+      headers: {
+        "accept": "application/json, text/plain, */*",
+        "user-agent": "Mozilla/5.0"
+      }
+    });
+
+    const text = await response.text();
 
     if (!response.ok) {
-      const text = await response.text(); // 🔥 better debugging
       return res.status(response.status).json({
         error: `External API error: ${response.status}`,
         details: text
       });
     }
 
-    const data = await response.json();
-    res.json(data);
+    res.send(JSON.parse(text));
 
   } catch (err) {
     console.error("/api/pw/topics error:", err);
@@ -704,7 +708,6 @@ app.get("/api/pw/datacontent", async (req, res) => {
 
     let url = new URL(`${BASE}/api/pw/datacontent`);
 
-    // ✅ only add if present
     if (batchId) url.searchParams.set("id", batchId);
     if (subjectSlug) url.searchParams.set("su", subjectSlug);
     if (topicSlug) url.searchParams.set("tslu", topicSlug);
@@ -712,10 +715,20 @@ app.get("/api/pw/datacontent", async (req, res) => {
 
     console.log("Final URL:", url.toString());
 
-    const response = await fetchfn(url.toString());
+    const response = await fetchfn(url.toString(), {
+      method: "GET",
+      headers: {
+        "accept": "application/json, text/plain, */*",
+        "accept-language": "en-US,en;q=0.9",
+        "user-agent": "Mozilla/5.0",
+        "origin": "https://www.google.com",
+        "referer": "https://www.google.com/"
+      }
+    });
+
+    const text = await response.text();
 
     if (!response.ok) {
-      const text = await response.text();
       return res.status(response.status).json({
         error: "External API error",
         status: response.status,
@@ -723,8 +736,7 @@ app.get("/api/pw/datacontent", async (req, res) => {
       });
     }
 
-    const data = await response.json();
-    res.json(data);
+    res.send(JSON.parse(text));
 
   } catch (err) {
     console.error(err);
@@ -734,72 +746,91 @@ app.get("/api/pw/datacontent", async (req, res) => {
 
 
 // ================= VIDEO COMBINED =================
-app.get("/api/pw/video-combined", async (req, res) => {
+// ================= VIDEO =================
+app.get("/api/pw/video", async (req, res) => {
   try {
-    // 🔥 multi-format support (auto pickup)
-    const batchId =
-      req.query.batchId ||
-      req.query.bid ||
-      req.query.BatchId;
+    const { batchId, subjectId, childId } = req.query;
 
-    const subjectId =
-      req.query.subjectId ||
-      req.query.sid ||
-      req.query.SubjectId;
+    let url = new URL(`${BASE}/api/pw/video`);
 
-    const childId =
-      req.query.childId ||
-      req.query.cid ||
-      req.query.ChildId;
+    if (batchId) url.searchParams.set("batchId", batchId);
+    if (subjectId) url.searchParams.set("subjectId", subjectId);
+    if (childId) url.searchParams.set("childId", childId);
 
-    if (!batchId || !childId) {
-      return res.status(400).json({
-        error: "Missing params",
-        received: { batchId, subjectId, childId }
-      });
-    }
+    console.log("VIDEO URL:", url.toString());
 
-    const endpoints = [
-      `/videonew?batchId=${batchId}&subjectId=${subjectId}&childId=${childId}`,
-      `/video?batchId=${batchId}&subjectId=${subjectId}&childId=${childId}`,
-      `/videosuper?batchId=${batchId}&childId=${childId}`,
-      `/videoplay?batchId=${batchId}&childId=${childId}`
-    ];
-
-    let debug = [];
-
-    for (let ep of endpoints) {
-      const url = `${BASE}/api/pw${ep}`;
-
-      try {
-        console.log("Trying:", url);
-
-        const data = await safeFetch(url);
-
-        if (data?.data || data?.success) {
-          return res.json({
-            source: ep,
-            result: data
-          });
-        }
-
-        debug.push({ url, status: "no data" });
-
-      } catch (err) {
-        debug.push({ url, error: err.message });
-      }
-    }
-
-    res.status(404).json({
-      error: "No video source found",
-      tried: debug
-    });
+    const data = await safeFetch(url.toString());
+    res.json(data);
 
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+
+// ================= VIDEO NEW =================
+app.get("/api/pw/videonew", async (req, res) => {
+  try {
+    const { batchId, subjectId, childId } = req.query;
+
+    let url = new URL(`${BASE}/api/pw/videonew`);
+
+    if (batchId) url.searchParams.set("batchId", batchId);
+    if (subjectId) url.searchParams.set("subjectId", subjectId);
+    if (childId) url.searchParams.set("childId", childId);
+
+    console.log("VIDEONEW URL:", url.toString());
+
+    const data = await safeFetch(url.toString());
+    res.json(data);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ================= VIDEO SUPER =================
+app.get("/api/pw/videosuper", async (req, res) => {
+  try {
+    const { batchId, childId } = req.query;
+
+    let url = new URL(`${BASE}/api/pw/videosuper`);
+
+    if (batchId) url.searchParams.set("batchId", batchId);
+    if (childId) url.searchParams.set("childId", childId);
+
+    console.log("VIDEOSUPER URL:", url.toString());
+
+    const data = await safeFetch(url.toString());
+    res.json(data);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ================= VIDEO PLAY =================
+app.get("/api/pw/videoplay", async (req, res) => {
+  try {
+    const { batchId, childId } = req.query;
+
+    let url = new URL(`${BASE}/api/pw/videoplay`);
+
+    if (batchId) url.searchParams.set("batchId", batchId);
+    if (childId) url.searchParams.set("childId", childId);
+
+    console.log("VIDEOPLAY URL:", url.toString());
+
+    const data = await safeFetch(url.toString());
+    res.json(data);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});  
+  
 // ================= ATTACHMENTS =================
 app.get("/api/pw/attachments", async (req, res) => {
   try {
@@ -828,8 +859,8 @@ app.get("/api/pw/attachments", async (req, res) => {
     }
 
     const urls = [
-      `${BASE}/api/pw/attachments-url?BatchId=${batchId}&SubjectId=${subjectId}&ContentId=${scheduleId}`,
-      `${BASE}/api/pw/attachment-link?batchId=${batchId}&subjectId=${subjectId}&scheduleId=${scheduleId}`
+      `${BASE}/api/pw/attachments-url?BatchId=${batchId}&SubjectId=${subjectId}&ContentId=${scheduleId}`
+      
     ];
 
     let debug = [];
