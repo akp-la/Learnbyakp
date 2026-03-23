@@ -718,7 +718,6 @@ app.get("/api/pw/datacontent", async (req, res) => {
         "origin": "https://www.google.com",
         "referer": "https://www.google.com/"
       }
-    });
 
     const text = await response.text();
 
