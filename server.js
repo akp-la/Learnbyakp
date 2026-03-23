@@ -105,7 +105,7 @@ function authenticateAdmin(req, res, next) {
     }
     next();
   });
-}
+
 
 // ================== EMAIL HTML HELPERS ==================
 function emailOtpHtml(otp) {
