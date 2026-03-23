@@ -688,6 +688,41 @@ if (!response.ok) {
     res.status(500).json({ error: err.toString() });
   }
 });
+//===========656567============
+  app.get("/api/pw/datacontent", async (req, res) => {
+  try {
+    // 🔥 multiple param support (old + new)
+    const BatchId = req.query.bid || req.query.BatchId;
+    const SubjectId = req.query.su || req.query.SubjectId;
+    const topicslug = req.query.topicslug || req.query.Topicslug;
+    const Subjectslug = req.query.su || req.query.Subjectslug;
+
+    // ❗ validation
+    if (!BatchId || !SubjectId || !Subjectslug || !Topicslug) {
+      return res.status(400).json({
+        error: "Missing BatchId (bid/BatchId) or SubjectId (su/SubjectId)"
+      });
+    }
+
+    // 🔥 target API (apiserverpro)
+    const url = new URL("https://apiserverpro.onrender.com/api/pw/datacontent");
+    url.searchParams.set("BatchId", BatchId);
+    url.searchParams.set("SubjectId", SubjectId);
+     url.searchParams.set("Subjectslug", Subjectslug );
+     url.searchParams.set("Topicslug", Topicslug);
+
+    // 🔥 fetch data
+    const response = await fetch(url.toString());
+    const data = await response.json();
+
+    res.json(data);
+
+  } catch (err) {
+    console.error("/api/pw/datacontent error:", err);
+    res.status(500).json({ error: err.toString() });
+  }
+});
+  
 // ================= HELPER =================
 const safeFetch = async (url) => {
   const res = await fetchfn(url);
@@ -697,59 +732,7 @@ const safeFetch = async (url) => {
 // ==========343=============
 
 // ================= DATACONTENT =================
-app.get("/api/pw/datacontent", async (req, res) => {
-  try {
-    const { BatchId, SubjectSlug, TopicSlug, ContentType } = req.query;
 
-    if (!BatchId && !SubjectSlug && !TopicSlug) {
-      return res.status(400).json({
-        error: "At least one parameter required"
-      });
-    }
-
-    const url = new URL(`${BASE}/api/pw/datacontent`);
-
-    if (BatchId) url.searchParams.set("id", BatchId);
-    if (SubjectSlug) url.searchParams.set("su", SubjectSlug);
-    if (TopicSlug) url.searchParams.set("tslu", TopicSlug);
-    if (ContentType) url.searchParams.set("type", ContentType);
-
-    console.log("Final URL:", url.toString());
-
-    const response = await fetchfn(url.toString(), {
-      method: "GET",
-      headers: {
-        "accept": "application/json"
-      }
-    });
-
-    const text = await response.text();
-
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: "External API error",
-        status: response.status,
-        details: text
-      });
-    }
-
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      return res.status(500).json({
-        error: "Invalid JSON from API",
-        raw: text
-      });
-    }
-
-    res.json(data);
-
-  } catch (err) {
-    console.error("Server Error:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
 // ================= VIDEO COMBINED =================
   app.get("/api/pw/video", async (req, res) => {
   try {
