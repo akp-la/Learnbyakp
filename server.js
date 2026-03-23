@@ -701,7 +701,13 @@ app.get("/api/pw/datacontent", async (req, res) => {
   try {
     const { BatchId, SubjectSlug, TopicSlug, ContentType } = req.query;
 
-    let url = new URL(`${BASE}/api/pw/datacontent`);
+    if (!BatchId && !SubjectSlug && !TopicSlug) {
+      return res.status(400).json({
+        error: "At least one parameter required"
+      });
+    }
+
+    const url = new URL(`${BASE}/api/pw/datacontent`);
 
     if (BatchId) url.searchParams.set("id", BatchId);
     if (SubjectSlug) url.searchParams.set("su", SubjectSlug);
@@ -713,11 +719,7 @@ app.get("/api/pw/datacontent", async (req, res) => {
     const response = await fetchfn(url.toString(), {
       method: "GET",
       headers: {
-        "accept": "application/json, text/plain, */*",
-        "accept-language": "en-US,en;q=0.9",
-        "user-agent": "Mozilla/5.0",
-        "origin": "https://www.google.com",
-        "referer": "https://www.google.com/"
+        "accept": "application/json"
       }
     });
 
@@ -731,13 +733,23 @@ app.get("/api/pw/datacontent", async (req, res) => {
       });
     }
 
-    res.send(JSON.parse(text));
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      return res.status(500).json({
+        error: "Invalid JSON from API",
+        raw: text
+      });
+    }
+
+    res.json(data);
 
   } catch (err) {
-    console.error(err);
+    console.error("Server Error:", err);
     res.status(500).json({ error: err.message });
   }
-}); // ✅ IMPORTANT
+});
 // ================= VIDEO COMBINED =================
   app.get("/api/pw/video", async (req, res) => {
   try {
