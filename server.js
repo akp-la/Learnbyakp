@@ -694,7 +694,7 @@ if (!response.ok) {
     // 🔥 multiple param support (old + new)
     const BatchId = req.query.bid || req.query.BatchId;
     const SubjectId = req.query.su || req.query.SubjectId;
-    const topicslug = req.query.topicslug || req.query.Topicslug;
+    const Topicslug = req.query.topicslug || req.query.Topicslug;
     const Subjectslug = req.query.su || req.query.Subjectslug;
 
     // ❗ validation
