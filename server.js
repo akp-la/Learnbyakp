@@ -749,21 +749,44 @@ app.get("/api/pw/datacontent", async (req, res) => {
 // ================= VIDEO =================
 app.get("/api/pw/video", async (req, res) => {
   try {
-    const { batchId, subjectId, childId } = req.query;
+    // ✅ Uppercase + lowercase support
+    const batchId = req.query.batchId || req.query.BatchId;
+    const subjectId = req.query.subjectId || req.query.SubjectId;
+    const childId = req.query.childId || req.query.ContentId;
 
-    let url = new URL(`${BASE}/api/pw/video`);
+    // ✅ Validation
+    if (!batchId || !subjectId || !childId) {
+      return res.status(400).json({
+        error: "Missing required params",
+        received: { batchId, subjectId, childId }
+      });
+    }
 
-    if (batchId) url.searchParams.set("batchId", batchId);
-    if (subjectId) url.searchParams.set("subjectId", subjectId);
-    if (childId) url.searchParams.set("childId", childId);
+    // ✅ URL build (ONLY ONCE)
+    const url = new URL(`${BASE}/api/pw/video`);
+    url.searchParams.set("batchId", batchId);
+    url.searchParams.set("subjectId", subjectId);
+    url.searchParams.set("childId", childId);
 
     console.log("VIDEO URL:", url.toString());
 
+    // ✅ Fetch
     const data = await safeFetch(url.toString());
-    res.json(data);
+
+    // ✅ Safe response
+    if (!data) {
+      return res.status(500).json({
+        error: "No data received from upstream API"
+      });
+    }
+
+    return res.json(data);
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("VIDEO API ERROR:", err.message);
+    return res.status(500).json({
+      error: err.message
+    });
   }
 });
 
