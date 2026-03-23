@@ -737,9 +737,7 @@ app.get("/api/pw/datacontent", async (req, res) => {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
-
-
-
+}); // ✅ IMPORTANT
 // ================= VIDEO COMBINED =================
   app.get("/api/pw/video", async (req, res) => {
   try {
