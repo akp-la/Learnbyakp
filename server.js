@@ -645,15 +645,15 @@ if (!response.ok) {
   });
 
   // Endpoint for /api/pw/li
-  app.get("/api/pw/live", async (req, res) => {
+  app.get("/api/pw/lives", async (req, res) => {
     try {
       const r = await fetchfn(
-        "https://apiserverpro.onrender.com/api/pw/live"
+        "https://apiserverpro.onrender.com/api/pw/lives"
       );
       const data = await r.json();
       res.json(data);
     } catch (e) {
-      console.error("/api/pw/live error:", e);
+      console.error("/api/pw/lives error:", e);
       res.json({ error: e.toString() });
     }
   });
@@ -689,40 +689,48 @@ if (!response.ok) {
   }
 });
 //===========656567============
-  app.get("/api/pw/datacontent", async (req, res) => {
+ app.get("/api/pw/datacontent", async (req, res) => {
   try {
-    // 🔥 multiple param support (old + new)
-    const BatchId = req.query.bid || req.query.BatchId;
-    const SubjectId = req.query.su || req.query.SubjectId;
-    const Topicslug = req.query.topicslug || req.query.Topicslug;
-    const Subjectslug = req.query.su || req.query.Subjectslug;
+    const { batchId, subjectSlug, topicSlug, contentType } = req.query;
 
-    // ❗ validation
-    if (!BatchId || !SubjectId || !Subjectslug || !Topicslug) {
-      return res.status(400).json({
-        error: "Missing BatchId (bid/BatchId) or SubjectId (su/SubjectId)"
+    let url = new URL(`${BASE}/api/pw/datacontent`);
+
+    if (batchId) url.searchParams.set("id", batchId);
+    if (subjectSlug) url.searchParams.set("su", subjectSlug);
+    if (topicSlug) url.searchParams.set("tslu", topicSlug);
+    if (contentType) url.searchParams.set("type", contentType);
+
+    console.log("Final URL:", url.toString());
+
+    const response = await fetchfn(url.toString(), {
+      method: "GET",
+      headers: {
+        "accept": "application/json, text/plain, */*",
+        "accept-language": "en-US,en;q=0.9",
+        "user-agent": "Mozilla/5.0",
+        "origin": "https://www.google.com",
+        "referer": "https://www.google.com/"
+      }
+    });
+
+    const text = await response.text();
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: "External API error",
+        status: response.status,
+        details: text
       });
     }
 
-    // 🔥 target API (apiserverpro)
-    const url = new URL("https://apiserverpro.onrender.com/api/pw/datacontent");
-    url.searchParams.set("BatchId", BatchId);
-    url.searchParams.set("SubjectId", SubjectId);
-     url.searchParams.set("Subjectslug", Subjectslug );
-     url.searchParams.set("Topicslug", Topicslug);
-
-    // 🔥 fetch data
-    const response = await fetch(url.toString());
-    const data = await response.json();
-
-    res.json(data);
+    res.send(JSON.parse(text));
 
   } catch (err) {
-    console.error("/api/pw/datacontent error:", err);
-    res.status(500).json({ error: err.toString() });
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 });
-  
+
 // ================= HELPER =================
 const safeFetch = async (url) => {
   const res = await fetchfn(url);
