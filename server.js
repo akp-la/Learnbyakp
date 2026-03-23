@@ -694,18 +694,19 @@ const safeFetch = async (url) => {
   if (!res.ok) throw new Error(`API Error: ${res.status}`);
   return res.json();
 };
+// ==========343=============
 
 // ================= DATACONTENT =================
 app.get("/api/pw/datacontent", async (req, res) => {
   try {
-    const { batchId, subjectSlug, topicSlug, contentType } = req.query;
+    const { BatchId, SubjectSlug, TopicSlug, ContentType } = req.query;
 
     let url = new URL(`${BASE}/api/pw/datacontent`);
 
-    if (batchId) url.searchParams.set("id", batchId);
-    if (subjectSlug) url.searchParams.set("su", subjectSlug);
-    if (topicSlug) url.searchParams.set("tslu", topicSlug);
-    if (contentType) url.searchParams.set("type", contentType);
+    if (BatchId) url.searchParams.set("id", BatchId);
+    if (SubjectSlug) url.searchParams.set("su", SubjectSlug);
+    if (TopicSlug) url.searchParams.set("tslu", TopicSlug);
+    if (ContentType) url.searchParams.set("type", ContentType);
 
     console.log("Final URL:", url.toString());
 
@@ -735,7 +736,7 @@ app.get("/api/pw/datacontent", async (req, res) => {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
-});
+
 
 
 // ================= VIDEO COMBINED =================
