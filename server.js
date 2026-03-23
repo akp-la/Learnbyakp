@@ -659,35 +659,29 @@ if (!response.ok) {
   });
 
   // Endpoint for /api/pw/topics
-app.get("/api/pw/topics", async (req, res) => {
+ app.get("/api/pw/topics", async (req, res) => {
   try {
-    const batchId = req.query.bid || req.query.BatchId;
-    const subjectId = req.query.su || req.query.SubjectId;
+    // 🔥 multiple param support (old + new)
+    const BatchId = req.query.bid || req.query.BatchId;
+    const SubjectId = req.query.su || req.query.SubjectId;
 
-    let url = new URL("https://apiserverpro.onrender.com/api/pw/topics");
-
-    if (batchId) url.searchParams.set("BatchId", batchId);
-    if (subjectId) url.searchParams.set("SubjectId", subjectId);
-
-    console.log("Final URL:", url.toString());
-
-    const response = await fetchfn(url.toString(), {
-      headers: {
-        "accept": "application/json, text/plain, */*",
-        "user-agent": "Mozilla/5.0"
-      }
-    });
-
-    const text = await response.text();
-
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: `External API error: ${response.status}`,
-        details: text
+    // ❗ validation
+    if (!BatchId || !SubjectId) {
+      return res.status(400).json({
+        error: "Missing BatchId (bid/BatchId) or SubjectId (su/SubjectId)"
       });
     }
 
-    res.send(JSON.parse(text));
+    // 🔥 target API (apiserverpro)
+    const url = new URL("https://apiserverpro.onrender.com/api/pw/topics");
+    url.searchParams.set("BatchId", BatchId);
+    url.searchParams.set("SubjectId", SubjectId);
+
+    // 🔥 fetch data
+    const response = await fetch(url.toString());
+    const data = await response.json();
+
+    res.json(data);
 
   } catch (err) {
     console.error("/api/pw/topics error:", err);
