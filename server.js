@@ -689,24 +689,30 @@ if (!response.ok) {
   }
 });
 //===========656567============
- app.get("/api/pw/datacontent", async (req, res) => {
+app.get("/api/pw/datacontent", async (req, res) => {
   try {
-    const { BatchId, SubjectSlug, TopicSlug, ContentType } = req.query;
+    // ✅ lowercase params lo
+    const { batchId, subjectSlug, topicSlug, contentType } = req.query;
 
     const url = new URL(`${BASE}/api/pw/datacontent`);
 
-    if (BatchId) url.searchParams.set("BatchId", BatchId);
-    if (SubjectSlug) url.searchParams.set("SubjectSlug", SubjectSlug);
-    if (TopicSlug) url.searchParams.set("TopicSlug", TopicSlug);
-    if (ContentType) url.searchParams.set("ContentType", ContentType);
+    // ✅ SAME param names use karo jo working URL me hai
+    if (batchId) url.searchParams.set("batchId", batchId);
+    if (subjectSlug) url.searchParams.set("subjectSlug", subjectSlug);
+    if (topicSlug) url.searchParams.set("topicSlug", topicSlug);
+    if (contentType) url.searchParams.set("contentType", contentType);
 
     console.log("Final URL:", url.toString());
 
-    const response = await fetchfn(url.toString());
+    const response = await fetchfn(url.toString(), {
+      method: "GET",
+      headers: {
+        "accept": "application/json"
+      }
+    });
 
     const text = await response.text();
 
-    // 🔥 IMPORTANT CHANGE
     let data;
     try {
       data = JSON.parse(text);
@@ -714,17 +720,17 @@ if (!response.ok) {
       data = { raw: text };
     }
 
-    // 🔥 EVEN IF 400 → still send data
+    // ✅ status bhi return karo debug ke liye
     res.json({
       status: response.status,
       data
     });
 
   } catch (err) {
+    console.error("datacontent error:", err);
     res.status(500).json({ error: err.message });
   }
 });
-
 // ================= HELPER =================
 const safeFetch = async (url) => {
   const res = await fetchfn(url);
@@ -732,135 +738,103 @@ const safeFetch = async (url) => {
   return res.json();
 };
 // ==========343=============
+app.get("/api/pw/video", async (req, res) => {
+  try {
+    const batchId = req.query.batchId || req.query.bid;
+    const subjectId = req.query.subjectId || req.query.su;
+    const childId = req.query.childId || req.query.childid;
 
+    if (!batchId || !subjectId) {
+      return res.status(400).json({ error: "Missing batchId or subjectId" });
+    }
+
+    const url = new URL(`${BASE}/api/pw/video`);
+    url.searchParams.set("batchId", batchId);
+    url.searchParams.set("subjectId", subjectId);
+    if (childId) url.searchParams.set("childId", childId);
+
+    console.log("VIDEO URL:", url.toString());
+
+    const response = await fetchfn(url.toString());
+    const data = await response.json();
+
+    res.json(data);
+  } catch (err) {
+    console.error("video error:", err);
+    res.status(500).json({ error: err.toString() });
+  }
+});
 // ================= DATACONTENT =================
+app.get("/api/pw/videonew", async (req, res) => {
+  try {
+    const batchId = req.query.batchId || req.query.bid;
+    const subjectId = req.query.subjectId || req.query.su;
+    const childId = req.query.childId || req.query.childid;
 
+    if (!batchId || !subjectId) {
+      return res.status(400).json({ error: "Missing batchId or subjectId" });
+    }
+
+    const url = new URL(`${BASE}/api/pw/videonew`);
+    url.searchParams.set("batchId", batchId);
+    url.searchParams.set("subjectId", subjectId);
+    if (childId) url.searchParams.set("childId", childId);
+
+    const response = await fetchfn(url.toString());
+    const data = await response.json();
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.toString() });
+  }
+});
 // ================= VIDEO COMBINED =================
-  app.get("/api/pw/video", async (req, res) => {
-  try {
-    // 🔥 multiple param support (old + new)
-    const BatchId = req.query.bid || req.query.BatchId;
-    const SubjectId = req.query.su || req.query.SubjectId;
-    const ContentId = req.query.childid || req.query.ContentId;
-    // ❗ validation
-    if (!BatchId || !SubjectId) {
-      return res.status(400).json({
-        error: "Missing BatchId (bid/BatchId) or SubjectId (su/SubjectId)"
-      });
-    }
-
-    // 🔥 target API (apiserverpro)
-    const url = new URL("https://apiserverpro.onrender.com/api/pw/video");
-    url.searchParams.set("BatchId", BatchId);
-    url.searchParams.set("SubjectId", SubjectId);
-     url.searchParams.set("ChildId", ContentId);
-    // 🔥 fetch data
-    const response = await fetch(url.toString());
-    const data = await response.json();
-
-    res.json(data);
-
-  } catch (err) {
-    console.error("/api/pw/video error:", err);
-    res.status(500).json({ error: err.toString() });
-  }
-}); 
-// ================= VIDEO =================
-  app.get("/api/pw/videonew", async (req, res) => {
-  try {
-    // 🔥 multiple param support (old + new)
-    const BatchId = req.query.bid || req.query.BatchId;
-    const SubjectId = req.query.su || req.query.SubjectId;
-    const ContentId = req.query.childid || req.query.ContentId;
-    // ❗ validation
-    if (!BatchId || !SubjectId) {
-      return res.status(400).json({
-        error: "Missing BatchId (bid/BatchId) or SubjectId (su/SubjectId)"
-      });
-    }
-
-    // 🔥 target API (apiserverpro)
-    const url = new URL("https://apiserverpro.onrender.com/api/pw/videonew");
-    url.searchParams.set("BatchId", BatchId);
-    url.searchParams.set("SubjectId", SubjectId);
-     url.searchParams.set("ChildId", ContentId);
-    // 🔥 fetch data
-    const response = await fetch(url.toString());
-    const data = await response.json();
-
-    res.json(data);
-
-  } catch (err) {
-    console.error("/api/pw/videonew error:", err);
-    res.status(500).json({ error: err.toString() });
-  }
-}); 
-
-
-// ================= VIDEO NEW =================
 app.get("/api/pw/videosuper", async (req, res) => {
   try {
-    // 🔥 multiple param support (old + new)
-    const BatchId = req.query.bid || req.query.BatchId;
-    const ContentId = req.query.childid || req.query.ContentId;
-    // ❗ validation
-    if (!BatchId || !SubjectId) {
-      return res.status(400).json({
-        error: "Missing BatchId (bid/BatchId) or SubjectId (su/SubjectId)"
-      });
+    const batchId = req.query.batchId || req.query.bid;
+    const childId = req.query.childId || req.query.childid;
+
+    if (!batchId || !childId) {
+      return res.status(400).json({ error: "Missing batchId or childId" });
     }
 
-    // 🔥 target API (apiserverpro)
-    const url = new URL("https://apiserverpro.onrender.com/api/pw/videosuper");
-    url.searchParams.set("BatchId", BatchId);
-     url.searchParams.set("ChildId", ContentId);
-    // 🔥 fetch data
-    const response = await fetch(url.toString());
+    const url = new URL(`${BASE}/api/pw/videosuper`);
+    url.searchParams.set("batchId", batchId);
+    url.searchParams.set("childId", childId);
+
+    console.log("VIDEOSUPER URL:", url.toString());
+
+    const response = await fetchfn(url.toString());
     const data = await response.json();
 
     res.json(data);
-
   } catch (err) {
-    console.error("/api/pw/videosuper error:", err);
     res.status(500).json({ error: err.toString() });
   }
-}); 
-//========================================
-
-
-// ================= VIDEO SUPER =================
-
-app.get("/api/pw/videoplay", async (req, res) => {
-  try {
-    // 🔥 multiple param support (old + new)
-    const BatchId = req.query.bid || req.query.BatchId;
-    const ContentId = req.query.childid || req.query.ContentId;
-    // ❗ validation
-    if (!BatchId || !SubjectId) {
-      return res.status(400).json({
-        error: "Missing BatchId (bid/BatchId) or SubjectId (su/SubjectId)"
-      });
-    }
-
-    // 🔥 target API (apiserverpro)
-    const url = new URL("https://apiserverpro.onrender.com/api/pw/videoplay");
-    url.searchParams.set("BatchId", BatchId);
-     url.searchParams.set("ChildId", ContentId);
-    // 🔥 fetch data
-    const response = await fetch(url.toString());
-    const data = await response.json();
-
-    res.json(data);
-
-  } catch (err) {
-    console.error("/api/pw/videoplay error:", err);
-    res.status(500).json({ error: err.toString() });
-  }
-}); 
-
+});
 
 // ================= VIDEO PLAY =================
+app.get("/api/pw/videoplay", async (req, res) => {
+  try {
+    const batchId = req.query.batchId || req.query.bid;
+    const childId = req.query.childId || req.query.childid;
 
+    if (!batchId || !childId) {
+      return res.status(400).json({ error: "Missing batchId or childId" });
+    }
+
+    const url = new URL(`${BASE}/api/pw/videoplay`);
+    url.searchParams.set("batchId", batchId);
+    url.searchParams.set("childId", childId);
+
+    const response = await fetchfn(url.toString());
+    const data = await response.json();
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.toString() });
+  }
+});
 // ================= ATTACHMENTS =================
 app.get("/api/pw/attachments", async (req, res) => {
   try {
