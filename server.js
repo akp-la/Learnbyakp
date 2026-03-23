@@ -1023,9 +1023,7 @@ app.get("/api/pw/kid", async (req, res) => {
     res.status(500).json({ error: err.toString() });
   }
 }); 
-
-  }
-});  // ========== EMAIL OTP (GENERIC) ==========
+  // ========== EMAIL OTP (GENERIC) ==========
   app.post("/api/send-email-otp", async (req, res) => {
     try {
       const { email } = req.body;
