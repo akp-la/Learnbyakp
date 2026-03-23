@@ -691,42 +691,36 @@ if (!response.ok) {
 //===========656567============
  app.get("/api/pw/datacontent", async (req, res) => {
   try {
-    const { batchId, subjectSlug, topicSlug, contentType } = req.query;
+    const { BatchId, SubjectSlug, TopicSlug, ContentType } = req.query;
 
-    let url = new URL(`${BASE}/api/pw/datacontent`);
+    const url = new URL(`${BASE}/api/pw/datacontent`);
 
-    if (batchId) url.searchParams.set("id", batchId);
-    if (subjectSlug) url.searchParams.set("su", subjectSlug);
-    if (topicSlug) url.searchParams.set("tslu", topicSlug);
-    if (contentType) url.searchParams.set("type", contentType);
+    if (BatchId) url.searchParams.set("BatchId", BatchId);
+    if (SubjectSlug) url.searchParams.set("SubjectSlug", SubjectSlug);
+    if (TopicSlug) url.searchParams.set("TopicSlug", TopicSlug);
+    if (ContentType) url.searchParams.set("ContentType", ContentType);
 
     console.log("Final URL:", url.toString());
 
-    const response = await fetchfn(url.toString(), {
-      method: "GET",
-      headers: {
-        "accept": "application/json, text/plain, */*",
-        "accept-language": "en-US,en;q=0.9",
-        "user-agent": "Mozilla/5.0",
-        "origin": "https://www.google.com",
-        "referer": "https://www.google.com/"
-      }
-    });
+    const response = await fetchfn(url.toString());
 
     const text = await response.text();
 
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: "External API error",
-        status: response.status,
-        details: text
-      });
+    // 🔥 IMPORTANT CHANGE
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { raw: text };
     }
 
-    res.send(JSON.parse(text));
+    // 🔥 EVEN IF 400 → still send data
+    res.json({
+      status: response.status,
+      data
+    });
 
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
