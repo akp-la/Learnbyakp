@@ -601,7 +601,7 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
     const url = new URL("https://apiserverpro.onrender.com/api/vibrant/content");
     url.searchParams.set("course_id", course_id);
 
-    if (id) {
+    if (parent_id) {
       url.searchParams.set("parent", parent_id);
     }
 
@@ -621,14 +621,14 @@ app.get("/api/vibrant/video-details", async (req, res) => {
     const video_id = req.query.D || req.query.video_id;
     const course_id = req.query.P || req.query.course_id;
 
-    if (!courseid) {
+    if (!course_id) {
       return res.status(400).json({ error: "Missing courseid (r or courseid)" });
     }
 
     const url = new URL("https://apiserverpro.onrender.com/api/vibrant/video-details");
     url.searchParams.set("course_id", course_id);
 
-    if (id) {
+    if (video_id) {
       url.searchParams.set("video_id", video_id);
     }
 
