@@ -446,6 +446,31 @@ function createApp() {
     res.status(500).json({ error: err.message });
   }
 });
+  //========ewrwerw===========
+  app.get("/api/vibrant/play", async (req, res) => {
+  try {
+    const url = req.query.url;
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://www.pw.live/",
+        "Origin": "https://www.pw.live"
+      }
+    });
+
+    res.status(response.status);
+
+    response.headers.forEach((value, key) => {
+      res.setHeader(key, value);
+    });
+
+    response.body.pipe(res);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error fetching stream");
+  }
+});
 //=============weqewqe==========
   app.get("/api/vibrant/live", async (req, res) => {
   try {
