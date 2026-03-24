@@ -447,34 +447,56 @@ function createApp() {
   }
 });
   //========ewrwerw===========
-app.get("/api/vibrant/play", async (req, res) => {
-  try {
-    const url = req.query.url || req.query.t;
+const KEY = Buffer.from("638udh3829162018");
+const IV = Buffer.from("fedcba9876543210");
 
-    if (!url) {
-      return res.status(400).send("Missing url param");
+// 🔓 decrypt function
+function decryptVibrant(input) {
+  try {
+    const encryptedPart = input.split(":")[0];
+
+    const encryptedBuffer = Buffer.from(encryptedPart, "base64");
+
+    const decipher = crypto.createDecipheriv("aes-128-cbc", KEY, IV);
+
+    let decrypted = decipher.update(encryptedBuffer, "binary", "utf8");
+    decrypted += decipher.final("utf8");
+
+    // PKCS7 padding remove
+    const padding = decrypted.charCodeAt(decrypted.length - 1);
+    if (padding > 0 && padding <= 16) {
+      decrypted = decrypted.slice(0, -padding);
     }
 
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Referer": "https://www.pw.live/",
-        "Origin": "https://www.pw.live"
-      }
-    });
+    return decrypted;
+  } catch (err) {
+    console.error("Decrypt error:", err);
+    return null;
+  }
+}
 
-    // status forward
-    res.status(response.status);
+// 🎬 PLAY API
+app.get("/api/vibrant/play", async (req, res) => {
+  try {
+    let { url } = req.query;
 
-    // important headers forward
-    res.setHeader("Content-Type", response.headers.get("content-type") || "application/octet-stream");
+    if (!url) {
+      return res.status(400).json({ error: "Missing url param" });
+    }
 
-    // stream pipe (important)
-    response.body.pipe(res);
+    url = decodeURIComponent(url);
+
+    const finalUrl = decryptVibrant(url);
+
+    if (!finalUrl) {
+      return res.status(500).json({ error: "Decryption failed" });
+    }
+
+    // 👉 redirect to actual video
+    return res.redirect(finalUrl);
 
   } catch (err) {
-    console.error("Proxy error:", err);
-    res.status(500).send("Proxy failed");
+    res.status(500).json({ error: err.message });
   }
 });
 //=============weqewqe==========
