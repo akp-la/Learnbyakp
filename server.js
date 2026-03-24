@@ -447,11 +447,14 @@ function createApp() {
   }
 });
   //========ewrwerw===========
-  app.get("/api/vibrant/play", async (req, res) => {
+ app.get("/api/vibrant/play", async (req, res) => {
   try {
-    const url = req.query.url;
+    const targetUrl = req.query.url;
+    if (!targetUrl) {
+      return res.status(400).send("Missing url");
+    }
 
-    const response = await fetch(url, {
+    const response = await fetch(targetUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0",
         "Referer": "https://www.pw.live/",
@@ -459,16 +462,46 @@ function createApp() {
       }
     });
 
-    res.status(response.status);
+    if (!response.ok) {
+      return res.status(response.status).send("Failed to fetch");
+    }
 
-    response.headers.forEach((value, key) => {
-      res.setHeader(key, value);
-    });
+    const contentType = response.headers.get("content-type") || "";
 
+    // 🔥 CASE 1: M3U8 Manifest (IMPORTANT)
+    if (contentType.includes("application/vnd.apple.mpegurl") || targetUrl.includes(".m3u8")) {
+      let text = await response.text();
+
+      const baseUrl = targetUrl.substring(0, targetUrl.lastIndexOf("/") + 1);
+
+      // rewrite all segment URLs
+      const modified = text
+        .split("\n")
+        .map(line => {
+          if (!line || line.startsWith("#")) return line;
+
+          // absolute URL
+          if (line.startsWith("http")) {
+            return `/api/vibrant/play?url=${encodeURIComponent(line)}`;
+          }
+
+          // relative URL
+          const fullUrl = baseUrl + line;
+          return `/api/vibrant/play?url=${encodeURIComponent(fullUrl)}`;
+        })
+        .join("\n");
+
+      res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
+      return res.send(modified);
+    }
+
+    // 🔥 CASE 2: TS / MP4 / other segments
+    res.setHeader("Content-Type", contentType);
     response.body.pipe(res);
+
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Error fetching stream");
+    console.error("Proxy error:", err);
+    res.status(500).send("Server error");
   }
 });
 //=============weqewqe==========
