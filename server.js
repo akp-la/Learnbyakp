@@ -591,7 +591,7 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
   app.get("/api/vibrant/content", async (req, res) => {
   try {
     // Support both old (r/e) and new (courseid/id) param formats
-    const parent_id = req.query.e || req.query.parent_id;
+    const parent_id = req.query.e || req.query.id;
     const course_id = req.query.c || req.query.course_id;
 
     if (!course_id) {
