@@ -446,9 +446,62 @@ function createApp() {
     res.status(500).json({ error: err.message });
   }
 });
+//=============weqewqe==========
+  app.get("/api/vibrant/live", async (req, res) => {
+  try {
+    const courseid = req.query.course_id || req.query.c;
 
+    if (!course_id) {
+      return res.status(400).json({ error: "Missing courseid" });
+    }
+
+    // External API call
+    const url = `https://apiserverpro.onrender.com/api/vibrant/ive?course_id=${courseid}`;
+    
+    const response = await fetchfn(url);
+
+if (!response.ok) {
+  return res.status(response.status).json({
+    error: "External API failed"
+  });
+}
+
+const data = await response.json();
+res.json(data);
+  } catch (err) {
+    console.error("/api/vibrant/live error:", err);
+    res.status(500).json({ error: err.toString() });
+  }
+});
 //======== rtrtrrttt=====
+app.get("/api/vibrant/previous-live", async (req, res) => {
+  try {
+    const courseid = req.query.course_id || req.query.c;
 
+    if (!courseid) {
+      return res.status(400).json({ error: "Missing courseid" });
+    }
+
+    // External API call
+    const url = `https://apiserverpro.onrender.com/api/vibrant/previous-live?course_id=${courseid}`;
+    
+    const response = await fetchfn(url);
+
+if (!response.ok) {
+  return res.status(response.status).json({
+    error: "External API failed"
+  });
+}
+
+const data = await response.json();
+res.json(data);
+  } catch (err) {
+    console.error("/api/vibrant/previous-live error:", err);
+    res.status(500).json({ error: err.toString() });
+  }
+});
+  
+//=========uwqeuiweyqi====
  app.get("/api/missionjeet/course-details", async (req, res) => {
   try {
     const courseid = req.query.courseid;
@@ -520,6 +573,75 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
       res.json({ error: e.toString() });
     }
   });
+//===============ytryutuytyu======
+    app.get("/api/vibrant/batches", async (req, res) => {
+    try {
+      const r = await fetchfn(
+        "https://apiserverpro.onrender.com/api/vibrant/batches"
+      );
+      const data = await r.json();
+      res.json(data);
+    } catch (e) {
+      console.error("/api/vibrant/batches error:", e);
+      res.json({ error: e.toString() });
+    }
+  });
+  
+//==============
+  app.get("/api/vibrant/content", async (req, res) => {
+  try {
+    // Support both old (r/e) and new (courseid/id) param formats
+    const parent_id = req.query.e || req.query.parent_id;
+    const course_id = req.query.c || req.query.course_id;
+
+    if (!courseid) {
+      return res.status(400).json({ error: "Missing courseid (r or courseid)" });
+    }
+
+    const url = new URL("https://apiserverpro.onrender.com/api/vibrant/content");
+    url.searchParams.set("course_id", course_id);
+
+    if (id) {
+      url.searchParams.set("parent", parent_id);
+    }
+
+    const response = await fetchfn(url.toString());
+    const data = await response.json();
+
+    res.json(data);
+  } catch (err) {
+    console.error("/api/vibrant/content error:", err);
+    res.status(500).json({ error: err.toString() });
+  }
+});
+  //==============uyutyutyuu
+app.get("/api/vibrant/video-details", async (req, res) => {
+  try {
+    // Support both old (r/e) and new (courseid/id) param formats
+    const video_id = req.query.D || req.query.video_id;
+    const course_id = req.query.P || req.query.course_id;
+
+    if (!courseid) {
+      return res.status(400).json({ error: "Missing courseid (r or courseid)" });
+    }
+
+    const url = new URL("https://apiserverpro.onrender.com/api/vibrant/video-details");
+    url.searchParams.set("course_id", course_id);
+
+    if (id) {
+      url.searchParams.set("video_id", video_id);
+    }
+
+    const response = await fetchfn(url.toString());
+    const data = await response.json();
+
+    res.json(data);
+  } catch (err) {
+    console.error("/api/vibrant/video-details error:", err);
+    res.status(500).json({ error: err.toString() });
+  }
+});
+  
   //ddfddfdfdf=======
 app.get("/api/nexttoppers/all-content", async (req, res) => {
   try {
