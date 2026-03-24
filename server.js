@@ -478,27 +478,58 @@ function decryptVibrant(input) {
 // 🎬 PLAY API
 app.get("/api/vibrant/play", async (req, res) => {
   try {
-    let { url } = req.query;
+    let videoUrl = decodeURIComponent(req.query.url);
 
-    if (!url) {
-      return res.status(400).json({ error: "Missing url param" });
+    if (!videoUrl) {
+      return res.status(400).send("Missing url");
     }
 
-    url = decodeURIComponent(url);
+    const response = await fetch(videoUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://player.appx.co.in/",
+        "Origin": "https://player.appx.co.in",
+      }
+    });
 
-    const finalUrl = decryptVibrant(url);
+    const contentType = response.headers.get("content-type");
 
-    if (!finalUrl) {
-      return res.status(500).json({ error: "Decryption failed" });
+    // ✅ If m3u8 file → rewrite URLs
+    if (contentType && contentType.includes("application/vnd.apple.mpegurl")) {
+      let text = await response.text();
+
+      // 🔥 IMPORTANT: rewrite segment URLs
+      const base = videoUrl.substring(0, videoUrl.lastIndexOf("/") + 1);
+
+      text = text.replace(/(?!#)(.*\.ts)/g, (match) => {
+        const absolute = match.startsWith("http")
+          ? match
+          : base + match;
+
+        return `/api/vibrant/play?url=${encodeURIComponent(absolute)}`;
+      });
+
+      res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
+      return res.send(text);
     }
 
-    // 👉 redirect to actual video
-    return res.redirect(finalUrl);
+    // ✅ For video segments (.ts / .m4s)
+    res.setHeader("Content-Type", contentType || "video/mp2t");
+
+    // 🔥 Range support (important for player)
+    if (req.headers.range) {
+      res.setHeader("Accept-Ranges", "bytes");
+    }
+
+    response.body.pipe(res);
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).send("Proxy Error");
   }
 });
+
+  
 //=============weqewqe==========
   app.get("/api/vibrant/live", async (req, res) => {
   try {
