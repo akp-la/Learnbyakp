@@ -449,59 +449,35 @@ function createApp() {
   //========ewrwerw===========
  app.get("/api/vibrant/play", async (req, res) => {
   try {
-    const targetUrl = req.query.url;
-    if (!targetUrl) {
-      return res.status(400).send("Missing url");
+    const { url } = req.query;
+
+    if (!url) {
+      return res.status(400).send("Missing url param");
     }
 
-    const response = await fetch(targetUrl, {
+    // final proxy URL (deltapro server)
+    const target = `https://deltapro-server.onrender.com/api/vibrant/play?url=${encodeURIComponent(url)}`;
+
+    const response = await fetch(target, {
       headers: {
         "User-Agent": "Mozilla/5.0",
-        "Referer": "https://www.pw.live/",
-        "Origin": "https://www.pw.live"
-      }
+      },
     });
 
-    if (!response.ok) {
-      return res.status(response.status).send("Failed to fetch");
-    }
+    // status forward
+    res.status(response.status);
 
-    const contentType = response.headers.get("content-type") || "";
+    // headers forward
+    response.headers.forEach((value, key) => {
+      res.setHeader(key, value);
+    });
 
-    // 🔥 CASE 1: M3U8 Manifest (IMPORTANT)
-    if (contentType.includes("application/vnd.apple.mpegurl") || targetUrl.includes(".m3u8")) {
-      let text = await response.text();
-
-      const baseUrl = targetUrl.substring(0, targetUrl.lastIndexOf("/") + 1);
-
-      // rewrite all segment URLs
-      const modified = text
-        .split("\n")
-        .map(line => {
-          if (!line || line.startsWith("#")) return line;
-
-          // absolute URL
-          if (line.startsWith("http")) {
-            return `/api/vibrant/play?url=${encodeURIComponent(line)}`;
-          }
-
-          // relative URL
-          const fullUrl = baseUrl + line;
-          return `/api/vibrant/play?url=${encodeURIComponent(fullUrl)}`;
-        })
-        .join("\n");
-
-      res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
-      return res.send(modified);
-    }
-
-    // 🔥 CASE 2: TS / MP4 / other segments
-    res.setHeader("Content-Type", contentType);
+    // stream pipe
     response.body.pipe(res);
 
   } catch (err) {
     console.error("Proxy error:", err);
-    res.status(500).send("Server error");
+    res.status(500).send("Proxy failed");
   }
 });
 //=============weqewqe==========
