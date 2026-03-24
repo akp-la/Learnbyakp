@@ -451,7 +451,7 @@ function createApp() {
   try {
     const courseid = req.query.course_id || req.query.c;
 
-    if (!course_id) {
+    if (!courseid) {
       return res.status(400).json({ error: "Missing courseid" });
     }
 
@@ -600,10 +600,8 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
 
     const url = new URL("https://apiserverpro.onrender.com/api/vibrant/content");
     url.searchParams.set("course_id", course_id);
-
-    if (parent_id) {
-      url.searchParams.set("parent", parent_id);
-    }
+    url.searchParams.set("parent_id", parent_id);
+    
 
     const response = await fetchfn(url.toString());
     const data = await response.json();
