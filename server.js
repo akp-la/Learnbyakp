@@ -447,32 +447,29 @@ function createApp() {
   }
 });
   //========ewrwerw===========
- app.get("/api/vibrant/play", async (req, res) => {
+app.get("/api/vibrant/play", async (req, res) => {
   try {
-    const { url } = req.query;
+    const url = req.query.url || req.query.t;
 
     if (!url) {
       return res.status(400).send("Missing url param");
     }
 
-    // final proxy URL (deltapro server)
-    const target = `https://deltapro-server.onrender.com/api/vibrant/play?url=${encodeURIComponent(url)}`;
-
-    const response = await fetch(target, {
+    const response = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0",
-      },
+        "Referer": "https://www.pw.live/",
+        "Origin": "https://www.pw.live"
+      }
     });
 
     // status forward
     res.status(response.status);
 
-    // headers forward
-    response.headers.forEach((value, key) => {
-      res.setHeader(key, value);
-    });
+    // important headers forward
+    res.setHeader("Content-Type", response.headers.get("content-type") || "application/octet-stream");
 
-    // stream pipe
+    // stream pipe (important)
     response.body.pipe(res);
 
   } catch (err) {
