@@ -456,7 +456,7 @@ function createApp() {
     }
 
     // External API call
-    const url = `https://apiserverpro.onrender.com/api/vibrant/ive?course_id=${courseid}`;
+    const url = `https://apiserverpro.onrender.com/api/vibrant/live?course_id=${courseid}`;
     
     const response = await fetchfn(url);
 
@@ -594,7 +594,7 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
     const parent_id = req.query.e || req.query.parent_id;
     const course_id = req.query.c || req.query.course_id;
 
-    if (!courseid) {
+    if (!course_id) {
       return res.status(400).json({ error: "Missing courseid (r or courseid)" });
     }
 
