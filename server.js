@@ -588,28 +588,51 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
   });
   
 //==============
-  app.get("/api/vibrant/content", async (req, res) => {
+ app.get("/api/vibrant/content", async (req, res) => {
   try {
-    // Support both old (r/e) and new (courseid/id) param formats
-    const parent_id = req.query.e || req.query.id;
-    const course_id = req.query.c || req.query.course_id;
+    // 🔥 support both
+    const course_id = req.query.course_id;
+    const parent_id = req.query.parent_id || req.query.id;
 
     if (!course_id) {
-      return res.status(400).json({ error: "Missing courseid (r or courseid)" });
+      return res.status(400).json({
+        status: 400,
+        message: "Missing course_id"
+      });
     }
 
+    // 🔗 original API
     const url = new URL("https://apiserverpro.onrender.com/api/vibrant/content");
+
     url.searchParams.set("course_id", course_id);
-    url.searchParams.set("parent_id", parent_id);
-    
+
+    // 👇 IMPORTANT: only send if exists
+    if (parent_id) {
+      url.searchParams.set("parent_id", parent_id);
+    }
 
     const response = await fetchfn(url.toString());
+
+    if (!response.ok) {
+      throw new Error(`API failed: ${response.status}`);
+    }
+
     const data = await response.json();
 
-    res.json(data);
+    // 🔥 normalize response
+    res.json({
+      status: 200,
+      data: data.data || data,
+      message: "success"
+    });
+
   } catch (err) {
-    console.error("/api/vibrant/content error:", err);
-    res.status(500).json({ error: err.toString() });
+    console.error("API ERROR:", err);
+
+    res.status(500).json({
+      status: 500,
+      message: err.message
+    });
   }
 });
   //==============uyutyutyuu
