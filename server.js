@@ -478,57 +478,38 @@ function decryptVibrant(input) {
 // 🎬 PLAY API
 app.get("/api/vibrant/play", async (req, res) => {
   try {
-    let videoUrl = decodeURIComponent(req.query.url);
+    const encodedUrl = req.query.url;
 
-    if (!videoUrl) {
+    if (!encodedUrl) {
       return res.status(400).send("Missing url");
     }
 
-    const response = await fetch(videoUrl, {
+    // 🔥 forward to deltapro server
+    const targetUrl =
+      "https://deltapro-server.onrender.com/api/vibrant/play?url=" +
+      encodedUrl;
+
+    const response = await fetch(targetUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0",
         "Referer": "https://player.appx.co.in/",
-        "Origin": "https://player.appx.co.in",
       }
     });
 
-    const contentType = response.headers.get("content-type");
+    // copy headers
+    res.setHeader(
+      "Content-Type",
+      response.headers.get("content-type") || "application/octet-stream"
+    );
 
-    // ✅ If m3u8 file → rewrite URLs
-    if (contentType && contentType.includes("application/vnd.apple.mpegurl")) {
-      let text = await response.text();
-
-      // 🔥 IMPORTANT: rewrite segment URLs
-      const base = videoUrl.substring(0, videoUrl.lastIndexOf("/") + 1);
-
-      text = text.replace(/(?!#)(.*\.ts)/g, (match) => {
-        const absolute = match.startsWith("http")
-          ? match
-          : base + match;
-
-        return `/api/vibrant/play?url=${encodeURIComponent(absolute)}`;
-      });
-
-      res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
-      return res.send(text);
-    }
-
-    // ✅ For video segments (.ts / .m4s)
-    res.setHeader("Content-Type", contentType || "video/mp2t");
-
-    // 🔥 Range support (important for player)
-    if (req.headers.range) {
-      res.setHeader("Accept-Ranges", "bytes");
-    }
-
+    // stream forward
     response.body.pipe(res);
 
   } catch (err) {
     console.error(err);
-    res.status(500).send("Proxy Error");
+    res.status(500).send("Proxy Forward Error");
   }
 });
-
   
 //=============weqewqe==========
   app.get("/api/vibrant/live", async (req, res) => {
