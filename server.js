@@ -725,38 +725,36 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
   }
 });
 //==============2423432===
-app.all("/api/vibrant/play", async (req, res) => {
-  try {
-    const t = req.query.t || req.query.url;
-    if (!t) {
-      return res.status(400).json({ error: "Missing 't' or 'url' parameter" });
-    }
-
-    const externalUrl =
-      "https://deltaserver-vvcb.onrender.com/api/vibrant/play?url=" +
-      encodeURIComponent(t);
-
-    const response = await fetchfn(externalUrl, {
-      method: req.method, // GET / HEAD jo bhi aa raha hai
-    });
-
-    if (!response.ok) {
-      return res
-        .status(response.status)
-        .json({ error: "External API failed" });
-    }
-
-    // Agar HEAD hai to body mat bhejo
-    if (req.method === "HEAD") {
-      return res.sendStatus(200);
-    }
-
-    const data = await response.json();
-    return res.json(data);
-  } catch (err) {
-    console.error("/api/vibrant/play error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+app.get("/api/vibrant/play", async (req, res) => {
+  const target = req.query.url;
+  if (!target) {
+    return res.status(400).json({ error: "Missing url parameter" });
   }
+
+  try {
+    const response = await fetch(target);
+
+    // Same status code forward karo
+    res.status(response.status);
+
+    // Important headers copy karo
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType) {
+      res.set("Content-Type", contentType);
+    }
+
+    // Extra CORS headers (safety)
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+
+    // Stream body aage
+    response.body.pipe(res);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Proxy error" });
+  }
+});
 });//jkdsyututyt======
   app.get("/api/nexttoppers/course-details", async (req, res) => {
   try {
