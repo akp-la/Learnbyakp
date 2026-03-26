@@ -476,56 +476,40 @@ function decryptVibrant(input) {
 }
 
 // 🎬 PLAY API
-app.get("/api/vibrant/play", async (req, res) => {
+app.get("/api/vibrate/play", async (req, res) => {
   try {
-    const originalUrl = req.query.url;
+    const { url } = req.query;
 
-    if (!originalUrl) {
-      return res.status(400).send("Missing url");
+    if (!url) {
+      return res.status(400).json({ error: "Missing url param" });
     }
 
-    // encode properly (important)
-    const encoded = encodeURIComponent(originalUrl);
-
-    const targetUrl =
-      "https://deltaserver-vvcb.onrender.com/api/vibrant/play?url=" + encoded;
-
-    console.log("Proxy Request:", targetUrl);
+    // target API
+    const targetUrl = `https://deltaserver-vvcb.onrender.com/api/vibrant/play?url=${encodeURIComponent(url)}`;
 
     const response = await fetch(targetUrl, {
-      method: "GET",
       headers: {
         "User-Agent": "Mozilla/5.0",
-        "Referer": "https://player.appx.co.in/",
-        "Origin": "https://player.appx.co.in"
-      }
+      },
     });
 
-    if (!response.ok) {
-      const text = await response.text();
-      console.log("Server Error:", text);
-      return res.status(response.status).send(text);
+    const contentType = response.headers.get("content-type");
+
+    // Agar JSON hai
+    if (contentType && contentType.includes("application/json")) {
+      const data = await response.json();
+      return res.json(data);
     }
 
-    // forward headers
-    res.setHeader(
-      "Content-Type",
-      response.headers.get("content-type") || "application/octet-stream"
-    );
-
-    res.setHeader(
-      "Access-Control-Allow-Origin",
-      "*"
-    );
-
-    // stream response
+    // Agar stream / m3u8 / video hai
+    res.setHeader("Content-Type", contentType || "application/octet-stream");
     response.body.pipe(res);
 
   } catch (err) {
-    console.error("Proxy Error:", err);
-    res.status(500).send("Proxy Forward Error");
+    console.error(err);
+    res.status(500).json({ error: "Proxy error" });
   }
-});  
+});
 //=============weqewqe==========
   app.get("/api/vibrant/live", async (req, res) => {
   try {
