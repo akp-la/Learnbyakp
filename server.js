@@ -732,12 +732,14 @@ app.get("/api/vibrant/play", async (req, res) => {
       return res.status(400).json({ error: "Missing 't' or 'url' parameter" });
     }
 
-    // External API call
     const externalUrl = `https://deltaserver-vvcb.onrender.com/api/vibrant/play?url=${encodeURIComponent(t)}`;
 
-    const response = await fetchfn(externalUrl);
+    console.log("Fetching external URL:", externalUrl); // DEBUG LINE
+
+    const response = await fetchfn(externalUrl); // ensure fetchfn is defined
 
     if (!response.ok) {
+      console.log("External API status:", response.status);
       return res.status(response.status).json({
         error: "External API failed",
       });
