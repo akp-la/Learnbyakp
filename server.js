@@ -803,9 +803,7 @@ app.all("/api/vibrant/play", async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || 3000, () => {
-  console.log("Server running");
-});
+
   
   //jkdsyututyt======
   app.get("/api/nexttoppers/course-details", async (req, res) => {
