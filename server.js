@@ -729,25 +729,22 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
 //==============2423432===
 
 
-app.get("/api/vibrant/play", async (req, res) => {
+app.all("/api/vibrant/play", async (req, res) => {
   try {
     const url = req.query.url;
+    if (!url) return res.status(400).send("Missing url");
 
-    if (!url) {
-      return res.status(400).send("Missing url");
+    if (req.method === "HEAD") {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      return res.status(200).end();
     }
 
-    // 🔥 deltaserver API call
-    const proxyUrl = `https://deltaserver-vvcb.onrender.com/api/vibrant/play?url=${encodeURIComponent(url)}`;
-
-    console.log("Calling:", proxyUrl);
-
-    const response = await fetch(proxyUrl, {
+    const response = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0",
+        "Accept": "*/*",
         "Referer": "https://classx.co.in/",
         "Origin": "https://classx.co.in",
-        "Accept": "*/*"
       }
     });
 
@@ -755,18 +752,16 @@ app.get("/api/vibrant/play", async (req, res) => {
       return res.status(response.status).send("Failed to fetch video");
     }
 
-    // 🔥 important headers
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader(
       "Content-Type",
       response.headers.get("content-type") || "application/vnd.apple.mpegurl"
     );
 
-    // 🔥 stream forward
+    if (!response.body) return res.status(502).send("No response body");
     response.body.pipe(res);
-
   } catch (err) {
-    console.error("ERROR:", err);
+    console.error("/api/vibrant/play error:", err);
     res.status(500).send("Server error");
   }
 });
