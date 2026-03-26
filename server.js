@@ -729,42 +729,20 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
 //==============2423432===
 
 
-function decryptVibrant(data) {
-  try {
-    const key = Buffer.from("638udh3829162018");
-
-    const [encryptedBase64, ivBase64] = data.split(":");
-
-    const encrypted = Buffer.from(encryptedBase64, "base64");
-    const iv = Buffer.from(ivBase64, "base64");
-
-    const decipher = crypto.createDecipheriv("aes-128-cbc", key, iv);
-
-    let decrypted = decipher.update(encrypted);
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
-
-    return decrypted.toString();
-  } catch (e) {
-    console.error("Decrypt error:", e);
-    throw new Error("Decrypt failed");
-  }
-}
-
 app.get("/api/vibrant/play", async (req, res) => {
   try {
-    const encrypted = req.query.url;
+    const url = req.query.url;
 
-    if (!encrypted) {
+    if (!url) {
       return res.status(400).send("Missing url");
     }
 
-    // 🔥 decrypt
-    const realUrl = decryptVibrant(encrypted);
+    // 🔥 deltaserver API call
+    const proxyUrl = `https://deltaserver-vvcb.onrender.com/api/vibrant/play?url=${encodeURIComponent(url)}`;
 
-    console.log("REAL URL:", realUrl);
+    console.log("Calling:", proxyUrl);
 
-    // 🔥 fetch video
-    const response = await fetch(realUrl, {
+    const response = await fetch(proxyUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0",
         "Referer": "https://classx.co.in/",
@@ -774,22 +752,24 @@ app.get("/api/vibrant/play", async (req, res) => {
     });
 
     if (!response.ok) {
-      console.log("Fetch failed:", response.status);
       return res.status(response.status).send("Failed to fetch video");
     }
 
+    // 🔥 important headers
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader(
       "Content-Type",
       response.headers.get("content-type") || "application/vnd.apple.mpegurl"
     );
 
+    // 🔥 stream forward
     response.body.pipe(res);
 
   } catch (err) {
-    console.error("SERVER ERROR:", err);
+    console.error("ERROR:", err);
     res.status(500).send("Server error");
   }
+});
 });//jkdsyututyt======
   app.get("/api/nexttoppers/course-details", async (req, res) => {
   try {
