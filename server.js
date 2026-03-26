@@ -478,64 +478,34 @@ function decryptVibrant(input) {
 // 🎬 PLAY API
 
 app.get("/api/vibrant/play", async (req, res) => {
+  const { url } = req.query || req.query.t ;
+  if (!url) {
+    return res.status(400).send("Missing url");
+  }
+
   try {
-    const { url } = req.query;
-    if (!url) return res.status(400).send("Missing url");
+    const upstream = await axios.get(url, { responseType: "stream" });
 
-    const targetUrl = decodeURIComponent(url);
-
-    const response = await fetch(targetUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Referer": "https://classx.co.in/",
-        "Origin": "https://classx.co.in",
-      },
-    });
-
-    const contentType = response.headers.get("content-type") || "";
-
-    // ✅ Handle M3U8 (IMPORTANT)
-    if (contentType.includes("application/vnd.apple.mpegurl") || targetUrl.includes(".m3u8")) {
-      let text = await response.text();
-
-      const baseUrl = targetUrl.substring(0, targetUrl.lastIndexOf("/") + 1);
-
-      text = text
-        .split("\n")
-        .map((line) => {
-          line = line.trim();
-
-          // skip comments
-          if (!line || line.startsWith("#")) return line;
-
-          let absoluteUrl;
-
-          if (line.startsWith("http")) {
-            absoluteUrl = line;
-          } else {
-            absoluteUrl = baseUrl + line;
-          }
-
-          return `api/vibrant/play?url=${encodeURIComponent(absoluteUrl)}`;
-        })
-        .join("\n");
-
-      res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
-      res.setHeader("Access-Control-Allow-Origin", "*");
-      return res.send(text);
-    }
-
-    // ✅ Handle TS / video chunks
-    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
     res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-    response.body.pipe(res);
-
+    upstream.data.pipe(res);
   } catch (err) {
-    console.error("ERROR:", err);
-    res.status(500).send("Proxy error");
+    console.error("Proxy error:", err.response?.status, err.message);
+    res.status(500).send("Failed to load video");
   }
 });
+
+// CORS preflight
+app.options("/api/vibrant/play", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.sendStatus(200);
+});
+
 //=============weqewqe==========
   app.get("/api/vibrant/live", async (req, res) => {
   try {
