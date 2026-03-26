@@ -756,7 +756,7 @@ app.get("/api/vibrant/play", async (req, res) => {
     res.status(500).json({ error: "Proxy error" });
   }
 });
-});//jkdsyututyt======
+//jkdsyututyt======
   app.get("/api/nexttoppers/course-details", async (req, res) => {
   try {
     const courseid = req.query.courseid;
