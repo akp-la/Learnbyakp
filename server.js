@@ -6,6 +6,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
+const fetch = require("node-fetch");
 
 const BASE = "https://deltaserver-vvcb.onrender.com";
 const rateLimit = require("express-rate-limit");
