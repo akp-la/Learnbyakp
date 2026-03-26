@@ -728,42 +728,83 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
 });
 //==============2423432===
 
+function toAbsolute(line, baseUrl) {
+  if (
+    !line ||
+    line.startsWith("#") ||
+    line.startsWith("http://") ||
+    line.startsWith("https://")
+  ) {
+    return line;
+  }
+  return new URL(line, baseUrl).toString();
+}
 
 app.all("/api/vibrant/play", async (req, res) => {
   try {
     const url = req.query.url;
     if (!url) return res.status(400).send("Missing url");
 
+    res.setHeader("Access-Control-Allow-Origin", "*");
+
     if (req.method === "HEAD") {
-      res.setHeader("Access-Control-Allow-Origin", "*");
       return res.status(200).end();
     }
 
-    const response = await fetch(url, {
+    const upstream = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0",
         "Accept": "*/*",
         "Referer": "https://classx.co.in/",
-        "Origin": "https://classx.co.in",
+        "Origin": "https://classx.co.in"
       }
     });
 
-    if (!response.ok) {
-      return res.status(response.status).send("Failed to fetch video");
+    if (!upstream.ok) {
+      return res.status(upstream.status).send("Failed to fetch video");
     }
 
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader(
-      "Content-Type",
-      response.headers.get("content-type") || "application/vnd.apple.mpegurl"
-    );
+    const contentType =
+      upstream.headers.get("content-type") || "application/octet-stream";
 
-    if (!response.body) return res.status(502).send("No response body");
-    response.body.pipe(res);
+    // m3u8 manifest
+    if (
+      contentType.includes("mpegurl") ||
+      url.includes(".m3u8")
+    ) {
+      const text = await upstream.text();
+
+      const rewritten = text
+        .split("\n")
+        .map((line) => {
+          const abs = toAbsolute(line.trim(), url);
+          if (abs.startsWith("http://") || abs.startsWith("https://")) {
+            return "/api/vibrant/play?url=" + encodeURIComponent(abs);
+          }
+          return line;
+        })
+        .join("\n");
+
+      res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
+      return res.send(rewritten);
+    }
+
+    // segments / binary files
+    res.setHeader("Content-Type", contentType);
+
+    if (!upstream.body) {
+      return res.status(502).send("No response body");
+    }
+
+    upstream.body.pipe(res);
   } catch (err) {
-    console.error("/api/vibrant/play error:", err);
+    console.error("play route error:", err);
     res.status(500).send("Server error");
   }
+});
+
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Server running");
 });
   
   //jkdsyututyt======
