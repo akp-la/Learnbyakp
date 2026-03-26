@@ -477,34 +477,7 @@ function decryptVibrant(input) {
 
 // 🎬 PLAY API
 
-app.get("/api/vibrant/play", async (req, res) => {
-  const { url } = req.query || req.query.t ;
-  if (!url) {
-    return res.status(400).send("Missing url");
-  }
 
-  try {
-    const upstream = await axios.get(url, { responseType: "stream" });
-
-    res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-    upstream.data.pipe(res);
-  } catch (err) {
-    console.error("Proxy error:", err.response?.status, err.message);
-    res.status(500).send("Failed to load video");
-  }
-});
-
-// CORS preflight
-app.options("/api/vibrant/play", (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.sendStatus(200);
-});
 
 //=============weqewqe==========
   app.get("/api/vibrant/live", async (req, res) => {
