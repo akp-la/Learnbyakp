@@ -726,34 +726,38 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
   }
 });
 //==============2423432===
+
+
 app.get("/api/vibrant/play", async (req, res) => {
-  const target = req.query.url;
-  if (!target) {
-    return res.status(400).json({ error: "Missing url parameter" });
-  }
-
   try {
-    const response = await fetch(target);
+    const videoUrl = req.query.url;
 
-    // Same status code forward karo
-    res.status(response.status);
-
-    // Important headers copy karo
-    const contentType = response.headers.get("content-type") || "";
-    if (contentType) {
-      res.set("Content-Type", contentType);
+    if (!videoUrl) {
+      return res.status(400).json({ error: "Missing url param" });
     }
 
-    // Extra CORS headers (safety)
-    res.set("Access-Control-Allow-Origin", "*");
-    res.set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    res.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+    // 🔥 external video fetch
+    const response = await fetch(videoUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://classx.co.in/"
+      }
+    });
 
-    // Stream body aage
+    if (!response.ok) {
+      return res.status(response.status).send("Failed to fetch video");
+    }
+
+    // 🔥 important headers (CORS + streaming)
+    res.setHeader("Content-Type", response.headers.get("content-type") || "application/vnd.apple.mpegurl");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+
+    // 🔥 stream pipe
     response.body.pipe(res);
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Proxy error" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 });
 //jkdsyututyt======
