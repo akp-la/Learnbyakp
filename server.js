@@ -476,7 +476,6 @@ function decryptVibrant(input) {
 }
 
 // 🎬 PLAY API
-const app = express();
 
 app.get("api/vibrant/play", async (req, res) => {
   try {
