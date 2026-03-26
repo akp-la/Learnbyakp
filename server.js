@@ -486,7 +486,7 @@ app.get("/api/vibrant/play", async (req, res) => {
 
     // 🔥 forward to deltapro server
     const targetUrl =
-      "https://deltapro-server.onrender.com/api/vibrant/play?url=" +
+      "https://deltaserver-vvcb.onrender.com/api/vibrant/play?url=" +
       encodedUrl;
 
     const response = await fetch(targetUrl, {
