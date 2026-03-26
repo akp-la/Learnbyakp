@@ -730,17 +730,24 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
 
 
 function decryptVibrant(data) {
-  const key = Buffer.from("638udh3829162018");
-  const iv = Buffer.from("fedcba9876543210");
+  try {
+    const key = Buffer.from("638udh3829162018");
 
-  const encrypted = Buffer.from(data.split(":")[0], "base64");
+    const [encryptedBase64, ivBase64] = data.split(":");
 
-  const decipher = crypto.createDecipheriv("aes-128-cbc", key, iv);
+    const encrypted = Buffer.from(encryptedBase64, "base64");
+    const iv = Buffer.from(ivBase64, "base64");
 
-  let decrypted = decipher.update(encrypted);
-  decrypted = Buffer.concat([decrypted, decipher.final()]);
+    const decipher = crypto.createDecipheriv("aes-128-cbc", key, iv);
 
-  return decrypted.toString();
+    let decrypted = decipher.update(encrypted);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+
+    return decrypted.toString();
+  } catch (e) {
+    console.error("Decrypt error:", e);
+    throw new Error("Decrypt failed");
+  }
 }
 
 app.get("/api/vibrant/play", async (req, res) => {
@@ -748,25 +755,27 @@ app.get("/api/vibrant/play", async (req, res) => {
     const encrypted = req.query.url;
 
     if (!encrypted) {
-      return res.status(400).send("Missing encrypted url");
+      return res.status(400).send("Missing url");
     }
 
     // 🔥 decrypt
     const realUrl = decryptVibrant(encrypted);
 
-    console.log("Decrypted:", realUrl);
+    console.log("REAL URL:", realUrl);
 
-    // 🔥 proxy fetch
+    // 🔥 fetch video
     const response = await fetch(realUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0",
         "Referer": "https://classx.co.in/",
-        "Origin": "https://classx.co.in"
+        "Origin": "https://classx.co.in",
+        "Accept": "*/*"
       }
     });
 
     if (!response.ok) {
-      return res.status(500).send("Failed to fetch video");
+      console.log("Fetch failed:", response.status);
+      return res.status(response.status).send("Failed to fetch video");
     }
 
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -778,11 +787,10 @@ app.get("/api/vibrant/play", async (req, res) => {
     response.body.pipe(res);
 
   } catch (err) {
-    console.error(err);
+    console.error("SERVER ERROR:", err);
     res.status(500).send("Server error");
   }
-});
-//jkdsyututyt======
+});//jkdsyututyt======
   app.get("/api/nexttoppers/course-details", async (req, res) => {
   try {
     const courseid = req.query.courseid;
