@@ -729,47 +729,55 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
 });
 //==============2423432===
 
-appInstance.all("/api/vibrant/play", async (req, res) => {
-  try {
-    const url = req.query.url;
-    if (!url) return res.status(400).send("Missing url");
+function createApp() {
+  const app = express();
 
-    res.setHeader("Access-Control-Allow-Origin", "*");
+  app.all("/api/vibrant/play", async (req, res) => {
+    try {
+      const url = req.query.url;
+      if (!url) return res.status(400).send("Missing url");
 
-    if (req.method === "HEAD") {
-      return res.status(200).end();
-    }
+      res.setHeader("Access-Control-Allow-Origin", "*");
 
-    const proxyUrl =
-      "https://deltaserver-vvcb.onrender.com/api/vibrant/play?url=" +
-      encodeURIComponent(url);
-
-    const upstream = await fetchfn(proxyUrl, {
-      method: "GET",
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "*/*"
+      if (req.method === "HEAD") {
+        return res.status(200).end();
       }
-    });
 
-    if (!upstream.ok) {
-      const text = await upstream.text();
-      console.error("deltaserver failed:", upstream.status, text);
-      return res.status(upstream.status).send(text || "Failed to fetch video");
+      const proxyUrl =
+        "https://deltaserver-vvcb.onrender.com/api/vibrant/play?url=" +
+        encodeURIComponent(url);
+
+      const upstream = await fetchfn(proxyUrl, {
+        method: "GET",
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Accept": "*/*"
+        }
+      });
+
+      if (!upstream.ok) {
+        const text = await upstream.text();
+        console.error("deltaserver failed:", upstream.status, text);
+        return res.status(upstream.status).send(text || "Failed to fetch video");
+      }
+
+      const contentType =
+        upstream.headers.get("content-type") || "application/octet-stream";
+
+      res.setHeader("Content-Type", contentType);
+
+      const buffer = await upstream.arrayBuffer();
+      res.send(Buffer.from(buffer));
+    } catch (err) {
+      console.error("/api/vibrant/play error:", err);
+      res.status(500).send("Failed to fetch video");
     }
+  });
 
-    const contentType =
-      upstream.headers.get("content-type") || "application/octet-stream";
+  return app;
+}
 
-    res.setHeader("Content-Type", contentType);
-
-    const buffer = await upstream.arrayBuffer();
-    res.send(Buffer.from(buffer));
-  } catch (err) {
-    console.error("/api/vibrant/play error:", err);
-    res.status(500).send("Failed to fetch video");
-  }
-});
+const appInstance = createApp();
   
   //jkdsyututyt======
   app.get("/api/nexttoppers/course-details", async (req, res) => {
