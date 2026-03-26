@@ -727,10 +727,7 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
     res.status(500).json({ error: err.toString() });
   }
 });
-//==============2423432===
-
-function createApp() {
-  const app = express();
+//-===============00-99
 
   app.all("/api/vibrant/play", async (req, res) => {
     try {
@@ -774,10 +771,9 @@ function createApp() {
     }
   });
 
-  return app;
-}
+  
 
-const appInstance = createApp();
+
   
   //jkdsyututyt======
   app.get("/api/nexttoppers/course-details", async (req, res) => {
