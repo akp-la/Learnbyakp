@@ -750,8 +750,33 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
     res.status(500).json({ error: err.toString() });
   }
 });
+//==============2423432===
+app.get("/api/vibrant/play", async (req, res) => {
+  try {
+    const t = req.query.t || req.query.url;
 
+    if (!t) {
+      return res.status(400).json({ error: "Missing 't' or 'url' parameter" });
+    }
 
+    // External API call
+    const externalUrl = `https://deltaserver-vvcb.onrender.com/api/vibrant/play?url=${encodeURIComponent(t)}`;
+
+    const response = await fetchfn(externalUrl);
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: "External API failed",
+      });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    console.error("/api/vibrant/play error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 //jkdsyututyt======
   app.get("/api/nexttoppers/course-details", async (req, res) => {
   try {
