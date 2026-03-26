@@ -478,39 +478,54 @@ function decryptVibrant(input) {
 // 🎬 PLAY API
 app.get("/api/vibrant/play", async (req, res) => {
   try {
-    const encodedUrl = req.query.url;
+    const originalUrl = req.query.url;
 
-    if (!encodedUrl) {
+    if (!originalUrl) {
       return res.status(400).send("Missing url");
     }
 
-    // 🔥 forward to deltapro server
+    // encode properly (important)
+    const encoded = encodeURIComponent(originalUrl);
+
     const targetUrl =
-      "https://deltaserver-vvcb.onrender.com/api/vibrant/play?url=" +
-      encodedUrl;
+      "https://deltaserver-vvcb.onrender.com/api/vibrant/play?url=" + encoded;
+
+    console.log("Proxy Request:", targetUrl);
 
     const response = await fetch(targetUrl, {
+      method: "GET",
       headers: {
         "User-Agent": "Mozilla/5.0",
         "Referer": "https://player.appx.co.in/",
+        "Origin": "https://player.appx.co.in"
       }
     });
 
-    // copy headers
+    if (!response.ok) {
+      const text = await response.text();
+      console.log("Server Error:", text);
+      return res.status(response.status).send(text);
+    }
+
+    // forward headers
     res.setHeader(
       "Content-Type",
       response.headers.get("content-type") || "application/octet-stream"
     );
 
-    // stream forward
+    res.setHeader(
+      "Access-Control-Allow-Origin",
+      "*"
+    );
+
+    // stream response
     response.body.pipe(res);
 
   } catch (err) {
-    console.error(err);
+    console.error("Proxy Error:", err);
     res.status(500).send("Proxy Forward Error");
   }
-});
-  
+});  
 //=============weqewqe==========
   app.get("/api/vibrant/live", async (req, res) => {
   try {
