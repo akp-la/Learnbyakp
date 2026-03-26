@@ -7,6 +7,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
 const crypto = require("crypto");
+const fetch = require("node-fetch");
 
 
 const BASE = "https://deltaserver-vvcb.onrender.com";
@@ -728,18 +729,6 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
 });
 //==============2423432===
 
-function toAbsolute(line, baseUrl) {
-  if (
-    !line ||
-    line.startsWith("#") ||
-    line.startsWith("http://") ||
-    line.startsWith("https://")
-  ) {
-    return line;
-  }
-  return new URL(line, baseUrl).toString();
-}
-
 app.all("/api/vibrant/play", async (req, res) => {
   try {
     const url = req.query.url;
@@ -764,24 +753,22 @@ app.all("/api/vibrant/play", async (req, res) => {
       return res.status(upstream.status).send("Failed to fetch video");
     }
 
-    const contentType =
-      upstream.headers.get("content-type") || "application/octet-stream";
+    const contentType = upstream.headers.get("content-type") || "";
 
-    // m3u8 manifest
-    if (
-      contentType.includes("mpegurl") ||
-      url.includes(".m3u8")
-    ) {
+    // 🔥 manifest rewrite
+    if (contentType.includes("mpegurl") || url.includes(".m3u8")) {
       const text = await upstream.text();
 
       const rewritten = text
         .split("\n")
-        .map((line) => {
-          const abs = toAbsolute(line.trim(), url);
-          if (abs.startsWith("http://") || abs.startsWith("https://")) {
-            return "/api/vibrant/play?url=" + encodeURIComponent(abs);
-          }
-          return line;
+        .map(line => {
+          if (
+            line.startsWith("#") ||
+            line.startsWith("http")
+          ) return line;
+
+          const absolute = new URL(line, url).toString();
+          return "/api/vibrant/play?url=" + encodeURIComponent(absolute);
         })
         .join("\n");
 
@@ -789,20 +776,15 @@ app.all("/api/vibrant/play", async (req, res) => {
       return res.send(rewritten);
     }
 
-    // segments / binary files
-    res.setHeader("Content-Type", contentType);
-
-    if (!upstream.body) {
-      return res.status(502).send("No response body");
-    }
+    res.setHeader("Content-Type", contentType || "application/octet-stream");
 
     upstream.body.pipe(res);
+
   } catch (err) {
-    console.error("play route error:", err);
-    res.status(500).send("Server error");
+    console.error("proxy error:", err);
+    res.status(500).send("Failed to fetch video");
   }
 });
-
 
   
   //jkdsyututyt======
