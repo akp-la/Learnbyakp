@@ -6,7 +6,8 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
-const fetch = require("node-fetch");
+const crypto = require("crypto");
+
 
 const BASE = "https://deltaserver-vvcb.onrender.com";
 const rateLimit = require("express-rate-limit");
@@ -728,36 +729,57 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
 //==============2423432===
 
 
+function decryptVibrant(data) {
+  const key = Buffer.from("638udh3829162018");
+  const iv = Buffer.from("fedcba9876543210");
+
+  const encrypted = Buffer.from(data.split(":")[0], "base64");
+
+  const decipher = crypto.createDecipheriv("aes-128-cbc", key, iv);
+
+  let decrypted = decipher.update(encrypted);
+  decrypted = Buffer.concat([decrypted, decipher.final()]);
+
+  return decrypted.toString();
+}
+
 app.get("/api/vibrant/play", async (req, res) => {
   try {
-    const videoUrl = req.query.url;
+    const encrypted = req.query.url;
 
-    if (!videoUrl) {
-      return res.status(400).json({ error: "Missing url param" });
+    if (!encrypted) {
+      return res.status(400).send("Missing encrypted url");
     }
 
-    // 🔥 external video fetch
-    const response = await fetch(videoUrl, {
+    // 🔥 decrypt
+    const realUrl = decryptVibrant(encrypted);
+
+    console.log("Decrypted:", realUrl);
+
+    // 🔥 proxy fetch
+    const response = await fetch(realUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0",
-        "Referer": "https://classx.co.in/"
+        "Referer": "https://classx.co.in/",
+        "Origin": "https://classx.co.in"
       }
     });
 
     if (!response.ok) {
-      return res.status(response.status).send("Failed to fetch video");
+      return res.status(500).send("Failed to fetch video");
     }
 
-    // 🔥 important headers (CORS + streaming)
-    res.setHeader("Content-Type", response.headers.get("content-type") || "application/vnd.apple.mpegurl");
     res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader(
+      "Content-Type",
+      response.headers.get("content-type") || "application/vnd.apple.mpegurl"
+    );
 
-    // 🔥 stream pipe
     response.body.pipe(res);
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).send("Server error");
   }
 });
 //jkdsyututyt======
