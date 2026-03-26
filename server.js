@@ -476,38 +476,65 @@ function decryptVibrant(input) {
 }
 
 // 🎬 PLAY API
-app.get("/api/vibrate/play", async (req, res) => {
+const app = express();
+
+app.get("api/vibrant/play", async (req, res) => {
   try {
     const { url } = req.query;
+    if (!url) return res.status(400).send("Missing url");
 
-    if (!url) {
-      return res.status(400).json({ error: "Missing url param" });
-    }
-
-    // target API
-    const targetUrl = `https://deltaserver-vvcb.onrender.com/api/vibrant/play?url=${encodeURIComponent(url)}`;
+    const targetUrl = decodeURIComponent(url);
 
     const response = await fetch(targetUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0",
+        "Referer": "https://classx.co.in/",
+        "Origin": "https://classx.co.in",
       },
     });
 
-    const contentType = response.headers.get("content-type");
+    const contentType = response.headers.get("content-type") || "";
 
-    // Agar JSON hai
-    if (contentType && contentType.includes("application/json")) {
-      const data = await response.json();
-      return res.json(data);
+    // ✅ Handle M3U8 (IMPORTANT)
+    if (contentType.includes("application/vnd.apple.mpegurl") || targetUrl.includes(".m3u8")) {
+      let text = await response.text();
+
+      const baseUrl = targetUrl.substring(0, targetUrl.lastIndexOf("/") + 1);
+
+      text = text
+        .split("\n")
+        .map((line) => {
+          line = line.trim();
+
+          // skip comments
+          if (!line || line.startsWith("#")) return line;
+
+          let absoluteUrl;
+
+          if (line.startsWith("http")) {
+            absoluteUrl = line;
+          } else {
+            absoluteUrl = baseUrl + line;
+          }
+
+          return `api/vibrant/play?url=${encodeURIComponent(absoluteUrl)}`;
+        })
+        .join("\n");
+
+      res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      return res.send(text);
     }
 
-    // Agar stream / m3u8 / video hai
-    res.setHeader("Content-Type", contentType || "application/octet-stream");
+    // ✅ Handle TS / video chunks
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Access-Control-Allow-Origin", "*");
+
     response.body.pipe(res);
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Proxy error" });
+    console.error("ERROR:", err);
+    res.status(500).send("Proxy error");
   }
 });
 //=============weqewqe==========
