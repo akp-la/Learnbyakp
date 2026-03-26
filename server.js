@@ -477,7 +477,7 @@ function decryptVibrant(input) {
 
 // 🎬 PLAY API
 
-app.get("api/vibrant/play", async (req, res) => {
+app.get("/api/vibrant/play", async (req, res) => {
   try {
     const { url } = req.query;
     if (!url) return res.status(400).send("Missing url");
