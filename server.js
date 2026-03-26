@@ -6,6 +6,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
+
 const BASE = "https://deltaserver-vvcb.onrender.com";
 const rateLimit = require("express-rate-limit");
 const app = express();
@@ -724,35 +725,39 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
   }
 });
 //==============2423432===
-app.get("/api/vibrant/play", async (req, res) => {
+app.all("/api/vibrant/play", async (req, res) => {
   try {
     const t = req.query.t || req.query.url;
-
     if (!t) {
       return res.status(400).json({ error: "Missing 't' or 'url' parameter" });
     }
 
-    const externalUrl = `https://deltaserver-vvcb.onrender.com/api/vibrant/play?url=${encodeURIComponent(t)}`;
+    const externalUrl =
+      "https://deltaserver-vvcb.onrender.com/api/vibrant/play?url=" +
+      encodeURIComponent(t);
 
-    console.log("Fetching external URL:", externalUrl); // DEBUG LINE
-
-    const response = await fetchfn(externalUrl); // ensure fetchfn is defined
+    const response = await fetchfn(externalUrl, {
+      method: req.method, // GET / HEAD jo bhi aa raha hai
+    });
 
     if (!response.ok) {
-      console.log("External API status:", response.status);
-      return res.status(response.status).json({
-        error: "External API failed",
-      });
+      return res
+        .status(response.status)
+        .json({ error: "External API failed" });
+    }
+
+    // Agar HEAD hai to body mat bhejo
+    if (req.method === "HEAD") {
+      return res.sendStatus(200);
     }
 
     const data = await response.json();
-    res.json(data);
+    return res.json(data);
   } catch (err) {
     console.error("/api/vibrant/play error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
-});
-//jkdsyututyt======
+});//jkdsyututyt======
   app.get("/api/nexttoppers/course-details", async (req, res) => {
   try {
     const courseid = req.query.courseid;
