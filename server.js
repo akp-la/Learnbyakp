@@ -730,46 +730,75 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
 //-===============00-99
 
   app.all("/api/vibrant/play", async (req, res) => {
-    try {
-      const url = req.query.url;
-      if (!url) return res.status(400).send("Missing url");
+  try {
+    const url = req.query.url;
+    if (!url) return res.status(400).send("Missing url");
 
-      res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "*");
 
-      if (req.method === "HEAD") {
-        return res.status(200).end();
-      }
-
-      const proxyUrl =
-        "https://deltaserver-vvcb.onrender.com/api/vibrant/play?url=" +
-        encodeURIComponent(url);
-
-      const upstream = await fetchfn(proxyUrl, {
-        method: "GET",
-        headers: {
-          "User-Agent": "Mozilla/5.0",
-          "Accept": "*/*"
-        }
-      });
-
-      if (!upstream.ok) {
-        const text = await upstream.text();
-        console.error("deltaserver failed:", upstream.status, text);
-        return res.status(upstream.status).send(text || "Failed to fetch video");
-      }
-
-      const contentType =
-        upstream.headers.get("content-type") || "application/octet-stream";
-
-      res.setHeader("Content-Type", contentType);
-
-      const buffer = await upstream.arrayBuffer();
-      res.send(Buffer.from(buffer));
-    } catch (err) {
-      console.error("/api/vibrant/play error:", err);
-      res.status(500).send("Failed to fetch video");
+    if (req.method === "OPTIONS") {
+      return res.status(204).end();
     }
-  });
+
+    const proxyUrl =
+      "https://deltaserver-vvcb.onrender.com/api/vibrant/play?url=" +
+      encodeURIComponent(url);
+
+    const upstream = await fetchfn(proxyUrl, {
+      method: req.method === "HEAD" ? "HEAD" : "GET",
+      redirect: "follow",
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "*/*"
+      }
+    });
+
+    if (!upstream.ok) {
+      const text = req.method === "HEAD" ? "" : await upstream.text();
+      console.error("deltaserver failed:", upstream.status, text);
+      return res.status(upstream.status).send(text || "Failed to fetch video");
+    }
+
+    let contentType = upstream.headers.get("content-type") || "";
+
+    // Agar upstream content-type weak ho, to URL se guess karo
+    if (!contentType || contentType.includes("application/octet-stream")) {
+      if (url.includes(".m3u8")) {
+        contentType = "application/x-mpegURL";
+      } else if (url.includes(".mpd")) {
+        contentType = "application/dash+xml";
+      } else if (url.includes(".ts")) {
+        contentType = "video/mp2t";
+      } else {
+        contentType = "application/octet-stream";
+      }
+    }
+
+    res.setHeader("Content-Type", contentType);
+
+    const contentLength = upstream.headers.get("content-length");
+    if (contentLength) res.setHeader("Content-Length", contentLength);
+
+    const acceptRanges = upstream.headers.get("accept-ranges");
+    if (acceptRanges) res.setHeader("Accept-Ranges", acceptRanges);
+
+    const cacheControl = upstream.headers.get("cache-control");
+    if (cacheControl) res.setHeader("Cache-Control", cacheControl);
+
+    // HEAD request me body mat bhejo, bas headers bhejo
+    if (req.method === "HEAD") {
+      return res.status(200).end();
+    }
+
+    const buffer = await upstream.arrayBuffer();
+    return res.status(200).send(Buffer.from(buffer));
+  } catch (err) {
+    console.error("/api/vibrant/play error:", err);
+    return res.status(500).send("Failed to fetch video");
+  }
+});
 
   
 
