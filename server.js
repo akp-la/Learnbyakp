@@ -728,7 +728,67 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
   }
 });
 //-===============00-99
-  app.get("/api/vibrant/live-proxy", async (req, res) => {
+function buildCloudFrontUrl(pathOrUrl) {
+  if (!pathOrUrl) return null;
+
+  // already full URL
+  if (/^https?:\/\//i.test(pathOrUrl)) {
+    return pathOrUrl;
+  }
+
+  // normalize leading slash
+  const clean = pathOrUrl.startsWith("/") ? pathOrUrl.slice(1) : pathOrUrl;
+
+  return `https://liveclasses.cloud-front.in/live/${clean}`;
+}
+
+function guessContentType(fileOrUrl, upstreamType = "") {
+  if (upstreamType && upstreamType !== "application/octet-stream") {
+    return upstreamType;
+  }
+
+  const lower = (fileOrUrl || "").toLowerCase();
+
+  if (lower.includes(".m3u8")) return "application/vnd.apple.mpegurl";
+  if (lower.includes(".ts")) return "video/mp2t";
+  if (lower.includes(".m4s")) return "video/iso.segment";
+  if (lower.includes(".mp4")) return "video/mp4";
+  if (lower.includes(".aac")) return "audio/aac";
+  if (lower.includes(".mp3")) return "audio/mpeg";
+  if (lower.includes(".key")) return "application/octet-stream";
+
+  return "application/octet-stream";
+}
+
+function rewriteM3U8(body) {
+  return body
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trim();
+
+      if (!trimmed) return line;
+
+      // comments/tags keep as is, but key URI rewrite separately below
+      if (trimmed.startsWith("#EXT-X-KEY")) {
+        return line.replace(/URI="([^"]+)"/, (_, uri) => {
+          return `URI="/api/vibrant/live-file?file=${encodeURIComponent(uri)}"`;
+        });
+      }
+
+      if (trimmed.startsWith("#")) return line;
+
+      // segment / nested playlist / absolute URL -> proxy route
+      return `/api/vibrant/live-file?file=${encodeURIComponent(trimmed)}`;
+    })
+    .join("\n");
+}
+
+/**
+ * MASTER LIVE PLAYLIST
+ * Example:
+ * /api/vibrant/live-proxy?schedule=T_177461124062612850_Id
+ */
+app.get("/api/vibrant/live-proxy", async (req, res) => {
   try {
     const { schedule } = req.query;
 
@@ -737,11 +797,13 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
     }
 
     const targetUrl = `https://liveclasses.cloud-front.in/live/${schedule}_appxabr.m3u8`;
+    console.log("LIVE MASTER TARGET:", targetUrl);
 
     const upstream = await fetchfn(targetUrl, {
       method: "GET",
       headers: {
-        "User-Agent": "Mozilla/5.0",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
         "Accept": "*/*",
         "Referer": "https://liveclasses.cloud-front.in/",
         "Origin": "https://liveclasses.cloud-front.in"
@@ -750,42 +812,41 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
 
     if (!upstream.ok) {
       const text = await upstream.text();
-      return res.status(upstream.status).send(text || "Failed to fetch live stream");
+      console.error("LIVE MASTER FAIL:", upstream.status, text);
+      return res
+        .status(upstream.status)
+        .send(text || "Failed to fetch live stream");
     }
 
     const contentType =
       upstream.headers.get("content-type") || "application/vnd.apple.mpegurl";
 
     const body = await upstream.text();
-
-    // m3u8 ke andar relative segment urls ko absolute/proxied banana useful hota hai
-    const proxiedBody = body
-      .split("\n")
-      .map((line) => {
-        if (
-          !line ||
-          line.startsWith("#") ||
-          line.startsWith("http://") ||
-          line.startsWith("https://")
-        ) {
-          return line;
-        }
-
-        // segment ya nested playlist ko bhi proxy route se chalao
-        return `/api/vibrant/live-file?file=${encodeURIComponent(line)}`;
-      })
-      .join("\n");
+    const proxiedBody = rewriteM3U8(body);
 
     res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "*");
+    res.setHeader("Cache-Control", "no-store");
     res.setHeader("Content-Type", contentType);
-    res.send(proxiedBody);
+
+    return res.send(proxiedBody);
   } catch (err) {
     console.error("live-proxy error:", err);
-    res.status(500).json({ error: err.message || "Proxy failed" });
+    return res.status(500).json({
+      error: err.message || "Proxy failed"
+    });
   }
 });
 
-app.get("/api/vibrant/live-file", async (req, res) => {
+/**
+ * SEGMENT / NESTED PLAYLIST / KEY FILE / ABSOLUTE URL
+ * Example:
+ * /api/vibrant/live-file?file=chunk_00001.ts
+ * /api/vibrant/live-file?file=720p/index.m3u8
+ * /api/vibrant/live-file?file=https://some-domain/file.m3u8
+ */
+app.all("/api/vibrant/live-file", async (req, res) => {
   try {
     const { file } = req.query;
 
@@ -793,12 +854,22 @@ app.get("/api/vibrant/live-file", async (req, res) => {
       return res.status(400).json({ error: "Missing file" });
     }
 
-    const targetUrl = `https://liveclasses.cloud-front.in/live/${file}`;
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "*");
+
+    if (req.method === "OPTIONS") {
+      return res.status(204).end();
+    }
+
+    const targetUrl = buildCloudFrontUrl(file);
+    console.log("LIVE FILE TARGET:", targetUrl);
 
     const upstream = await fetchfn(targetUrl, {
-      method: "GET",
+      method: req.method === "HEAD" ? "HEAD" : "GET",
       headers: {
-        "User-Agent": "Mozilla/5.0",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
         "Accept": "*/*",
         "Referer": "https://liveclasses.cloud-front.in/",
         "Origin": "https://liveclasses.cloud-front.in"
@@ -806,24 +877,59 @@ app.get("/api/vibrant/live-file", async (req, res) => {
     });
 
     if (!upstream.ok) {
-      const text = await upstream.text();
-      return res.status(upstream.status).send(text || "Failed to fetch segment");
+      const text = req.method === "HEAD" ? "" : await upstream.text();
+      console.error("LIVE FILE FAIL:", upstream.status, text);
+      return res
+        .status(upstream.status)
+        .send(text || "Failed to fetch segment/file");
     }
 
-    const contentType =
-      upstream.headers.get("content-type") || "application/octet-stream";
+    const upstreamType = upstream.headers.get("content-type") || "";
+    const finalType = guessContentType(file, upstreamType);
 
+    res.setHeader("Content-Type", finalType);
+
+    const contentLength = upstream.headers.get("content-length");
+    if (contentLength) {
+      res.setHeader("Content-Length", contentLength);
+    }
+
+    const cacheControl = upstream.headers.get("cache-control");
+    if (cacheControl) {
+      res.setHeader("Cache-Control", cacheControl);
+    } else {
+      res.setHeader("Cache-Control", "no-store");
+    }
+
+    const acceptRanges = upstream.headers.get("accept-ranges");
+    if (acceptRanges) {
+      res.setHeader("Accept-Ranges", acceptRanges);
+    }
+
+    if (req.method === "HEAD") {
+      return res.status(200).end();
+    }
+
+    // nested playlist ko rewrite karo
+    if (
+      finalType.includes("mpegurl") ||
+      String(file).toLowerCase().includes(".m3u8")
+    ) {
+      const body = await upstream.text();
+      const proxiedBody = rewriteM3U8(body);
+      return res.send(proxiedBody);
+    }
+
+    // बाकी binary files
     const buffer = Buffer.from(await upstream.arrayBuffer());
-
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Content-Type", contentType);
-    res.send(buffer);
+    return res.send(buffer);
   } catch (err) {
     console.error("live-file error:", err);
-    res.status(500).json({ error: err.message || "Segment proxy failed" });
+    return res.status(500).json({
+      error: err.message || "Segment proxy failed"
+    });
   }
 });
-
   //====================asdasdasd============
 
   app.all("/api/vibrant/play", async (req, res) => {
