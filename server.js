@@ -1104,31 +1104,67 @@ if (!response.ok) {
 
   // Endpoint for /api/pw/li
   app.get("/api/pw/live", async (req, res) => {
-    try {
-      const r = await fetchfn(
-        "https://deltaserver-vvcb.onrender.com/api/pw/live"
-      );
-      const data = await r.json();
-      res.json(data);
-    } catch (e) {
-      console.error("/api/pw/live error:", e);
-      res.json({ error: e.toString() });
+  try {
+    const { batchId } = req.query;
+
+    if (!batchId) {
+      return res.status(400).json({ error: "batchId required" });
     }
-  });
+
+    const response = await fetch(
+      "https://deltaserverpro-vvcb.onrender.com/api/pw/live",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          batchId: batchId,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.json(data);
+
+  } catch (error) {
+    console.error("Live API error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 //=============pw batch details
-  app.get("/api/pw/batchdetails", async (req, res) => {
-    try {
-      const r = await fetchfn(
-        "https://deltaserver-vvcb.onrender.com/api/pw/batchdetails"
-      );
-      const data = await r.json();
-      res.json(data);
-    } catch (e) {
-      console.error("/api/pw/batchdetails error:", e);
-      res.json({ error: e.toString() });
+ app.post("/api/pw/batchdetails", async (req, res) => {
+  try {
+    const batchId = req.query.batchId || req.body?.searchParams?.BatchId;
+
+    if (!batchId) {
+      return res.status(400).json({ error: "batchId required" });
     }
-  });
-  
+
+    const response = await fetch(
+      "https://deltaserverpro-vvcb.onrender.com/api/pw/batchdetails",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          searchParams: {
+            BatchId: batchId,
+          },
+        }),
+      }
+    );
+
+    const data = await response.json();
+    res.json(data);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
   // Endpoint for /api/pw/topics
  app.get("/api/pw/topics", async (req, res) => {
   try {
