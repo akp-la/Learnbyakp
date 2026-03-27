@@ -1103,19 +1103,32 @@ if (!response.ok) {
   });
 
   // Endpoint for /api/pw/li
-  app.get("/api/pw/lives", async (req, res) => {
+  app.get("/api/pw/live", async (req, res) => {
     try {
       const r = await fetchfn(
-        "https://deltaserver-vvcb.onrender.com/api/pw/lives"
+        "https://deltaserver-vvcb.onrender.com/api/pw/live"
       );
       const data = await r.json();
       res.json(data);
     } catch (e) {
-      console.error("/api/pw/lives error:", e);
+      console.error("/api/pw/live error:", e);
       res.json({ error: e.toString() });
     }
   });
-
+//=============pw batch details
+  app.get("/api/pw/batchdetails", async (req, res) => {
+    try {
+      const r = await fetchfn(
+        "https://deltaserver-vvcb.onrender.com/api/pw/batchdetails"
+      );
+      const data = await r.json();
+      res.json(data);
+    } catch (e) {
+      console.error("/api/pw/batchdetails error:", e);
+      res.json({ error: e.toString() });
+    }
+  });
+  
   // Endpoint for /api/pw/topics
  app.get("/api/pw/topics", async (req, res) => {
   try {
