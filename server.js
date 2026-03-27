@@ -728,6 +728,103 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
   }
 });
 //-===============00-99
+  app.get("/api/vibrant/live-proxy", async (req, res) => {
+  try {
+    const { schedule } = req.query;
+
+    if (!schedule) {
+      return res.status(400).json({ error: "Missing schedule" });
+    }
+
+    const targetUrl = `https://liveclasses.cloud-front.in/live/${schedule}_appxabr.m3u8`;
+
+    const upstream = await fetchfn(targetUrl, {
+      method: "GET",
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "*/*",
+        "Referer": "https://liveclasses.cloud-front.in/",
+        "Origin": "https://liveclasses.cloud-front.in"
+      }
+    });
+
+    if (!upstream.ok) {
+      const text = await upstream.text();
+      return res.status(upstream.status).send(text || "Failed to fetch live stream");
+    }
+
+    const contentType =
+      upstream.headers.get("content-type") || "application/vnd.apple.mpegurl";
+
+    const body = await upstream.text();
+
+    // m3u8 ke andar relative segment urls ko absolute/proxied banana useful hota hai
+    const proxiedBody = body
+      .split("\n")
+      .map((line) => {
+        if (
+          !line ||
+          line.startsWith("#") ||
+          line.startsWith("http://") ||
+          line.startsWith("https://")
+        ) {
+          return line;
+        }
+
+        // segment ya nested playlist ko bhi proxy route se chalao
+        return `/api/vibrant/live-file?file=${encodeURIComponent(line)}`;
+      })
+      .join("\n");
+
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Content-Type", contentType);
+    res.send(proxiedBody);
+  } catch (err) {
+    console.error("live-proxy error:", err);
+    res.status(500).json({ error: err.message || "Proxy failed" });
+  }
+});
+
+app.get("/api/vibrant/live-file", async (req, res) => {
+  try {
+    const { file } = req.query;
+
+    if (!file) {
+      return res.status(400).json({ error: "Missing file" });
+    }
+
+    const targetUrl = `https://liveclasses.cloud-front.in/live/${file}`;
+
+    const upstream = await fetchfn(targetUrl, {
+      method: "GET",
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "*/*",
+        "Referer": "https://liveclasses.cloud-front.in/",
+        "Origin": "https://liveclasses.cloud-front.in"
+      }
+    });
+
+    if (!upstream.ok) {
+      const text = await upstream.text();
+      return res.status(upstream.status).send(text || "Failed to fetch segment");
+    }
+
+    const contentType =
+      upstream.headers.get("content-type") || "application/octet-stream";
+
+    const buffer = Buffer.from(await upstream.arrayBuffer());
+
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Content-Type", contentType);
+    res.send(buffer);
+  } catch (err) {
+    console.error("live-file error:", err);
+    res.status(500).json({ error: err.message || "Segment proxy failed" });
+  }
+});
+
+  //====================asdasdasd============
 
   app.all("/api/vibrant/play", async (req, res) => {
   try {
