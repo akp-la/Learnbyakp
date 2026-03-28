@@ -1078,47 +1078,15 @@ if (!response.ok) {
   });
 
   // Endpoint for /api/pw/li
-  app.get("/api/pw/live", async (req, res) => {
-  try {
-    const { batchId } = req.query;
 
-    if (!batchId) {
-      return res.status(400).json({ error: "batchId required" });
-    }
-
-    const response = await fetch(
-      "https://deltaserverpro-vvcb.onrender.com/api/pw/live",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          batchId: batchId,
-        }),
-      }
-    );
-
-    const data = await response.json();
-
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.json(data);
-
-  } catch (error) {
-    console.error("Live API error:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
 //=============pw batch details
 const UPSTREAM = "https://deltaserver-vvcb.onrender.com";
 
-/**
- * 1) LIVE CLASSES API
- * Page expects:
- * POST /api/pw/live
- * body: { batchId: "..." }
- */
 app.post("/api/pw/live", async (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
   try {
     const batchId = req.body?.batchId;
 
@@ -1133,15 +1101,17 @@ app.post("/api/pw/live", async (req, res) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Accept: "application/json",
+        "Accept": "application/json",
       },
       body: JSON.stringify({ batchId }),
     });
 
     const text = await upstream.text();
 
+    console.log("LIVE upstream status:", upstream.status);
+    console.log("LIVE upstream body:", text);
+
     if (!upstream.ok) {
-      console.error("live upstream error:", upstream.status, text);
       return res.status(upstream.status).send(text);
     }
 
@@ -1154,6 +1124,13 @@ app.post("/api/pw/live", async (req, res) => {
       message: err.message,
     });
   }
+});
+
+app.options("/api/pw/live", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  return res.sendStatus(204);
 });
 
 /**
