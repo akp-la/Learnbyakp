@@ -1189,77 +1189,76 @@ app.get("/api/test", (req, res) => {
 });
 
   // Endpoint for /api/pw/topics
- app.get("/api/pw/topics", async (req, res) => {
-  try {
-    // 🔥 multiple param support (old + new)
-    const BatchId = req.query.bid || req.query.BatchId;
-    const SubjectId = req.query.su || req.query.SubjectId;
+app.get("/api/pw/topics", async (req, res) => {
+  return proxyGet(req, res, "/api/pw/topics", {
+    BatchId: "BatchId",
+    SubjectId: "SubjectId",
+  });
+});
+//===========corckes====
+  function setCors(res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+}
 
-    // ❗ validation
-    if (!BatchId || !SubjectId) {
-      return res.status(400).json({
-        error: "Missing BatchId (bid/BatchId) or SubjectId (su/SubjectId)"
-      });
+app.options("*", (req, res) => {
+  setCors(res);
+  res.sendStatus(204);
+});
+
+async function proxyGet(req, res, upstreamPath, queryMap = null) {
+  try {
+    setCors(res);
+
+    const params = new URLSearchParams();
+
+    if (queryMap) {
+      for (const [from, to] of Object.entries(queryMap)) {
+        const value = req.query[from];
+        if (value !== undefined && value !== null && value !== "") {
+          params.set(to, value);
+        }
+      }
+    } else {
+      for (const [key, value] of Object.entries(req.query)) {
+        if (value !== undefined && value !== null && value !== "") {
+          params.set(key, value);
+        }
+      }
     }
 
-    // 🔥 target API (deltaserver-vvcb)
-    const url = new URL("https://apiserver-6hat.onrender.com/api/pw/topics");
-    url.searchParams.set("BatchId", BatchId);
-    url.searchParams.set("SubjectId", SubjectId);
-
-    // 🔥 fetch data
-    const response = await fetch(url.toString());
-    const data = await response.json();
-
-    res.json(data);
-
-  } catch (err) {
-    console.error("/api/pw/topics error:", err);
-    res.status(500).json({ error: err.toString() });
-  }
-});
-//===========656567============
-app.get("/api/pw/datacontent", async (req, res) => {
-  try {
-    // ✅ lowercase params lo
-    const { batchId, subjectSlug, topicSlug, contentType } = req.query;
-
-    const url = new URL(`${BASE}/api/pw/datacontent`);
-
-    // ✅ SAME param names use karo jo working URL me hai
-    if (batchId) url.searchParams.set("batchId", batchId);
-    if (subjectSlug) url.searchParams.set("subjectSlug", subjectSlug);
-    if (topicSlug) url.searchParams.set("topicSlug", topicSlug);
-    if (contentType) url.searchParams.set("contentType", contentType);
-
-    console.log("Final URL:", url.toString());
-
-    const response = await fetchfn(url.toString(), {
+    const url = `${UPSTREAM}${upstreamPath}?${params.toString()}`;
+    const upstream = await fetchfn(url, {
       method: "GET",
       headers: {
-        "accept": "application/json"
-      }
+        Accept: "application/json",
+        "User-Agent": "Mozilla/5.0",
+      },
     });
 
-    const text = await response.text();
+    const contentType = upstream.headers.get("content-type") || "application/json";
+    const text = await upstream.text();
 
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = { raw: text };
+    if (!upstream.ok) {
+      return res.status(upstream.status).type(contentType).send(text);
     }
 
-    // ✅ status bhi return karo debug ke liye
-    res.json({
-      status: response.status,
-      data
-    });
-
+    return res.status(200).type(contentType).send(text);
   } catch (err) {
-    console.error("datacontent error:", err);
-    res.status(500).json({ error: err.message });
+    console.error(`Proxy error for ${upstreamPath}:`, err);
+    return res.status(500).json({ success: false, message: err.message });
   }
+}
+  
+//===========656567============
+app.get("/api/pw/datacontent", async (req, res) => {
+  return proxyGet(req, res, "/api/pw/datacontent", {
+    batchId: "batchId",
+    subjectSlug: "subjectSlug",
+    topicSlug: "topicSlug",
+    contentType: "contentType",
+  });
 });
 // ================= HELPER =================
 const safeFetch = async (url) => {
@@ -1269,222 +1268,123 @@ const safeFetch = async (url) => {
 };
 // ==========343=============
 app.get("/api/pw/video", async (req, res) => {
-  try {
-    const batchId = req.query.batchId || req.query.bid;
-    const subjectId = req.query.subjectId || req.query.su;
-    const childId = req.query.childId || req.query.childid;
-
-    if (!batchId || !subjectId) {
-      return res.status(400).json({ error: "Missing batchId or subjectId" });
-    }
-
-    const url = new URL(`${BASE}/api/pw/video`);
-    url.searchParams.set("batchId", batchId);
-    url.searchParams.set("subjectId", subjectId);
-    if (childId) url.searchParams.set("childId", childId);
-
-    console.log("VIDEO URL:", url.toString());
-
-    const response = await fetchfn(url.toString());
-    const data = await response.json();
-
-    res.json(data);
-  } catch (err) {
-    console.error("video error:", err);
-    res.status(500).json({ error: err.toString() });
-  }
+  return proxyGet(req, res, "/api/pw/video", {
+    batchId: "batchId",
+    subjectId: "subjectId",
+    childId: "childId",
+  });
 });
 // ================= DATACONTENT =================
 app.get("/api/pw/videonew", async (req, res) => {
-  try {
-    const batchId = req.query.batchId || req.query.bid;
-    const subjectId = req.query.subjectId || req.query.su;
-    const childId = req.query.childId || req.query.childid;
-
-    if (!batchId || !subjectId) {
-      return res.status(400).json({ error: "Missing batchId or subjectId" });
-    }
-
-    const url = new URL(`${BASE}/api/pw/videonew`);
-    url.searchParams.set("batchId", batchId);
-    url.searchParams.set("subjectId", subjectId);
-    if (childId) url.searchParams.set("childId", childId);
-
-    const response = await fetchfn(url.toString());
-    const data = await response.json();
-
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.toString() });
-  }
+  return proxyGet(req, res, "/api/pw/videonew", {
+    batchId: "batchId",
+    subjectId: "subjectId",
+    childId: "childId",
+  });
 });
 // ================= VIDEO COMBINED =================
 app.get("/api/pw/videosuper", async (req, res) => {
-  try {
-    const batchId = req.query.batchId || req.query.bid;
-    const childId = req.query.childId || req.query.childid;
-
-    if (!batchId || !childId) {
-      return res.status(400).json({ error: "Missing batchId or childId" });
-    }
-
-    const url = new URL(`${BASE}/api/pw/videosuper`);
-    url.searchParams.set("batchId", batchId);
-    url.searchParams.set("childId", childId);
-
-    console.log("VIDEOSUPER URL:", url.toString());
-
-    const response = await fetchfn(url.toString());
-    const data = await response.json();
-
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.toString() });
-  }
+  return proxyGet(req, res, "/api/pw/videosuper", {
+    batchId: "batchId",
+    childId: "childId",
+  });
 });
 
 // ================= VIDEO PLAY =================
 app.get("/api/pw/videoplay", async (req, res) => {
-  try {
-    const batchId = req.query.batchId || req.query.bid;
-    const childId = req.query.childId || req.query.childid;
-
-    if (!batchId || !childId) {
-      return res.status(400).json({ error: "Missing batchId or childId" });
-    }
-
-    const url = new URL(`${BASE}/api/pw/videoplay`);
-    url.searchParams.set("batchId", batchId);
-    url.searchParams.set("childId", childId);
-
-    const response = await fetchfn(url.toString());
-    const data = await response.json();
-
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.toString() });
-  }
+  return proxyGet(req, res, "/api/pw/videoplay", {
+    batchId: "batchId",
+    childId: "childId",
+  });
 });
 // ================= ATTACHMENTS =================
-app.get("/api/pw/attachments", async (req, res) => {
-  try {
-    // 🔥 auto लेने वाला (multiple formats support)
-    const batchId =
-      req.query.batchId ||
-      req.query.bid ||
-      req.query.BatchId;
-
-    const subjectId =
-      req.query.subjectId ||
-      req.query.sid ||
-      req.query.SubjectId;
-
-    const scheduleId =
-      req.query.scheduleId ||
-      req.query.cid ||
-      req.query.ContentId ||
-      req.query.schedule_id;
-
-    if (!batchId || !subjectId || !scheduleId) {
-      return res.status(400).json({
-        error: "Missing params",
-        received: { batchId, subjectId, scheduleId }
-      });
-    }
-
-    const urls = [
-      `${BASE}/api/pw/attachments-url?BatchId=${batchId}&SubjectId=${subjectId}&ContentId=${scheduleId}`
-      
-    ];
-
-    let debug = [];
-
-    for (let u of urls) {
-      try {
-        console.log("Trying:", u);
-
-        const data = await safeFetch(u);
-
-        if (data?.data || data?.success) {
-          return res.json({
-            source: u,
-            result: data
-          });
-        }
-
-        debug.push({ url: u, status: "no data" });
-
-      } catch (err) {
-        debug.push({ url: u, error: err.message });
-      }
-    }
-
-    res.status(404).json({
-      error: "No attachment found",
-      tried: debug
-    });
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+app.get("/api/pw/attachments-url", async (req, res) => {
+  return proxyGet(req, res, "/api/pw/attachments-url", {
+    BatchId: "BatchId",
+    SubjectId: "SubjectId",
+    ContentId: "ContentId",
+  });
 });
-
+  //==========sasdsasd//
+  app.get("/api/pw/attachment-link", async (req, res) => {
+  return proxyGet(req, res, "/api/pw/attachment-link", {
+    batchId: "batchId",
+    subjectId: "subjectId",
+    scheduleId: "scheduleId",
+  });
+});
 
 // ================= VIEW =================
-app.get("/api/pw/view", (req, res) => {
-  const { url } = req.query;
-  if (!url) return res.status(400).send("Missing URL");
+app.get("/api/pw/view", async (req, res) => {
+  try {
+    setCors(res);
 
-  res.redirect(url);
+    const { url, filename } = req.query;
+    if (!url) {
+      return res.status(400).send("Missing url");
+    }
+
+    const upstream = await fetchfn(url, {
+      method: "GET",
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        Accept: "*/*",
+      },
+    });
+
+    const contentType =
+      upstream.headers.get("content-type") || "application/octet-stream";
+
+    const buffer = await upstream.arrayBuffer();
+
+    res.setHeader("Content-Type", contentType);
+    if (filename) {
+      res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+    }
+    return res.send(Buffer.from(buffer));
+  } catch (err) {
+    console.error("view error:", err);
+    return res.status(500).send(err.message);
+  }
 });
-
 
 // ================= DOWNLOAD =================
 app.get("/api/pw/download", async (req, res) => {
   try {
+    setCors(res);
+
     const { url, filename } = req.query;
+    if (!url) {
+      return res.status(400).send("Missing url");
+    }
 
-    if (!url) return res.status(400).send("Missing URL");
+    const upstream = await fetchfn(url, {
+      method: "GET",
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        Accept: "*/*",
+      },
+    });
 
-    const response = await fetchfn(url);
+    const contentType =
+      upstream.headers.get("content-type") || "application/octet-stream";
 
-if (!response.ok) {
-  return res.status(response.status).json({
-    error: "External API failed"
-  });
-}
+    const buffer = await upstream.arrayBuffer();
 
-
-
+    res.setHeader("Content-Type", contentType);
     res.setHeader(
       "Content-Disposition",
       `attachment; filename="${filename || "file"}"`
     );
 
-   const buffer = await response.arrayBuffer();
-res.send(Buffer.from(buffer));
-
+    return res.send(Buffer.from(buffer));
   } catch (err) {
-    res.status(500).send(err.message);
+    console.error("download error:", err);
+    return res.status(500).send(err.message);
   }
 });
-
 
 // ================= ATTACHMENT LINKS =================
-app.get("/api/pw/contents/attachment-links", async (req, res) => {
-  try {
-    const { batchId, subjectId, scheduleId } = req.query;
-
-    const url = `${BASE}/api/pw/contents/attachment-links?batchId=${batchId}&subjectId=${subjectId}&scheduleId=${scheduleId}`;
-     if (!batchId || !subjectId || !scheduleId) {
-  return res.status(400).json({ error: "Missing params" });
-}
-    res.json(await safeFetch(url));
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 
 // ================= OTP =================
