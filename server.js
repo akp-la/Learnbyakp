@@ -1149,9 +1149,14 @@ if (!response.ok) {
   }
 });
 //=============pw batch details
-app.get("/api/pw/batchdetails", async (req, res) => {
+app.all("/api/pw/batchdetails", async (req, res) => {
   try {
-    const batchId = req.query.batchId || req.query.batchid;
+    const batchId =
+      req.query.batchId ||
+      req.query.batchid ||
+      req.body?.batchId ||
+      req.body?.batchid ||
+      req.body?.searchParams?.BatchId;
 
     if (!batchId) {
       return res.status(400).json({ error: "batchId required" });
@@ -1163,13 +1168,13 @@ app.get("/api/pw/batchdetails", async (req, res) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json"
+          Accept: "application/json",
         },
         body: JSON.stringify({
           searchParams: {
-            BatchId: batchId
-          }
-        })
+            BatchId: batchId,
+          },
+        }),
       }
     );
 
@@ -1180,14 +1185,9 @@ app.get("/api/pw/batchdetails", async (req, res) => {
       return res.status(upstream.status).send(text);
     }
 
-    try {
-      return res.json(JSON.parse(text));
-    } catch {
-      return res.status(500).json({
-        error: "Invalid JSON from upstream",
-        raw: text
-      });
-    }
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Content-Type", "application/json");
+    return res.send(text);
   } catch (err) {
     console.error("batchdetails route error:", err);
     return res.status(500).json({ error: err.message });
