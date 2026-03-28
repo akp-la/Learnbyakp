@@ -1274,6 +1274,7 @@ app.get("/api/pw/video", async (req, res) => {
     childId: "childId",
   });
 });
+  
 // ================= DATACONTENT =================
 app.get("/api/pw/videonew", async (req, res) => {
   return proxyGet(req, res, "/api/pw/videonew", {
@@ -1390,14 +1391,44 @@ app.get("/api/pw/download", async (req, res) => {
 // ================= OTP =================
 app.get("/api/pw/otp", async (req, res) => {
   try {
+    setCors(res);
+
     const { kid } = req.query;
 
-    const url = `${BASE}/api/pw/otp?kid=${kid}`;
+    if (!kid) {
+      return res.status(400).json({
+        success: false,
+        error: "kid required"
+      });
+    }
 
-    res.json(await safeFetch(url));
+    const upstreamUrl =
+      `${UPSTREAM}/api/pw/otp?kid=${encodeURIComponent(kid)}`;
 
+    const upstream = await fetchfn(upstreamUrl, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0"
+      }
+    });
+
+    const text = await upstream.text();
+    const contentType =
+      upstream.headers.get("content-type") || "application/json";
+
+    if (!upstream.ok) {
+      console.error("otp upstream error:", upstream.status, text);
+      return res.status(upstream.status).type(contentType).send(text);
+    }
+
+    return res.status(200).type(contentType).send(text);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("otp route error:", err);
+    return res.status(500).json({
+      success: false,
+      error: err.message
+    });
   }
 });
 
@@ -1405,30 +1436,46 @@ app.get("/api/pw/otp", async (req, res) => {
 // ================= KID =================
 app.get("/api/pw/kid", async (req, res) => {
   try {
-    // 🔥 multiple param support (old + new)
-    const BatchId = req.query.bid || req.query.BatchId;
-    const ContentId = req.query.childid || req.query.ContentId;
-    // ❗ validation
-    if (!BatchId || !SubjectId) {
+    setCors(res);
+
+    const { mpdUrl } = req.query;
+
+    if (!mpdUrl) {
       return res.status(400).json({
-        error: "Missing BatchId (bid/BatchId) or SubjectId (su/SubjectId)"
+        success: false,
+        error: "mpdUrl required"
       });
     }
 
-    // 🔥 target API (deltaserver-vvcb)
-    const url = new URL("https://apiserver-6hat.onrender.com/api/pw/kid?mpdUrl=${encodeURIComponent(mpdUrl)}");
+    const upstreamUrl =
+      `${UPSTREAM}/api/pw/kid?mpdUrl=${encodeURIComponent(mpdUrl)}`;
 
-    // 🔥 fetch data
-    const response = await fetch(url.toString());
-    const data = await response.json();
+    const upstream = await fetchfn(upstreamUrl, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0"
+      }
+    });
 
-    res.json(data);
+    const text = await upstream.text();
+    const contentType =
+      upstream.headers.get("content-type") || "application/json";
 
+    if (!upstream.ok) {
+      console.error("kid upstream error:", upstream.status, text);
+      return res.status(upstream.status).type(contentType).send(text);
+    }
+
+    return res.status(200).type(contentType).send(text);
   } catch (err) {
-    console.error("/api/pw/kid error:", err);
-    res.status(500).json({ error: err.toString() });
+    console.error("kid route error:", err);
+    return res.status(500).json({
+      success: false,
+      error: err.message
+    });
   }
-}); 
+});
   // ========== EMAIL OTP (GENERIC) ==========
   app.post("/api/send-email-otp", async (req, res) => {
     try {
