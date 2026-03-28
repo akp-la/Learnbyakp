@@ -484,30 +484,44 @@ function decryptVibrant(input) {
 
 
 //=============weqewqe==========
-  app.get("/api/vibrant/live", async (req, res) => {
+ app.get("/api/pw/live", async (req, res) => {
   try {
-    const courseid = req.query.course_id || req.query.c;
+    const batchId = req.query.batchId || req.query.batchid;
 
-    if (!courseid) {
-      return res.status(400).json({ error: "Missing courseid" });
+    if (!batchId) {
+      return res.status(400).json({ error: "batchId required" });
     }
 
-    // External API call
-    const url = `https://deltaserver-vvcb.onrender.com/api/vibrant/live?course_id=${courseid}`;
-    
-    const response = await fetchfn(url);
+    const upstream = await fetchfn(
+      "https://deltaserverpro-vvcb.onrender.com/api/pw/live",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({ batchId })
+      }
+    );
 
-if (!response.ok) {
-  return res.status(response.status).json({
-    error: "External API failed"
-  });
-}
+    const text = await upstream.text();
 
-const data = await response.json();
-res.json(data);
+    if (!upstream.ok) {
+      console.error("Upstream live failed:", upstream.status, text);
+      return res.status(upstream.status).send(text);
+    }
+
+    try {
+      return res.json(JSON.parse(text));
+    } catch {
+      return res.status(500).json({
+        error: "Invalid JSON from upstream",
+        raw: text
+      });
+    }
   } catch (err) {
-    console.error("/api/vibrant/live error:", err);
-    res.status(500).json({ error: err.toString() });
+    console.error("live route error:", err);
+    return res.status(500).json({ error: err.message });
   }
 });
 //======== rtrtrrttt=====
@@ -1135,34 +1149,48 @@ if (!response.ok) {
   }
 });
 //=============pw batch details
- app.post("/api/pw/batchdetails", async (req, res) => {
+app.get("/api/pw/batchdetails", async (req, res) => {
   try {
-    const batchId = req.query.batchId || req.body?.searchParams?.BatchId;
+    const batchId = req.query.batchId || req.query.batchid;
 
     if (!batchId) {
       return res.status(400).json({ error: "batchId required" });
     }
 
-    const response = await fetch(
+    const upstream = await fetchfn(
       "https://deltaserverpro-vvcb.onrender.com/api/pw/batchdetails",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Accept": "application/json"
         },
         body: JSON.stringify({
           searchParams: {
-            BatchId: batchId,
-          },
-        }),
+            BatchId: batchId
+          }
+        })
       }
     );
 
-    const data = await response.json();
-    res.json(data);
+    const text = await upstream.text();
 
+    if (!upstream.ok) {
+      console.error("Upstream batchdetails failed:", upstream.status, text);
+      return res.status(upstream.status).send(text);
+    }
+
+    try {
+      return res.json(JSON.parse(text));
+    } catch {
+      return res.status(500).json({
+        error: "Invalid JSON from upstream",
+        raw: text
+      });
+    }
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("batchdetails route error:", err);
+    return res.status(500).json({ error: err.message });
   }
 });
   // Endpoint for /api/pw/topics
