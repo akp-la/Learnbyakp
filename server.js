@@ -10,7 +10,7 @@ const crypto = require("crypto");
 const fetch = require("node-fetch");
 
 
-const BASE = "https://apiserver-skpg.onrender.com";
+const BASE = "https://apiserver-phi-topaz.vercel.app";
 const rateLimit = require("express-rate-limit");
 const app = express();
 app.use(rateLimit({ windowMs: 60 * 1000, max: 30 }));
@@ -430,7 +430,7 @@ function createApp() {
       return res.status(400).json({ error: "Missing content_id or courseid" });
     }
 
-    const url = `https://apiserver-skpg.onrender.com/api/missionjeet/content-details?content_id=${entityId}&course_id=${courseId}`;
+    const url = `https://apiserver-phi-topaz.vercel.app/api/missionjeet/content-details?content_id=${entityId}&course_id=${courseId}`;
 
     const response = await fetchfn(url);
 
@@ -495,7 +495,7 @@ app.get("/api/vibrant/previous-live", async (req, res) => {
     }
 
     // External API call
-    const url = `https://apiserver-skpg.onrender.com/api/vibrant/previous-live?course_id=${courseid}`;
+    const url = `https://apiserver-phi-topaz.vercel.app/api/vibrant/previous-live?course_id=${courseid}`;
     
     const response = await fetchfn(url);
 
@@ -523,7 +523,7 @@ res.json(data);
     }
 
     // External API call
-    const url = `https://apiserver-skpg.onrender.com/api/missionjeet/course-details?courseid=${courseid}`;
+    const url = `https://apiserver-phi-topaz.vercel.app/api/missionjeet/course-details?courseid=${courseid}`;
     
     const response = await fetchfn(url);
 
@@ -553,9 +553,9 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
     // Build external URL matching exact path pattern
     let externalUrl;
     if (id && id !== courseid) {
-      externalUrl = `https://apiserver-skpg.onrender.com/api/missionjeet/all-content/${courseid}?id=${id}`;
+      externalUrl = `https://apiserver-phi-topaz.vercel.app/api/missionjeet/all-content/${courseid}?id=${id}`;
     } else {
-      externalUrl = `https://apiserver-skpg.onrender.com/api/missionjeet/all-content/${courseid}`;
+      externalUrl = `https://apiserver-phi-topaz.vercel.app/api/missionjeet/all-content/${courseid}`;
     }
 
     const response = await fetchfn(externalUrl);
@@ -576,7 +576,7 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
   app.get("/api/batches", async (req, res) => {
     try {
       const r = await fetchfn(
-        "https://apiserver-skpg.onrender.com/api/pw/batches"
+        "https://apiserver-phi-topaz.vercel.app/api/pw/batches"
       );
       const data = await r.json();
       res.json(data);
@@ -589,7 +589,7 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
     app.get("/api/vibrant/batches", async (req, res) => {
     try {
       const r = await fetchfn(
-        "https://apiserver-skpg.onrender.com/api/vibrant/batches"
+        "https://apiserver-phi-topaz.vercel.app/api/vibrant/batches"
       );
       const data = await r.json();
       res.json(data);
@@ -614,7 +614,7 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
     }
 
     // 🔗 original API
-    const url = new URL("https://apiserver-skpg.onrender.com/api/vibrant/content");
+    const url = new URL("https://apiserver-phi-topaz.vercel.app/api/vibrant/content");
 
     url.searchParams.set("course_id", course_id);
 
@@ -658,7 +658,7 @@ app.get("/api/vibrant/video-details", async (req, res) => {
       return res.status(400).json({ error: "Missing courseid (r or courseid)" });
     }
 
-    const url = new URL("https://apiserver-skpg.onrender.com/api/vibrant/video-details");
+    const url = new URL("https://apiserver-phi-topaz.vercel.app/api/vibrant/video-details");
     url.searchParams.set("course_id", course_id);
 
     if (video_id) {
@@ -686,7 +686,7 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
       return res.status(400).json({ error: "Missing courseid (r or courseid)" });
     }
 
-    const url = new URL("https://apiserver-skpg.onrender.com/api/nexttoppers/all-content");
+    const url = new URL("https://apiserver-phi-topaz.vercel.app/api/nexttoppers/all-content");
     url.searchParams.set("courseid", courseid);
 
     if (id) {
@@ -921,7 +921,7 @@ app.all("/api/vibrant/live-file", async (req, res) => {
     }
 
     const proxyUrl =
-      "https://apiserver-skpg.onrender.com/api/vibrant/play?url=" +
+      "https://apiserver-phi-topaz.vercel.app/api/vibrant/play?url=" +
       encodeURIComponent(url);
 
     const upstream = await fetchfn(proxyUrl, {
@@ -992,7 +992,7 @@ app.all("/api/vibrant/live-file", async (req, res) => {
     }
 
     // External API call
-    const url = `https://apiserver-skpg.onrender.com/api/nexttoppers/course-details?courseid=${courseid}`;
+    const url = `https://apiserver-phi-topaz.vercel.app/api/nexttoppers/course-details?courseid=${courseid}`;
     
    const response = await fetchfn(url);
 
@@ -1019,7 +1019,7 @@ app.get("/api/nexttoppers/content-details", async (req, res) => {
       return res.status(400).json({ error: "Missing content_id or courseid" });
     }
 
-    const url = `https://apiserver-skpg.onrender.com/api/nexttoppers/content-details?content_id=${entityId}&courseid=${courseId}`;
+    const url = `https://apiserver-phi-topaz.vercel.app/api/nexttoppers/content-details?content_id=${entityId}&courseid=${courseId}`;
 
     const response = await fetchfn(url);
 
@@ -1053,7 +1053,7 @@ if (!response.ok) {
   app.get("/api/nexttoppers/batches", async (req, res) => {
     try {
       const r = await fetchfn(
-        "https://apiserver-skpg.onrender.com/api/nexttoppers/batches"
+        "https://apiserver-phi-topaz.vercel.app/api/nexttoppers/batches"
       );
       const data = await r.json();
       res.json(data);
@@ -1067,7 +1067,7 @@ if (!response.ok) {
   app.get("/api/missionjeet/batches", async (req, res) => {
     try {
       const r = await fetchfn(
-        "https://apiserver-skpg.onrender.com/api/missionjeet/batches"
+        "https://apiserver-phi-topaz.vercel.app/api/missionjeet/batches"
       );
       const data = await r.json();
       res.json(data);
@@ -1080,7 +1080,7 @@ if (!response.ok) {
   // Endpoint for /api/pw/li
 
 //=============pw batch details
-const UPSTREAM = "https://apiserver-skpg.onrender.com";
+const UPSTREAM = "https://apiserver-phi-topaz.vercel.app";
 
 app.post("/api/pw/live", async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
