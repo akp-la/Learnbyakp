@@ -540,6 +540,92 @@ res.json(data);
     res.status(500).json({ error: err.toString() });
   }
 });
+  const BASE_URL = "https://apiserver-6hat.onrender.com";
+//=============454534534==========
+  app.post("/api/pw/login", async (req, res) => {
+  try {
+    const { phoneNumber, username } = req.body || {};
+
+    if (!phoneNumber || !username) {
+      return res.status(400).json({
+        success: false,
+        message: "phoneNumber and username are required"
+      });
+    }
+
+    const upstream1 = await fetch(`${BASE_URL}/api/pw/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json, text/plain, */*"
+      },
+      body: JSON.stringify({
+        phoneNumber,
+        username
+      })
+    });
+
+    const text = await upstream1.text();
+
+    res.status(upstream1.status);
+    res.setHeader(
+      "Content-Type",
+      upstream1.headers.get("content-type") || "application/json"
+    );
+    return res.send(text);
+  } catch (error) {
+    console.error("PW LOGIN ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Proxy error in /api/pw/login"
+    });
+  }
+});
+
+// PW VERIFY
+app.post("/api/pw/verify", async (req, res) => {
+  try {
+    const { otp, phoneNumber, username } = req.body || {};
+
+    if (!otp || !phoneNumber || !username) {
+      return res.status(400).json({
+        success: false,
+        message: "otp, phoneNumber and username are required"
+      });
+    }
+
+    const upstream1 = await fetch(`${BASE_URL\}/api/pw/verify`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json, text/plain, */*"
+      },
+      body: JSON.stringify({
+        otp,
+        phoneNumber,
+        username
+      })
+    });
+
+    const text = await upstream1.text();
+
+    res.status(upstream1.status);
+    res.setHeader(
+      "Content-Type",
+      upstream.headers.get("content-type") || "application/json"
+    );
+    return res.send(text);
+  } catch (error) {
+    console.error("PW VERIFY ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Proxy error in /api/pw/verify"
+    });
+  }
+});
+  
 //============ attttttttt======
 app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
   try {
