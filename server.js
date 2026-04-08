@@ -1281,6 +1281,164 @@ app.get("/api/pw/topics", async (req, res) => {
     SubjectId: "SubjectId",
   });
 });
+  //============dasdddd=====
+  async function proxyJson(req, res, targetUrl, extraHeaders = {}) {
+  try {
+    const upstream = await fetch(targetUrl, {
+      method: "GET",
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json, text/plain, */*",
+        ...extraHeaders,
+      },
+    });
+
+    const contentType = upstream.headers.get("content-type") || "";
+    const text = await upstream.text();
+
+    res.status(upstream.status);
+    if (contentType) res.setHeader("Content-Type", contentType);
+    return res.send(text);
+  } catch (err) {
+    console.error("Proxy error:", err);
+    return res.status(500).json({
+      success: false,
+      error: err.message || "Proxy request failed",
+    });
+  }
+}
+
+/**
+ * 1) /api/pw/video
+ * frontend call:
+ * /api/pw/video?batchId=...&subjectId=...&childId=...
+ */
+app.get("/api/pw/video", async (req, res) => {
+  const { batchId, subjectId, childId } = req.query;
+
+  if (!batchId || !subjectId || !childId) {
+    return res.status(400).json({
+      success: false,
+      error: "Missing batchId, subjectId, or childId",
+    });
+  }
+
+  const url =
+    `${UPSTREAM}/api/pw/video?batchId=${encodeURIComponent(batchId)}` +
+    `&subjectId=${encodeURIComponent(subjectId)}` +
+    `&childId=${encodeURIComponent(childId)}`;
+
+  return proxyJson(req, res, url);
+});
+
+/**
+ * 2) /api/pw/videoplay
+ * frontend call:
+ * /api/pw/videoplay?batchId=...&subjectId=...&childId=...
+ */
+app.get("/api/pw/videoplay", async (req, res) => {
+  const { batchId, subjectId, childId } = req.query;
+
+  if (!batchId || !subjectId || !childId) {
+    return res.status(400).json({
+      success: false,
+      error: "Missing batchId, subjectId, or childId",
+    });
+  }
+
+  const url =
+    `${UPSTREAM}/api/pw/videoplay?batchId=${encodeURIComponent(batchId)}` +
+    `&subjectId=${encodeURIComponent(subjectId)}` +
+    `&childId=${encodeURIComponent(childId)}`;
+
+  return proxyJson(req, res, url);
+});
+
+/**
+ * 3) /api/pw/get-urls
+ * frontend call:
+ * /api/pw/get-urls?batchId=...&subjectId=...&childId=...
+ */
+app.get("/api/pw/get-urls", async (req, res) => {
+  const { batchId, subjectId, childId } = req.query;
+
+  if (!batchId || !subjectId || !childId) {
+    return res.status(400).json({
+      success: false,
+      error: "Missing batchId, subjectId, or childId",
+    });
+  }
+
+  const url =
+    `${UPSTREAM}/api/pw/get-urls?batchId=${encodeURIComponent(batchId)}` +
+    `&subjectId=${encodeURIComponent(subjectId)}` +
+    `&childId=${encodeURIComponent(childId)}`;
+
+  return proxyJson(req, res, url);
+});
+
+/**
+ * 4) /api/pw/attachments-url
+ * frontend call:
+ * /api/pw/attachments-url?BatchId=...&SubjectId=...&ContentId=...
+ */
+app.get("/api/pw/attachments-url", async (req, res) => {
+  const { BatchId, SubjectId, ContentId } = req.query;
+
+  if (!BatchId || !SubjectId || !ContentId) {
+    return res.status(400).json({
+      success: false,
+      error: "Missing BatchId, SubjectId, or ContentId",
+    });
+  }
+
+  const url =
+    `${UPSTREAM}/api/pw/attachments-url?BatchId=${encodeURIComponent(BatchId)}` +
+    `&SubjectId=${encodeURIComponent(SubjectId)}` +
+    `&ContentId=${encodeURIComponent(ContentId)}`;
+
+  return proxyJson(req, res, url);
+});
+
+/**
+ * 5) /api/pw/kid
+ * frontend call:
+ * /api/pw/kid?mpdUrl=...
+ */
+app.get("/api/pw/kid", async (req, res) => {
+  const { mpdUrl } = req.query;
+
+  if (!mpdUrl) {
+    return res.status(400).json({
+      success: false,
+      error: "Missing mpdUrl",
+    });
+  }
+
+  const url = `${UPSTREAM}/api/pw/kid?mpdUrl=${encodeURIComponent(mpdUrl)}`;
+  return proxyJson(req, res, url);
+});
+
+/**
+ * 6) /api/pw/otp
+ * frontend call:
+ * /api/pw/otp?kid=...
+ */
+app.get("/api/pw/otp", async (req, res) => {
+  const { kid } = req.query;
+
+  if (!kid) {
+    return res.status(400).json({
+      success: false,
+      error: "Missing kid",
+    });
+  }
+
+  const url = `${UPSTREAM}/api/pw/otp?kid=${encodeURIComponent(kid)}`;
+  return proxyJson(req, res, url);
+});
+
+
 //===========corckes====
   function setCors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -1353,13 +1511,7 @@ const safeFetch = async (url) => {
   return res.json();
 };
 // ==========343=============
-app.get("/api/pw/video", async (req, res) => {
-  return proxyGet(req, res, "/api/pw/video", {
-    batchId: "batchId",
-    subjectId: "subjectId",
-    childId: "childId",
-  });
-});
+
   
 // ================= DATACONTENT =================
 app.get("/api/pw/videonew", async (req, res) => {
@@ -1378,28 +1530,6 @@ app.get("/api/pw/videosuper", async (req, res) => {
 });
 
 // ================= VIDEO PLAY =================
-app.get("/api/pw/videoplay", async (req, res) => {
-  return proxyGet(req, res, "/api/pw/videoplay", {
-    batchId: "batchId",
-    childId: "childId",
-  });
-});
-// ================= ATTACHMENTS =================
-app.get("/api/pw/attachments-url", async (req, res) => {
-  return proxyGet(req, res, "/api/pw/attachments-url", {
-    BatchId: "BatchId",
-    SubjectId: "SubjectId",
-    ContentId: "ContentId",
-  });
-});
-  //==========sasdsasd//
-  app.get("/api/pw/attachment-link", async (req, res) => {
-  return proxyGet(req, res, "/api/pw/attachment-link", {
-    batchId: "batchId",
-    subjectId: "subjectId",
-    scheduleId: "scheduleId",
-  });
-});
 
 // ================= VIEW =================
 app.get("/api/pw/view", async (req, res) => {
@@ -1475,93 +1605,9 @@ app.get("/api/pw/download", async (req, res) => {
 
 
 // ================= OTP =================
-app.get("/api/pw/otp", async (req, res) => {
-  try {
-    setCors(res);
-
-    const { kid } = req.query;
-
-    if (!kid) {
-      return res.status(400).json({
-        success: false,
-        error: "kid required"
-      });
-    }
-
-    const upstreamUrl =
-      `${UPSTREAM}/api/pw/otp?kid=${encodeURIComponent(kid)}`;
-
-    const upstream = await fetchfn(upstreamUrl, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "User-Agent": "Mozilla/5.0"
-      }
-    });
-
-    const text = await upstream.text();
-    const contentType =
-      upstream.headers.get("content-type") || "application/json";
-
-    if (!upstream.ok) {
-      console.error("otp upstream error:", upstream.status, text);
-      return res.status(upstream.status).type(contentType).send(text);
-    }
-
-    return res.status(200).type(contentType).send(text);
-  } catch (err) {
-    console.error("otp route error:", err);
-    return res.status(500).json({
-      success: false,
-      error: err.message
-    });
-  }
-});
-
 
 // ================= KID =================
-app.get("/api/pw/kid", async (req, res) => {
-  try {
-    setCors(res);
 
-    const { mpdUrl } = req.query;
-
-    if (!mpdUrl) {
-      return res.status(400).json({
-        success: false,
-        error: "mpdUrl required"
-      });
-    }
-
-    const upstreamUrl =
-      `${UPSTREAM}/api/pw/kid?mpdUrl=${encodeURIComponent(mpdUrl)}`;
-
-    const upstream = await fetchfn(upstreamUrl, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "User-Agent": "Mozilla/5.0"
-      }
-    });
-
-    const text = await upstream.text();
-    const contentType =
-      upstream.headers.get("content-type") || "application/json";
-
-    if (!upstream.ok) {
-      console.error("kid upstream error:", upstream.status, text);
-      return res.status(upstream.status).type(contentType).send(text);
-    }
-
-    return res.status(200).type(contentType).send(text);
-  } catch (err) {
-    console.error("kid route error:", err);
-    return res.status(500).json({
-      success: false,
-      error: err.message
-    });
-  }
-});
   // ========== EMAIL OTP (GENERIC) ==========
   app.post("/api/send-email-otp", async (req, res) => {
     try {
