@@ -595,7 +595,7 @@ app.post("/api/pw/verify", async (req, res) => {
       });
     }
 
-    const upstream1 = await fetch(`${BASE_URL\}/api/pw/verify`, {
+    const upstream1 = await fetch(`${BASE_URL}/api/pw/verify`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
