@@ -1355,11 +1355,11 @@ app.get("/api/pw/videoplay", async (req, res) => {
 });
 
 /**
- * 3) /api/pw/get-urls
+ * 3) /api/pw/get-url
  * frontend call:
- * /api/pw/get-urls?batchId=...&subjectId=...&childId=...
+ * /api/pw/get-url?batchId=...&subjectId=...&childId=...
  */
-app.get("/api/pw/get-urls", async (req, res) => {
+app.get("/api/pw/get-url", async (req, res) => {
   const { batchId, subjectId, childId } = req.query;
 
   if (!batchId || !subjectId || !childId) {
@@ -1370,7 +1370,7 @@ app.get("/api/pw/get-urls", async (req, res) => {
   }
 
   const url =
-    `${UPSTREAM}/api/pw/get-urls?batchId=${encodeURIComponent(batchId)}` +
+    `${UPSTREAM}/api/pw/get-url?batchId=${encodeURIComponent(batchId)}` +
     `&subjectId=${encodeURIComponent(subjectId)}` +
     `&childId=${encodeURIComponent(childId)}`;
 
