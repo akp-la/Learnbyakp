@@ -991,8 +991,71 @@ app.all("/api/vibrant/live-file", async (req, res) => {
     });
   }
 });
-  //====================asdasdasd============
+  //======live of mission jeet=====
+  app.get("/api/missionjeet/live", async (req, res) => {
+  try {
+    const response = await fetch(
+      "https://apiserver-m8ea.onrender.com/api/missionjeet/live",
+      {
+        method: "GET",
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Accept": "application/json",
+          "Origin": "https://learnbyakp.onrender.com",
+          "Referer": "https://learnbyakp.onrender.com/"
+        }
+      }
+    );
 
+    const text = await response.text();
+
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Content-Type", "application/json");
+
+    res.status(response.status).send(text);
+
+  } catch (error) {
+    console.error("LIVE API ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch live classes"
+    });
+  }
+});
+  
+  //====================asdasdasd============
+app.get("/api/nexttoppers/live", async (req, res) => {
+  try {
+    const response = await fetch(
+      "https://apiserver-m8ea.onrender.com/api/nexttoppers/live",
+      {
+        method: "GET",
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Accept": "application/json",
+          "Origin": "https://learnbyakp.onrender.com",
+          "Referer": "https://learnbyakp.onrender.com/"
+        }
+      }
+    );
+
+    const text = await response.text();
+
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Content-Type", "application/json");
+
+    res.status(response.status).send(text);
+
+  } catch (error) {
+    console.error("LIVE API ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch live classes"
+    });
+  }
+});
+
+  //==========live api for nexttoppers======
   app.all("/api/vibrant/play", async (req, res) => {
   try {
     const url = req.query.url;
