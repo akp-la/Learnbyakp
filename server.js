@@ -1460,23 +1460,44 @@ app.get("/api/pw/get-url", async (req, res) => {
  * /api/pw/attachments-url?BatchId=...&SubjectId=...&ContentId=...
  */
 app.get("/api/pw/attachments-url", async (req, res) => {
-  const { BatchId, SubjectId, ContentId } = req.query;
+  try {
+    const { BatchId, SubjectId, ContentId } = req.query;
 
-  if (!BatchId || !SubjectId || !ContentId) {
-    return res.status(400).json({
+    if (!BatchId || !SubjectId || !ContentId) {
+      return res.status(400).json({
+        success: false,
+        message: "BatchId, SubjectId and ContentId are required"
+      });
+    }
+
+    const targetUrl =
+      `https://apiserver-henna.vercel.app/api/pw/attachments-url` +
+      `?BatchId=${encodeURIComponent(BatchId)}` +
+      `&SubjectId=${encodeURIComponent(SubjectId)}` +
+      `&ContentId=${encodeURIComponent(ContentId)}`;
+
+    const response = await fetch(targetUrl, {
+      method: "GET",
+      headers: {
+        accept: "application/json, text/plain, */*",
+        "user-agent": "Mozilla/5.0"
+      }
+    });
+
+    const text = await response.text();
+
+    res.status(response.status);
+    res.setHeader("content-type", response.headers.get("content-type") || "application/json");
+    return res.send(text);
+  } catch (error) {
+    console.error("attachments-url proxy error:", error);
+    return res.status(500).json({
       success: false,
-      error: "Missing BatchId, SubjectId, or ContentId",
+      message: "Failed to fetch attachments-url",
+      error: error.message
     });
   }
-
-  const url =
-    `${UPSTREAM}/api/pw/attachments-url?BatchId=${encodeURIComponent(BatchId)}` +
-    `&SubjectId=${encodeURIComponent(SubjectId)}` +
-    `&ContentId=${encodeURIComponent(ContentId)}`;
-
-  return proxyJson(req, res, url);
 });
-
 /**
  * 5) /api/pw/kid
  * frontend call:
