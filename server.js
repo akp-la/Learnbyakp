@@ -1477,7 +1477,6 @@ app.get("/api/pw/attachments-url", async (req, res) => {
       `&ContentId=${encodeURIComponent(ContentId)}`;
 
     const response = await fetch(targetUrl, {
-      method: "GET",
       headers: {
         accept: "application/json, text/plain, */*",
         "user-agent": "Mozilla/5.0"
@@ -1487,7 +1486,10 @@ app.get("/api/pw/attachments-url", async (req, res) => {
     const text = await response.text();
 
     res.status(response.status);
-    res.setHeader("content-type", response.headers.get("content-type") || "application/json");
+    res.setHeader(
+      "content-type",
+      response.headers.get("content-type") || "application/json"
+    );
     return res.send(text);
   } catch (error) {
     console.error("attachments-url proxy error:", error);
@@ -1498,6 +1500,52 @@ app.get("/api/pw/attachments-url", async (req, res) => {
     });
   }
 });
+
+app.get("/api/pw/attachment-link", async (req, res) => {
+  try {
+    const batchId = req.query.batchId || req.query.BatchId;
+    const subjectId = req.query.subjectId || req.query.SubjectId;
+    const scheduleId = req.query.scheduleId || req.query.ContentId || req.query.schedule_id;
+
+    if (!batchId || !subjectId || !scheduleId) {
+      return res.status(400).json({
+        success: false,
+        message: "batchId, subjectId and scheduleId are required"
+      });
+    }
+
+    const targetUrl =
+      `https://apiserver-henna.vercel.app/api/pw/attachment-link` +
+      `?batchId=${encodeURIComponent(batchId)}` +
+      `&subjectId=${encodeURIComponent(subjectId)}` +
+      `&scheduleId=${encodeURIComponent(scheduleId)}`;
+
+    const response = await fetch(targetUrl, {
+      headers: {
+        accept: "application/json, text/plain, */*",
+        "user-agent": "Mozilla/5.0"
+      }
+    });
+
+    const text = await response.text();
+
+    res.status(response.status);
+    res.setHeader(
+      "content-type",
+      response.headers.get("content-type") || "application/json"
+    );
+    return res.send(text);
+  } catch (error) {
+    console.error("attachment-link proxy error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch attachment-link",
+      error: error.message
+    });
+  }
+});
+
+  
 /**
  * 5) /api/pw/kid
  * frontend call:
