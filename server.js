@@ -1199,18 +1199,32 @@ if (!response.ok) {
 
 
   // Endpoint for /api/nexttoppers/batches
-  app.get("/api/nexttoppers/batches", async (req, res) => {
-    try {
-      const r = await fetchfn(
-        "https://apiserver-m8ea.onrender.com/api/nexttoppers/batches"
-      );
-      const data = await r.json();
-      res.json(data);
-    } catch (e) {
-      console.error("/api/nexttoppers/batches error:", e);
-      res.json({ error: e.toString() });
+ app.get("/api/nexttoppers/drm", async (req, res) => {
+  try {
+    const { videoid } = req.query;
+
+    if (!videoid) {
+      return res.status(400).json({ error: "videoid is required" });
     }
-  });
+
+    const upstream = `https://apiserver-henna.vercel.app/api/nexttoppers/getVideoDetailsDrm?videoid=${encodeURIComponent(videoid)}`;
+
+    const response = await fetch(upstream, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json",
+        "Referer": "https://course.nexttoppers.com/"
+      }
+    });
+
+    const text = await response.text();
+
+    res.status(response.status).send(text);
+  } catch (err) {
+    console.error("DRM proxy error:", err);
+    res.status(500).json({ error: "Proxy failed" });
+  }
+});
  
 // Endpoint for /api/jeet/batches
   app.get("/api/missionjeet/batches", async (req, res) => {
