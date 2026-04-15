@@ -32,26 +32,31 @@ const ADMIN_PWD = process.env.ADMIN_PWD || "992jaa";
 
 
 
+
+const app = express();
+
 const allowedOrigins = [
   "https://learnbyakp.onrender.com",
   "https://learnbyakp.online",
-  "https://studyakp-d8cfa.web.app",
-  "http://localhost:9999"
+  "https://studyakp-d8cfa.web.app"
 ];
 
-const corsFn = cors({
-  origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps / postman)
-    if (!origin) return callback(null, true);
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || origin === "null") return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(null, false);
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: false,
+  optionsSuccessStatus: 204
+};
 
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      return callback(new Error("proxy error, your proxy cannot read data type"));
-    }
-  }
-});
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // preflight handle
 
+app.use(express.json());
 app.use(corsFn);
 // ================== DATA HELPER (DELETE COLLECTION) ==================
 async function deleteCollection(db, collectionPath, batchSize = 300) {
