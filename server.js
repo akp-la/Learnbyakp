@@ -1,7 +1,7 @@
 // ================== IMPORTS ==================
 const functions = require("firebase-functions/v1"); // v1 import
 const admin = require("firebase-admin");
-
+const cors = require("cors");
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
@@ -30,7 +30,7 @@ const ADMIN_PWD = process.env.ADMIN_PWD || "992jaa";
 // ================== CORS HELPER FOR /data ==================
 
 
-import cors from "cors";
+
 
 const allowedOrigins = [
   "https://learnbyakp.onrender.com",
