@@ -28,8 +28,29 @@ const COL = db.collection("studyData");
 const ADMIN_PWD = process.env.ADMIN_PWD || "992jaa";
 
 // ================== CORS HELPER FOR /data ==================
-const corsFn = cors({ origin: true });
 
+
+import cors from "cors";
+
+const allowedOrigins = [
+  "https://learnbyakp.onrender.com",
+  "https://learnbyakp.online"
+];
+
+const corsFn = cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps / postman)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error("Not allowed by CORS"));
+    }
+  }
+});
+
+app.use(corsFn);
 // ================== DATA HELPER (DELETE COLLECTION) ==================
 async function deleteCollection(db, collectionPath, batchSize = 300) {
   const collectionRef = db.collection(collectionPath);
