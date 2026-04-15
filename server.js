@@ -35,7 +35,8 @@ const ADMIN_PWD = process.env.ADMIN_PWD || "992jaa";
 const allowedOrigins = [
   "https://learnbyakp.onrender.com",
   "https://learnbyakp.online",
-  "https://studyakp-d8cfa.web.app"
+  "https://studyakp-d8cfa.web.app",
+  "http://localhost:9999"
 ];
 
 const corsFn = cors({
