@@ -1,7 +1,7 @@
 // ================== IMPORTS ==================
 const functions = require("firebase-functions/v1"); // v1 import
 const admin = require("firebase-admin");
-const cors = require("cors");
+
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
@@ -45,7 +45,7 @@ const corsFn = cors({
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     } else {
-      return callback(new Error("Not allowed by CORS"));
+      return callback(new Error("proxy error, your proxy cannot read data type"));
     }
   }
 });
