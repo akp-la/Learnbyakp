@@ -8,7 +8,7 @@ const bcrypt = require("bcryptjs");
 const axios = require("axios");
 const crypto = require("crypto");
 const fetch = require("node-fetch");
-
+const corsFn = cors();
 
 const BASE = "https://apiserver-m8ea.onrender.com";
 const rateLimit = require("express-rate-limit");
