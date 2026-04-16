@@ -29,12 +29,6 @@ const ADMIN_PWD = process.env.ADMIN_PWD || "992jaa";
 
 // ================== CORS HELPER FOR /data ==================
 
-
-
-
-
-const app = express();
-
 const allowedOrigins = [
   "https://learnbyakp.onrender.com",
   "https://learnbyakp.online",
