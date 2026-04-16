@@ -1335,7 +1335,7 @@ app.post("/api/pw/batchdetails", async (req, res) => {
       });
     }
 
-    const upstream = await fetchfn(`${UPSTREAM}/api/pw/batchdetails`, {
+    const upstream1 = await fetchfn(`https://apiserver-henna.vercel.app/api/pw/batchdetails`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1348,11 +1348,11 @@ app.post("/api/pw/batchdetails", async (req, res) => {
       }),
     });
 
-    const text = await upstream.text();
+    const text = await upstream1.text();
 
-    if (!upstream.ok) {
-      console.error("batchdetails upstream error:", upstream.status, text);
-      return res.status(upstream.status).send(text);
+    if (!upstream1.ok) {
+      console.error("batchdetails upstream error:", upstream1.status, text);
+      return res.status(upstream1.status).send(text);
     }
 
     res.setHeader("Content-Type", "application/json");
