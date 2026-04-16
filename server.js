@@ -1324,14 +1324,14 @@ app.options("/api/pw/live", (req, res) => {
  * POST /api/pw/batchdetails
  * body: { searchParams: { BatchId: "..." } }
  */
-app.post("/api/pw/batchdetails", async (req, res) => {
+app.get("/api/pw/batchdetails", async (req, res) => {
   try {
-    const batchId = req.body?.searchParams?.BatchId;
+    const batchId = req.query.batchId;
 
     if (!batchId) {
       return res.status(400).json({
         success: false,
-        message: "searchParams.BatchId required",
+        message: "batchId required",
       });
     }
 
@@ -1358,7 +1358,7 @@ app.post("/api/pw/batchdetails", async (req, res) => {
     res.setHeader("Content-Type", "application/json");
     return res.send(text);
   } catch (err) {
-    console.error("batchdetails route error:", err);
+    console.error("batchdetails GET route error:", err);
     return res.status(500).json({
       success: false,
       message: err.message,
