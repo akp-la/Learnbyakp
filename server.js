@@ -28,130 +28,6 @@ const COL = db.collection("studyData");
 const ADMIN_PWD = process.env.ADMIN_PWD || "992jaa";
 
 // ================== CORS HELPER FOR /data ==================
-const MAILTM_BASE = "https://api.mail.tm";
-
-app.use(express.json({ limit: "1mb" }));
-
-app.use(cors({
-  origin: [
-    "http://localhost:5600",
-    "http://127.0.0.1:5600",
-    "https://learnbyakp.online",
-    "https://learnbyakp.onrender.com"
-  ],
-  credentials: false
-}));
-
-function buildHeaders(req, hasBody = false) {
-  const headers = {
-    Accept: "application/json"
-  };
-
-  if (hasBody) {
-    headers["Content-Type"] = "application/json";
-  }
-
-  const auth = req.headers.authorization;
-  if (auth) {
-    headers["Authorization"] = auth;
-  }
-
-  return headers;
-}
-
-async function proxyJson(req, res, upstreamUrl, options = {}) {
-  try {
-    const response = await fetch(upstreamUrl, options);
-    const text = await response.text();
-
-    let data;
-    try {
-      data = text ? JSON.parse(text) : null;
-    } catch {
-      data = text;
-    }
-
-    if (!response.ok) {
-      return res.status(response.status).json(
-        typeof data === "object" && data
-          ? data
-          : { message: data || `HTTP ${response.status}` }
-      );
-    }
-
-    if (typeof data === "object" && data !== null) {
-      return res.status(response.status).json(data);
-    }
-
-    return res.status(response.status).json({ data });
-  } catch (error) {
-    console.error("Proxy error:", error);
-    return res.status(500).json({
-      message: "Proxy request failed",
-      error: error.message
-    });
-  }
-}
-
-// GET /api/tempmail/domains?page=1
-app.get("/api/tempmail/domains", async (req, res) => {
-  const page = req.query.page || "1";
-  const url = `${MAILTM_BASE}/domains?page=${encodeURIComponent(page)}`;
-
-  await proxyJson(req, res, url, {
-    method: "GET",
-    headers: buildHeaders(req)
-  });
-});
-
-// POST /api/tempmail/accounts
-app.post("/api/tempmail/accounts", async (req, res) => {
-  const url = `${MAILTM_BASE}/accounts`;
-
-  await proxyJson(req, res, url, {
-    method: "POST",
-    headers: buildHeaders(req, true),
-    body: JSON.stringify(req.body || {})
-  });
-});
-
-// POST /api/tempmail/token
-app.post("/api/tempmail/token", async (req, res) => {
-  const url = `${MAILTM_BASE}/token`;
-
-  await proxyJson(req, res, url, {
-    method: "POST",
-    headers: buildHeaders(req, true),
-    body: JSON.stringify(req.body || {})
-  });
-});
-
-// GET /api/tempmail/messages?page=1
-app.get("/api/tempmail/messages", async (req, res) => {
-  const page = req.query.page || "1";
-  const url = `${MAILTM_BASE}/messages?page=${encodeURIComponent(page)}`;
-
-  await proxyJson(req, res, url, {
-    method: "GET",
-    headers: buildHeaders(req)
-  });
-});
-
-// GET /api/tempmail/messages/:id
-app.get("/api/tempmail/messages/:id", async (req, res) => {
-  const id = req.params.id;
-  const url = `${MAILTM_BASE}/messages/${encodeURIComponent(id)}`;
-
-  await proxyJson(req, res, url, {
-    method: "GET",
-    headers: buildHeaders(req)
-  });
-});
-
-// optional health
-app.get("/api/tempmail/health", (req, res) => {
-  res.json({ ok: true, service: "tempmail-proxy" });
-});
 
 //=====================etertert=================
 const allowedOrigins = [
@@ -772,6 +648,8 @@ app.post("/api/pw/verify", async (req, res) => {
     });
   }
 });
+  // -==========temp mail ===========
+  
   
 //============ attttttttt======
 app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
@@ -1275,7 +1153,131 @@ app.get("/api/nexttoppers/live", async (req, res) => {
 });
 
   
+//=======================================================
+const MAILTM_BASE = "https://api.mail.tm";
 
+app.use(express.json({ limit: "1mb" }));
+
+app.use(cors({
+  origin: [
+    "http://localhost:5600",
+    "http://127.0.0.1:5600",
+    "https://learnbyakp.online",
+    "https://learnbyakp.onrender.com"
+  ],
+  credentials: false
+}));
+
+function buildHeaders(req, hasBody = false) {
+  const headers = {
+    Accept: "application/json"
+  };
+
+  if (hasBody) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const auth = req.headers.authorization;
+  if (auth) {
+    headers["Authorization"] = auth;
+  }
+
+  return headers;
+}
+
+async function proxyJson(req, res, upstreamUrl, options = {}) {
+  try {
+    const response = await fetch(upstreamUrl, options);
+    const text = await response.text();
+
+    let data;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = text;
+    }
+
+    if (!response.ok) {
+      return res.status(response.status).json(
+        typeof data === "object" && data
+          ? data
+          : { message: data || `HTTP ${response.status}` }
+      );
+    }
+
+    if (typeof data === "object" && data !== null) {
+      return res.status(response.status).json(data);
+    }
+
+    return res.status(response.status).json({ data });
+  } catch (error) {
+    console.error("Proxy error:", error);
+    return res.status(500).json({
+      message: "Proxy request failed",
+      error: error.message
+    });
+  }
+}
+
+// GET /api/tempmail/domains?page=1
+app.get("/api/tempmail/domains", async (req, res) => {
+  const page = req.query.page || "1";
+  const url = `${MAILTM_BASE}/domains?page=${encodeURIComponent(page)}`;
+
+  await proxyJson(req, res, url, {
+    method: "GET",
+    headers: buildHeaders(req)
+  });
+});
+
+// POST /api/tempmail/accounts
+app.post("/api/tempmail/accounts", async (req, res) => {
+  const url = `${MAILTM_BASE}/accounts`;
+
+  await proxyJson(req, res, url, {
+    method: "POST",
+    headers: buildHeaders(req, true),
+    body: JSON.stringify(req.body || {})
+  });
+});
+
+// POST /api/tempmail/token
+app.post("/api/tempmail/token", async (req, res) => {
+  const url = `${MAILTM_BASE}/token`;
+
+  await proxyJson(req, res, url, {
+    method: "POST",
+    headers: buildHeaders(req, true),
+    body: JSON.stringify(req.body || {})
+  });
+});
+
+// GET /api/tempmail/messages?page=1
+app.get("/api/tempmail/messages", async (req, res) => {
+  const page = req.query.page || "1";
+  const url = `${MAILTM_BASE}/messages?page=${encodeURIComponent(page)}`;
+
+  await proxyJson(req, res, url, {
+    method: "GET",
+    headers: buildHeaders(req)
+  });
+});
+
+// GET /api/tempmail/messages/:id
+app.get("/api/tempmail/messages/:id", async (req, res) => {
+  const id = req.params.id;
+  const url = `${MAILTM_BASE}/messages/${encodeURIComponent(id)}`;
+
+  await proxyJson(req, res, url, {
+    method: "GET",
+    headers: buildHeaders(req)
+  });
+});
+
+// optional health
+app.get("/api/tempmail/health", (req, res) => {
+  res.json({ ok: true, service: "tempmail-proxy" });
+});
 
   
   //jkdsyututyt======
