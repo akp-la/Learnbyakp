@@ -28,7 +28,63 @@ const COL = db.collection("studyData");
 const ADMIN_PWD = process.env.ADMIN_PWD || "992jaa";
 
 // ================== CORS HELPER FOR /data ==================
+const MAIL_TM_BASE = "https://api.mail.tm";
 
+app.use(cors());
+app.use(express.json());
+
+async function proxy(req, res) {
+  try {
+    const targetPath = req.originalUrl.replace(/^\/api\/tempmail/, "");
+    const url = `${MAIL_TM_BASE}${targetPath}`;
+
+    const response = await fetch(url, {
+      method: req.method,
+      headers: {
+        Accept: "application/json",
+        ...(req.headers.authorization
+          ? { Authorization: req.headers.authorization }
+          : {}),
+        ...(req.method !== "GET" && req.method !== "HEAD"
+          ? { "Content-Type": "application/json" }
+          : {})
+      },
+      body:
+        req.method !== "GET" && req.method !== "HEAD"
+          ? JSON.stringify(req.body || {})
+          : undefined
+    });
+
+    const text = await response.text();
+    const contentType =
+      response.headers.get("content-type") || "application/json";
+
+    res.status(response.status);
+    res.setHeader("Content-Type", contentType);
+    res.send(text);
+  } catch (error) {
+    res.status(500).json({
+      error: true,
+      message: error.message
+    });
+  }
+}
+
+app.all("/api/tempmail", proxy);
+app.all("/api/tempmail/*", proxy);
+
+app.get("/", (req, res) => {
+  res.json({
+    ok: true,
+    api: "/api/tempmail"
+  });
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+//=====================etertert=================
 const allowedOrigins = [
   "https://learnbyakp.onrender.com",
   "https://learnbyakp.online",
