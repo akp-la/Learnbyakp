@@ -28,14 +28,14 @@ const COL = db.collection("studyData");
 const ADMIN_PWD = process.env.ADMIN_PWD || "992jaa";
 
 // ================== CORS HELPER FOR /data ==================
-const BASE = "https://api.mail.tm";
+const router = express.Router();
 
-app.use(cors());
-app.use(express.json());
+const MAIL_TM_BASE = "https://api.mail.tm";
 
 async function sendRequest(url, options = {}) {
   const response = await fetch(url, options);
   const text = await response.text();
+
   return {
     status: response.status,
     contentType: response.headers.get("content-type") || "application/json; charset=utf-8",
@@ -43,18 +43,10 @@ async function sendRequest(url, options = {}) {
   };
 }
 
-app.get("/", (req, res) => {
-  res.json({ ok: true, message: "Temp mail API running" });
-});
-
-app.get("/health", (req, res) => {
-  res.json({ ok: true });
-});
-
-app.get("/api/tempmail/domains", async (req, res) => {
+router.get("/domains", async (req, res) => {
   try {
     const query = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
-    const result = await sendRequest(`${BASE}/domains${query}`, {
+    const result = await sendRequest(`${MAIL_TM_BASE}/domains${query}`, {
       headers: { Accept: "application/json" }
     });
     res.status(result.status).set("Content-Type", result.contentType).send(result.body);
@@ -63,9 +55,9 @@ app.get("/api/tempmail/domains", async (req, res) => {
   }
 });
 
-app.post("/api/tempmail/accounts", async (req, res) => {
+router.post("/accounts", async (req, res) => {
   try {
-    const result = await sendRequest(`${BASE}/accounts`, {
+    const result = await sendRequest(`${MAIL_TM_BASE}/accounts`, {
       method: "POST",
       headers: {
         Accept: "application/json",
@@ -79,9 +71,9 @@ app.post("/api/tempmail/accounts", async (req, res) => {
   }
 });
 
-app.post("/api/tempmail/token", async (req, res) => {
+router.post("/token", async (req, res) => {
   try {
-    const result = await sendRequest(`${BASE}/token`, {
+    const result = await sendRequest(`${MAIL_TM_BASE}/token`, {
       method: "POST",
       headers: {
         Accept: "application/json",
@@ -95,10 +87,10 @@ app.post("/api/tempmail/token", async (req, res) => {
   }
 });
 
-app.get("/api/tempmail/messages", async (req, res) => {
+router.get("/messages", async (req, res) => {
   try {
     const query = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
-    const result = await sendRequest(`${BASE}/messages${query}`, {
+    const result = await sendRequest(`${MAIL_TM_BASE}/messages${query}`, {
       headers: {
         Accept: "application/json",
         Authorization: req.headers.authorization || ""
@@ -110,9 +102,9 @@ app.get("/api/tempmail/messages", async (req, res) => {
   }
 });
 
-app.get("/api/tempmail/messages/:id", async (req, res) => {
+router.get("/messages/:id", async (req, res) => {
   try {
-    const result = await sendRequest(`${BASE}/messages/${req.params.id}`, {
+    const result = await sendRequest(`${MAIL_TM_BASE}/messages/${req.params.id}`, {
       headers: {
         Accept: "application/json",
         Authorization: req.headers.authorization || ""
@@ -124,6 +116,7 @@ app.get("/api/tempmail/messages/:id", async (req, res) => {
   }
 });
 
+module.exports = router;
 
 //=====================etertert=================
 const allowedOrigins = [
