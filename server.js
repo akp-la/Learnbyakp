@@ -28,95 +28,130 @@ const COL = db.collection("studyData");
 const ADMIN_PWD = process.env.ADMIN_PWD || "992jaa";
 
 // ================== CORS HELPER FOR /data ==================
-const router = express.Router();
+const MAILTM_BASE = "https://api.mail.tm";
 
-const MAIL_TM_BASE = "https://api.mail.tm";
+app.use(express.json({ limit: "1mb" }));
 
-async function sendRequest(url, options = {}) {
-  const response = await fetch(url, options);
-  const text = await response.text();
+app.use(cors({
+  origin: [
+    "http://localhost:5600",
+    "http://127.0.0.1:5600",
+    "https://learnbyakp.online",
+    "https://learnbyakp.onrender.com"
+  ],
+  credentials: false
+}));
 
-  return {
-    status: response.status,
-    contentType: response.headers.get("content-type") || "application/json; charset=utf-8",
-    body: text
+function buildHeaders(req, hasBody = false) {
+  const headers = {
+    Accept: "application/json"
   };
+
+  if (hasBody) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const auth = req.headers.authorization;
+  if (auth) {
+    headers["Authorization"] = auth;
+  }
+
+  return headers;
 }
 
-router.get("/domains", async (req, res) => {
+async function proxyJson(req, res, upstreamUrl, options = {}) {
   try {
-    const query = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
-    const result = await sendRequest(`${MAIL_TM_BASE}/domains${query}`, {
-      headers: { Accept: "application/json" }
-    });
-    res.status(result.status).set("Content-Type", result.contentType).send(result.body);
+    const response = await fetch(upstreamUrl, options);
+    const text = await response.text();
+
+    let data;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = text;
+    }
+
+    if (!response.ok) {
+      return res.status(response.status).json(
+        typeof data === "object" && data
+          ? data
+          : { message: data || `HTTP ${response.status}` }
+      );
+    }
+
+    if (typeof data === "object" && data !== null) {
+      return res.status(response.status).json(data);
+    }
+
+    return res.status(response.status).json({ data });
   } catch (error) {
-    res.status(500).json({ ok: false, message: error.message });
+    console.error("Proxy error:", error);
+    return res.status(500).json({
+      message: "Proxy request failed",
+      error: error.message
+    });
   }
+}
+
+// GET /api/tempmail/domains?page=1
+app.get("/api/tempmail/domains", async (req, res) => {
+  const page = req.query.page || "1";
+  const url = `${MAILTM_BASE}/domains?page=${encodeURIComponent(page)}`;
+
+  await proxyJson(req, res, url, {
+    method: "GET",
+    headers: buildHeaders(req)
+  });
 });
 
-router.post("/accounts", async (req, res) => {
-  try {
-    const result = await sendRequest(`${MAIL_TM_BASE}/accounts`, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(req.body || {})
-    });
-    res.status(result.status).set("Content-Type", result.contentType).send(result.body);
-  } catch (error) {
-    res.status(500).json({ ok: false, message: error.message });
-  }
+// POST /api/tempmail/accounts
+app.post("/api/tempmail/accounts", async (req, res) => {
+  const url = `${MAILTM_BASE}/accounts`;
+
+  await proxyJson(req, res, url, {
+    method: "POST",
+    headers: buildHeaders(req, true),
+    body: JSON.stringify(req.body || {})
+  });
 });
 
-router.post("/token", async (req, res) => {
-  try {
-    const result = await sendRequest(`${MAIL_TM_BASE}/token`, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(req.body || {})
-    });
-    res.status(result.status).set("Content-Type", result.contentType).send(result.body);
-  } catch (error) {
-    res.status(500).json({ ok: false, message: error.message });
-  }
+// POST /api/tempmail/token
+app.post("/api/tempmail/token", async (req, res) => {
+  const url = `${MAILTM_BASE}/token`;
+
+  await proxyJson(req, res, url, {
+    method: "POST",
+    headers: buildHeaders(req, true),
+    body: JSON.stringify(req.body || {})
+  });
 });
 
-router.get("/messages", async (req, res) => {
-  try {
-    const query = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
-    const result = await sendRequest(`${MAIL_TM_BASE}/messages${query}`, {
-      headers: {
-        Accept: "application/json",
-        Authorization: req.headers.authorization || ""
-      }
-    });
-    res.status(result.status).set("Content-Type", result.contentType).send(result.body);
-  } catch (error) {
-    res.status(500).json({ ok: false, message: error.message });
-  }
+// GET /api/tempmail/messages?page=1
+app.get("/api/tempmail/messages", async (req, res) => {
+  const page = req.query.page || "1";
+  const url = `${MAILTM_BASE}/messages?page=${encodeURIComponent(page)}`;
+
+  await proxyJson(req, res, url, {
+    method: "GET",
+    headers: buildHeaders(req)
+  });
 });
 
-router.get("/messages/:id", async (req, res) => {
-  try {
-    const result = await sendRequest(`${MAIL_TM_BASE}/messages/${req.params.id}`, {
-      headers: {
-        Accept: "application/json",
-        Authorization: req.headers.authorization || ""
-      }
-    });
-    res.status(result.status).set("Content-Type", result.contentType).send(result.body);
-  } catch (error) {
-    res.status(500).json({ ok: false, message: error.message });
-  }
+// GET /api/tempmail/messages/:id
+app.get("/api/tempmail/messages/:id", async (req, res) => {
+  const id = req.params.id;
+  const url = `${MAILTM_BASE}/messages/${encodeURIComponent(id)}`;
+
+  await proxyJson(req, res, url, {
+    method: "GET",
+    headers: buildHeaders(req)
+  });
 });
 
-module.exports = router;
+// optional health
+app.get("/api/tempmail/health", (req, res) => {
+  res.json({ ok: true, service: "tempmail-proxy" });
+});
 
 //=====================etertert=================
 const allowedOrigins = [
