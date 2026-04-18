@@ -28,56 +28,100 @@ const COL = db.collection("studyData");
 const ADMIN_PWD = process.env.ADMIN_PWD || "992jaa";
 
 // ================== CORS HELPER FOR /data ==================
-const MAIL_TM_BASE = "https://api.mail.tm";
+const BASE = "https://api.mail.tm";
 
 app.use(cors());
 app.use(express.json());
 
-async function proxy(req, res) {
-  try {
-    const targetPath = req.originalUrl.replace(/^\/api\/tempmail/, "");
-    const url = `${MAIL_TM_BASE}${targetPath}`;
-
-    const response = await fetch(url, {
-      method: req.method,
-      headers: {
-        Accept: "application/json",
-        ...(req.headers.authorization
-          ? { Authorization: req.headers.authorization }
-          : {}),
-        ...(req.method !== "GET" && req.method !== "HEAD"
-          ? { "Content-Type": "application/json" }
-          : {})
-      },
-      body:
-        req.method !== "GET" && req.method !== "HEAD"
-          ? JSON.stringify(req.body || {})
-          : undefined
-    });
-
-    const text = await response.text();
-    const contentType =
-      response.headers.get("content-type") || "application/json";
-
-    res.status(response.status);
-    res.setHeader("Content-Type", contentType);
-    res.send(text);
-  } catch (error) {
-    res.status(500).json({
-      error: true,
-      message: error.message
-    });
-  }
+async function sendRequest(url, options = {}) {
+  const response = await fetch(url, options);
+  const text = await response.text();
+  return {
+    status: response.status,
+    contentType: response.headers.get("content-type") || "application/json; charset=utf-8",
+    body: text
+  };
 }
 
-app.all("/api/tempmail", proxy);
-app.all("/api/tempmail/*", proxy);
-
 app.get("/", (req, res) => {
-  res.json({
-    ok: true,
-    api: "/api/tempmail"
-  });
+  res.json({ ok: true, message: "Temp mail API running" });
+});
+
+app.get("/health", (req, res) => {
+  res.json({ ok: true });
+});
+
+app.get("/api/tempmail/domains", async (req, res) => {
+  try {
+    const query = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
+    const result = await sendRequest(`${BASE}/domains${query}`, {
+      headers: { Accept: "application/json" }
+    });
+    res.status(result.status).set("Content-Type", result.contentType).send(result.body);
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.post("/api/tempmail/accounts", async (req, res) => {
+  try {
+    const result = await sendRequest(`${BASE}/accounts`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(req.body || {})
+    });
+    res.status(result.status).set("Content-Type", result.contentType).send(result.body);
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.post("/api/tempmail/token", async (req, res) => {
+  try {
+    const result = await sendRequest(`${BASE}/token`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(req.body || {})
+    });
+    res.status(result.status).set("Content-Type", result.contentType).send(result.body);
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/tempmail/messages", async (req, res) => {
+  try {
+    const query = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
+    const result = await sendRequest(`${BASE}/messages${query}`, {
+      headers: {
+        Accept: "application/json",
+        Authorization: req.headers.authorization || ""
+      }
+    });
+    res.status(result.status).set("Content-Type", result.contentType).send(result.body);
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/tempmail/messages/:id", async (req, res) => {
+  try {
+    const result = await sendRequest(`${BASE}/messages/${req.params.id}`, {
+      headers: {
+        Accept: "application/json",
+        Authorization: req.headers.authorization || ""
+      }
+    });
+    res.status(result.status).set("Content-Type", result.contentType).send(result.body);
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message });
+  }
 });
 
 
