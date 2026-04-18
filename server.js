@@ -1185,7 +1185,7 @@ function buildHeaders(req, hasBody = false) {
   return headers;
 }
 
-async function proxyJson(req, res, upstreamUrl, options = {}) {
+async function proxyMailTm(req, res, upstreamUrl, options = {}) {
   try {
     const response = await fetch(upstreamUrl, options);
     const text = await response.text();
@@ -1199,19 +1199,14 @@ async function proxyJson(req, res, upstreamUrl, options = {}) {
 
     if (!response.ok) {
       return res.status(response.status).json(
-        typeof data === "object" && data
-          ? data
-          : { message: data || `HTTP ${response.status}` }
+        typeof data === "object" && data ? data : { message: data || `HTTP ${response.status}` }
       );
     }
 
-    if (typeof data === "object" && data !== null) {
-      return res.status(response.status).json(data);
-    }
-
-    return res.status(response.status).json({ data });
+    return res.status(response.status).json(
+      typeof data === "object" && data !== null ? data : { data }
+    );
   } catch (error) {
-    console.error("Proxy error:", error);
     return res.status(500).json({
       message: "Proxy request failed",
       error: error.message
@@ -1224,7 +1219,7 @@ app.get("/api/tempmail/domains", async (req, res) => {
   const page = req.query.page || "1";
   const url = `${MAILTM_BASE}/domains?page=${encodeURIComponent(page)}`;
 
-  await proxyJson(req, res, url, {
+  await proxyMailTm(req, res, url, {
     method: "GET",
     headers: buildHeaders(req)
   });
@@ -1234,7 +1229,7 @@ app.get("/api/tempmail/domains", async (req, res) => {
 app.post("/api/tempmail/accounts", async (req, res) => {
   const url = `${MAILTM_BASE}/accounts`;
 
-  await proxyJson(req, res, url, {
+  await proxyMailTm(req, res, url, {
     method: "POST",
     headers: buildHeaders(req, true),
     body: JSON.stringify(req.body || {})
@@ -1245,7 +1240,7 @@ app.post("/api/tempmail/accounts", async (req, res) => {
 app.post("/api/tempmail/token", async (req, res) => {
   const url = `${MAILTM_BASE}/token`;
 
-  await proxyJson(req, res, url, {
+  await proxyMailTm(req, res, url, {
     method: "POST",
     headers: buildHeaders(req, true),
     body: JSON.stringify(req.body || {})
@@ -1257,7 +1252,7 @@ app.get("/api/tempmail/messages", async (req, res) => {
   const page = req.query.page || "1";
   const url = `${MAILTM_BASE}/messages?page=${encodeURIComponent(page)}`;
 
-  await proxyJson(req, res, url, {
+  await proxyMailTm(req, res, url, {
     method: "GET",
     headers: buildHeaders(req)
   });
@@ -1268,7 +1263,7 @@ app.get("/api/tempmail/messages/:id", async (req, res) => {
   const id = req.params.id;
   const url = `${MAILTM_BASE}/messages/${encodeURIComponent(id)}`;
 
-  await proxyJson(req, res, url, {
+  await proxyMailTm(req, res, url, {
     method: "GET",
     headers: buildHeaders(req)
   });
