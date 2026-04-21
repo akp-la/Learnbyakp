@@ -1079,6 +1079,130 @@ app.get("/api/nexttoppers/live", async (req, res) => {
     });
   }
 });
+//=========== rwa==== video
+  const allowedOrigins = [
+  "https://learnbyakp.online",
+  "https://learnbyakp.onrender.com",
+  "http://localhost:3000",
+  "http://127.0.0.1:5500",
+  null
+];
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS"));
+  }
+}));
+
+app.use(express.json());
+
+const ALLOWED_HOSTS = new Set([
+  "transcoded-videos.classx.co.in"
+]);
+
+function isAllowedTarget(input) {
+  try {
+    const u = new URL(input);
+    return ["http:", "https:"].includes(u.protocol) && ALLOWED_HOSTS.has(u.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function buildProxyUrl(targetUrl) {
+  return `/api/hls-proxy?url=${encodeURIComponent(targetUrl)}`;
+}
+
+function rewriteM3u8(content, originalUrl) {
+  const base = new URL(originalUrl);
+
+  return content
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trim();
+
+      if (!trimmed || trimmed.startsWith("#")) {
+        // URI="..."
+        return line.replace(/URI="([^"]+)"/g, (_, uri) => {
+          const abs = new URL(uri, base).toString();
+          return `URI="${buildProxyUrl(abs)}"`;
+        });
+      }
+
+      // playlist/segment relative path
+      try {
+        const abs = new URL(trimmed, base).toString();
+        return buildProxyUrl(abs);
+      } catch {
+        return line;
+      }
+    })
+    .join("\n");
+}
+
+app.get("/api/hls-proxy", async (req, res) => {
+  try {
+    const target = req.query.url;
+    if (!target || typeof target !== "string") {
+      return res.status(400).json({ success: false, message: "Missing url param" });
+    }
+
+    if (!isAllowedTarget(target)) {
+      return res.status(403).json({ success: false, message: "Target host not allowed" });
+    }
+
+    const upstream = await fetch(target, {
+      method: "GET",
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "*/*",
+        "Referer": "https://learnbyakp.online/"
+      }
+    });
+
+    if (!upstream.ok) {
+      const txt = await upstream.text().catch(() => "");
+      return res.status(upstream.status).send(txt || `Upstream error ${upstream.status}`);
+    }
+
+    const contentType = upstream.headers.get("content-type") || "";
+    res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
+    res.setHeader("Vary", "Origin");
+
+    // useful headers
+    if (contentType) res.setHeader("Content-Type", contentType);
+    const cacheControl = upstream.headers.get("cache-control");
+    if (cacheControl) res.setHeader("Cache-Control", cacheControl);
+
+    // m3u8 rewrite
+    if (
+      contentType.includes("application/vnd.apple.mpegurl") ||
+      contentType.includes("application/x-mpegURL") ||
+      target.includes(".m3u8")
+    ) {
+      const text = await upstream.text();
+      const rewritten = rewriteM3u8(text, target);
+      res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
+      return res.send(rewritten);
+    }
+
+    // binary stream: ts / m4s / key / mp4
+    const arrayBuffer = await upstream.arrayBuffer();
+    return res.send(Buffer.from(arrayBuffer));
+  } catch (err) {
+    console.error("Proxy error:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Proxy failed"
+    });
+  }
+});
+
+// optional preflight
+app.options("/api/hls-proxy", cors());
 
   //==========live api for nexttoppers======
   app.all("/api/vibrant/play", async (req, res) => {
