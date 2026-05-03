@@ -1457,7 +1457,7 @@ app.post("/api/pw/batchdetails", async (req, res) => {
       });
     }
 
-    const upstream1 = await fetchfn(`https://apiserverpro.vercel.app/api/pw/batchdetails`, {
+    const upstream1 = await fetchfn(`https://apiserverpro.netlify.app/api/pw/batchdetails`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1594,7 +1594,7 @@ app.get("/api/pw/get-url", async (req, res) => {
   }
 
   const url =
-    `${UPSTREAM}/api/pw/get-url?batchId=${encodeURIComponent(batchId)}` +
+    `https://apiserverpro.netlify.app/api/pw/get-url?batchId=${encodeURIComponent(batchId)}` +
     `&subjectId=${encodeURIComponent(subjectId)}` +
     `&childId=${encodeURIComponent(childId)}`;
 
