@@ -1457,7 +1457,7 @@ app.post("/api/pw/batchdetails", async (req, res) => {
       });
     }
 
-    const upstream1 = await fetchfn(https://apiserver-tau.vercel.app/api/pw/batchdetails`, {
+    const upstream1 = await fetchfn(`https://apiserver-tau.vercel.app/api/pw/batchdetails`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
