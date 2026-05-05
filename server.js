@@ -1351,7 +1351,7 @@ if (!response.ok) {
       return res.status(400).json({ error: "videoid is required" });
     }
 
-    const upstream = `api/nexttoppers/getVideoDetailsDrm/api/nexttoppers/getVideoDetailsDrm?videoid=${encodeURIComponent(videoid)}`;
+    const upstream = `https://apiserver-tau.vercel.app/api/nexttoppers/getVideoDetailsDrm?videoid=${encodeURIComponent(videoid)}`;
 
     const response = await fetch(upstream, {
       headers: {
