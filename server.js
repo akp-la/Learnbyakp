@@ -1594,7 +1594,7 @@ app.get("/api/pw/get-url", async (req, res) => {
   }
 
   const url =
-    `https://apiserverpro.netlify.app/api/pw/get-url?batchId=${encodeURIComponent(batchId)}` +
+    `https://apiserver-tau.vercel.app/api/pw/get-url?batchId=${encodeURIComponent(batchId)}` +
     `&subjectId=${encodeURIComponent(subjectId)}` +
     `&childId=${encodeURIComponent(childId)}`;
 
@@ -1708,7 +1708,7 @@ app.get("/api/pw/kid", async (req, res) => {
     });
   }
 
-  const url = `${UPSTREAM}/api/pw/kid?mpdUrl=${encodeURIComponent(mpdUrl)}`;
+  const url = `https://apiserver-tau.vercel.app/api/pw/kid?mpdUrl=${encodeURIComponent(mpdUrl)}`;
   return proxyJson(req, res, url);
 });
 
