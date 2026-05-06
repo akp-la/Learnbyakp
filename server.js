@@ -9,7 +9,7 @@ const axios = require("axios");
 const crypto = require("crypto");
 const fetch = require("node-fetch");
 const corsFn = cors();
-const change = "https:://apiserver-tau.vercel.app";
+const CHANGE = "https:://apiserver-tau.vercel.app";
 const BASE = "https://apiserver-m8ea.onrender.com";
 const rateLimit = require("express-rate-limit");
 const app = express();
@@ -563,7 +563,7 @@ res.json(data);
     res.status(500).json({ error: err.toString() });
   }
 });
-  const BASE_URL = "${BASE}";
+  const BASE_URL = `${BASE}`;
 //=============454534534==========
   app.post("/api/pw/login", async (req, res) => {
   try {
@@ -687,7 +687,7 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
   app.get("/api/batches", async (req, res) => {
     try {
       const r = await fetchfn(
-        "${BASE}/api/pw/batches"
+        `${BASE}/api/pw/batches`
       );
       const data = await r.json();
       res.json(data);
@@ -700,7 +700,7 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
     app.get("/api/vibrant/batches", async (req, res) => {
     try {
       const r = await fetchfn(
-        "${BASE}/api/vibrant/batches"
+        `${BASE}/api/vibrant/batches`
       );
       const data = await r.json();
       res.json(data);
@@ -725,7 +725,7 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
     }
 
     // 🔗 original API
-    const url = new URL("${BASE}/api/vibrant/content");
+    const url = new URL(`${BASE}/api/vibrant/content`);
 
     url.searchParams.set("course_id", course_id);
 
@@ -769,7 +769,7 @@ app.get("/api/vibrant/video-details", async (req, res) => {
       return res.status(400).json({ error: "Missing courseid (r or courseid)" });
     }
 
-    const url = new URL("${BASE}/api/vibrant/video-details");
+    const url = new URL(`${BASE}/api/vibrant/video-details`);
     url.searchParams.set("course_id", course_id);
 
     if (video_id) {
@@ -797,7 +797,7 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
       return res.status(400).json({ error: "Missing courseid (r or courseid)" });
     }
 
-    const url = new URL("${BASE}/api/nexttoppers/all-content");
+    const url = new URL(`${BASE}/api/nexttoppers/all-content`);
     url.searchParams.set("courseid", courseid);
 
     if (id) {
@@ -1030,7 +1030,7 @@ app.get("/api/vibrant/live", async (req, res) => {
     }
 
     const upstreamUrl =
-      `${change}/api/vibrant/live?course_id=${encodeURIComponent(courseId)}`;
+      `${CHANGE}/api/vibrant/live?course_id=${encodeURIComponent(courseId)}`;
 
     const response = await fetch(upstreamUrl, {
       method: "GET",
@@ -1070,7 +1070,7 @@ app.get("/api/vibrant/live", async (req, res) => {
   app.get("/api/missionjeet/live", async (req, res) => {
   try {
     const response = await fetch(
-      "${BASE}/api/missionjeet/live",
+      `${BASE}/api/missionjeet/live`,
       {
         method: "GET",
         headers: {
@@ -1102,7 +1102,7 @@ app.get("/api/vibrant/live", async (req, res) => {
 app.get("/api/nexttoppers/live", async (req, res) => {
   try {
     const response = await fetch(
-      "${BASE}/api/nexttoppers/live",
+      `${BASE}/api/nexttoppers/live`,
       {
         method: "GET",
         headers: {
@@ -1145,7 +1145,7 @@ app.get("/api/nexttoppers/live", async (req, res) => {
     }
 
     const proxyUrl =
-      "${BASE}/api/vibrant/play?url=" +
+      `${BASE}/api/vibrant/play?url=` +
       encodeURIComponent(url);
 
     const upstream = await fetchfn(proxyUrl, {
@@ -1401,7 +1401,7 @@ if (!response.ok) {
       return res.status(400).json({ error: "videoid is required" });
     }
 
-    const upstream = `${change}/api/nexttoppers/getVideoDetailsDrm?videoid=${encodeURIComponent(videoid)}`;
+    const upstream = `${CHANGE}/api/nexttoppers/getVideoDetailsDrm?videoid=${encodeURIComponent(videoid)}`;
 
     const response = await fetch(upstream, {
       headers: {
@@ -1424,7 +1424,7 @@ if (!response.ok) {
   app.get("/api/missionjeet/batches", async (req, res) => {
     try {
       const r = await fetchfn(
-        "${BASE}/api/missionjeet/batches"
+        `${BASE}/api/missionjeet/batches`
       );
       const data = await r.json();
       res.json(data);
@@ -1437,7 +1437,7 @@ if (!response.ok) {
   // Endpoint for /api/pw/li
 
 //=============pw batch details
-const UPSTREAM = "${BASE}";
+const UPSTREAM = `${BASE}`;
 
 app.post("/api/pw/live", async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -1507,7 +1507,7 @@ app.post("/api/pw/batchdetails", async (req, res) => {
       });
     }
 
-    const upstream1 = await fetchfn(`${change}/api/pw/batchdetails`, {
+    const upstream1 = await fetchfn(`${CHANGE}/api/pw/batchdetails`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1644,7 +1644,7 @@ app.get("/api/pw/get-url", async (req, res) => {
   }
 
   const url =
-    `${change}/api/pw/get-url?batchId=${encodeURIComponent(batchId)}` +
+    `${CHANGE}/api/pw/get-url?batchId=${encodeURIComponent(batchId)}` +
     `&subjectId=${encodeURIComponent(subjectId)}` +
     `&childId=${encodeURIComponent(childId)}`;
 
@@ -1758,7 +1758,7 @@ app.get("/api/pw/kid", async (req, res) => {
     });
   }
 
-  const url = `${change}/api/pw/kid?mpdUrl=${encodeURIComponent(mpdUrl)}`;
+  const url = `${CHANGE}/api/pw/kid?mpdUrl=${encodeURIComponent(mpdUrl)}`;
   return proxyJson(req, res, url);
 });
 
