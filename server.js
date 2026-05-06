@@ -1017,6 +1017,41 @@ app.all("/api/vibrant/live-file", async (req, res) => {
   }
 });
   // vibrant live ====
+  app.post("/api/vibrant/resolve-url", async (req, res) => {
+  try {
+    const { path, url } = req.body || {};
+    const input = path || url;
+
+    if (!input || typeof input !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: "path or url is required"
+      });
+    }
+
+    // Direct playable URL allow
+    if (
+      /^https?:\/\//i.test(input) &&
+      /\.(m3u8|mpd|mp4)(\?|$)/i.test(input)
+    ) {
+      return res.json({
+        success: true,
+        url: input
+      });
+    }
+    return res.status(422).json({
+      success: false,
+      error: "This path is not a direct playable URL. Backend must return an authorized .m3u8, .mpd, or .mp4 URL."
+    });
+
+  } catch (err) {
+    console.error("resolve-url error:", err);
+    return res.status(500).json({
+      success: false,
+      error: "Internal server error while resolving URL"
+    });
+  }
+});
   // GET /api/vibrant/live?course_id=123
 app.get("/api/vibrant/live", async (req, res) => {
   try {
