@@ -1017,35 +1017,65 @@ app.all("/api/vibrant/live-file", async (req, res) => {
   }
 });
   // vibrant live ====
-  app.post("/api/vibrant/resolve-url", async (req, res) => {
+ app.post("/api/vibrant/resolve-url", async (req, res) => {
   try {
-    const { path, url } = req.body || {};
-    const input = path || url;
+    const {
+      path,
+      quality,
+      bitrate,
+      course_id,
+      video_id,
+      isLive
+    } = req.body || {};
 
-    if (!input || typeof input !== "string") {
+    if (!path || typeof path !== "string") {
       return res.status(400).json({
         success: false,
-        error: "path or url is required"
+        error: "path is required"
       });
     }
 
-    // Direct playable URL allow
+    // Agar path already direct playable URL hai
     if (
-      /^https?:\/\//i.test(input) &&
-      /\.(m3u8|mpd|mp4)(\?|$)/i.test(input)
+      /^https?:\/\//i.test(path) &&
+      /\.(m3u8|mpd|mp4)(\?|$)/i.test(path)
     ) {
       return res.json({
         success: true,
-        url: input
+        url: path
       });
     }
-    return res.status(422).json({
-      success: false,
-      error: "This path is not a direct playable URL. Backend must return an authorized .m3u8, .mpd, or .mp4 URL."
+
+    /*
+      Yaha tumhara authorized resolver logic aayega.
+      Ye function final playable URL return karega.
+      Example output:
+      https://domain.com/video/master.m3u8
+    */
+    const finalUrl = await getAuthorizedVibrantPlayableUrl({
+      path,
+      quality,
+      bitrate,
+      course_id,
+      video_id,
+      isLive
+    });
+
+    if (!finalUrl) {
+      return res.status(422).json({
+        success: false,
+        error: "Could not resolve authorized playable URL."
+      });
+    }
+
+    return res.json({
+      success: true,
+      url: finalUrl
     });
 
   } catch (err) {
     console.error("resolve-url error:", err);
+
     return res.status(500).json({
       success: false,
       error: "Internal server error while resolving URL"
