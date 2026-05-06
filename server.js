@@ -9,7 +9,7 @@ const axios = require("axios");
 const crypto = require("crypto");
 const fetch = require("node-fetch");
 const corsFn = cors();
-
+const change = "https:://apiserver-tau.vercel.app";
 const BASE = "https://apiserver-m8ea.onrender.com";
 const rateLimit = require("express-rate-limit");
 const app = express();
@@ -453,7 +453,7 @@ function createApp() {
       return res.status(400).json({ error: "Missing content_id or courseid" });
     }
 
-    const url = `https://apiserver-m8ea.onrender.com/api/missionjeet/content-details?content_id=${entityId}&course_id=${courseId}`;
+    const url = `${BASE}/api/missionjeet/content-details?content_id=${entityId}&course_id=${courseId}`;
 
     const response = await fetchfn(url);
 
@@ -518,7 +518,7 @@ app.get("/api/vibrant/previous-live", async (req, res) => {
     }
 
     // External API call
-    const url = `https://apiserver-m8ea.onrender.com/api/vibrant/previous-live?course_id=${courseid}`;
+    const url = `${BASE}/api/vibrant/previous-live?course_id=${courseid}`;
     
     const response = await fetchfn(url);
 
@@ -546,7 +546,7 @@ res.json(data);
     }
 
     // External API call
-    const url = `https://apiserver-m8ea.onrender.com/api/missionjeet/course-details?courseid=${courseid}`;
+    const url = `${BASE}/api/missionjeet/course-details?courseid=${courseid}`;
     
     const response = await fetchfn(url);
 
@@ -563,7 +563,7 @@ res.json(data);
     res.status(500).json({ error: err.toString() });
   }
 });
-  const BASE_URL = "https://apiserver-m8ea.onrender.com";
+  const BASE_URL = "${BASE}";
 //=============454534534==========
   app.post("/api/pw/login", async (req, res) => {
   try {
@@ -664,9 +664,9 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
     // Build external URL matching exact path pattern
     let externalUrl;
     if (id && id !== courseid) {
-      externalUrl = `https://apiserver-m8ea.onrender.com/api/missionjeet/all-content/${courseid}?id=${id}`;
+      externalUrl = `${BASE}/api/missionjeet/all-content/${courseid}?id=${id}`;
     } else {
-      externalUrl = `https://apiserver-m8ea.onrender.com/api/missionjeet/all-content/${courseid}`;
+      externalUrl = `${BASE}/api/missionjeet/all-content/${courseid}`;
     }
 
     const response = await fetchfn(externalUrl);
@@ -687,7 +687,7 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
   app.get("/api/batches", async (req, res) => {
     try {
       const r = await fetchfn(
-        "https://apiserver-m8ea.onrender.com/api/pw/batches"
+        "${BASE}/api/pw/batches"
       );
       const data = await r.json();
       res.json(data);
@@ -700,7 +700,7 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
     app.get("/api/vibrant/batches", async (req, res) => {
     try {
       const r = await fetchfn(
-        "https://apiserver-m8ea.onrender.com/api/vibrant/batches"
+        "${BASE}/api/vibrant/batches"
       );
       const data = await r.json();
       res.json(data);
@@ -725,7 +725,7 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
     }
 
     // 🔗 original API
-    const url = new URL("https://apiserver-m8ea.onrender.com/api/vibrant/content");
+    const url = new URL("${BASE}/api/vibrant/content");
 
     url.searchParams.set("course_id", course_id);
 
@@ -769,7 +769,7 @@ app.get("/api/vibrant/video-details", async (req, res) => {
       return res.status(400).json({ error: "Missing courseid (r or courseid)" });
     }
 
-    const url = new URL("https://apiserver-m8ea.onrender.com/api/vibrant/video-details");
+    const url = new URL("${BASE}/api/vibrant/video-details");
     url.searchParams.set("course_id", course_id);
 
     if (video_id) {
@@ -797,7 +797,7 @@ app.get("/api/nexttoppers/all-content", async (req, res) => {
       return res.status(400).json({ error: "Missing courseid (r or courseid)" });
     }
 
-    const url = new URL("https://apiserver-m8ea.onrender.com/api/nexttoppers/all-content");
+    const url = new URL("${BASE}/api/nexttoppers/all-content");
     url.searchParams.set("courseid", courseid);
 
     if (id) {
@@ -1016,11 +1016,61 @@ app.all("/api/vibrant/live-file", async (req, res) => {
     });
   }
 });
+  // vibrant live ====
+  // GET /api/vibrant/live?course_id=123
+app.get("/api/vibrant/live", async (req, res) => {
+  try {
+    const courseId = req.query.course_id || req.query.courseid || req.query.id;
+
+    if (!courseId) {
+      return res.status(400).json({
+        success: false,
+        message: "course_id is required"
+      });
+    }
+
+    const upstreamUrl =
+      `${change}/api/vibrant/live?course_id=${encodeURIComponent(courseId)}`;
+
+    const response = await fetch(upstreamUrl, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0"
+      }
+    });
+
+    const text = await response.text();
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
+
+    return res.status(response.status).json({
+      success: response.ok,
+      status: response.status,
+      source: "vibrant-live",
+      data
+    });
+
+  } catch (error) {
+    console.error("Vibrant live proxy error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch Vibrant live data",
+      error: error.message
+    });
+  }
+});
   //======live of mission jeet=====
   app.get("/api/missionjeet/live", async (req, res) => {
   try {
     const response = await fetch(
-      "https://apiserver-m8ea.onrender.com/api/missionjeet/live",
+      "${BASE}/api/missionjeet/live",
       {
         method: "GET",
         headers: {
@@ -1052,7 +1102,7 @@ app.all("/api/vibrant/live-file", async (req, res) => {
 app.get("/api/nexttoppers/live", async (req, res) => {
   try {
     const response = await fetch(
-      "https://apiserver-m8ea.onrender.com/api/nexttoppers/live",
+      "${BASE}/api/nexttoppers/live",
       {
         method: "GET",
         headers: {
@@ -1095,7 +1145,7 @@ app.get("/api/nexttoppers/live", async (req, res) => {
     }
 
     const proxyUrl =
-      "https://apiserver-m8ea.onrender.com/api/vibrant/play?url=" +
+      "${BASE}/api/vibrant/play?url=" +
       encodeURIComponent(url);
 
     const upstream = await fetchfn(proxyUrl, {
@@ -1285,7 +1335,7 @@ app.get("/api/tempmail/health", (req, res) => {
     }
 
     // External API call
-    const url = `https://apiserver-m8ea.onrender.com/api/nexttoppers/course-details?courseid=${courseid}`;
+    const url = `${BASE}/api/nexttoppers/course-details?courseid=${courseid}`;
     
    const response = await fetchfn(url);
 
@@ -1312,7 +1362,7 @@ app.get("/api/nexttoppers/content-details", async (req, res) => {
       return res.status(400).json({ error: "Missing content_id or courseid" });
     }
 
-    const url = `https://apiserver-m8ea.onrender.com/api/nexttoppers/content-details?content_id=${entityId}&courseid=${courseId}`;
+    const url = `${BASE}/api/nexttoppers/content-details?content_id=${entityId}&courseid=${courseId}`;
 
     const response = await fetchfn(url);
 
@@ -1351,7 +1401,7 @@ if (!response.ok) {
       return res.status(400).json({ error: "videoid is required" });
     }
 
-    const upstream = `https://apiserver-tau.vercel.app/api/nexttoppers/getVideoDetailsDrm?videoid=${encodeURIComponent(videoid)}`;
+    const upstream = `${change}/api/nexttoppers/getVideoDetailsDrm?videoid=${encodeURIComponent(videoid)}`;
 
     const response = await fetch(upstream, {
       headers: {
@@ -1374,7 +1424,7 @@ if (!response.ok) {
   app.get("/api/missionjeet/batches", async (req, res) => {
     try {
       const r = await fetchfn(
-        "https://apiserver-m8ea.onrender.com/api/missionjeet/batches"
+        "${BASE}/api/missionjeet/batches"
       );
       const data = await r.json();
       res.json(data);
@@ -1387,7 +1437,7 @@ if (!response.ok) {
   // Endpoint for /api/pw/li
 
 //=============pw batch details
-const UPSTREAM = "https://apiserver-m8ea.onrender.com";
+const UPSTREAM = "${BASE}";
 
 app.post("/api/pw/live", async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -1457,7 +1507,7 @@ app.post("/api/pw/batchdetails", async (req, res) => {
       });
     }
 
-    const upstream1 = await fetchfn(`https://apiserver-tau.vercel.app/api/pw/batchdetails`, {
+    const upstream1 = await fetchfn(`${change}/api/pw/batchdetails`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1594,7 +1644,7 @@ app.get("/api/pw/get-url", async (req, res) => {
   }
 
   const url =
-    `https://apiserver-tau.vercel.app/api/pw/get-url?batchId=${encodeURIComponent(batchId)}` +
+    `${change}/api/pw/get-url?batchId=${encodeURIComponent(batchId)}` +
     `&subjectId=${encodeURIComponent(subjectId)}` +
     `&childId=${encodeURIComponent(childId)}`;
 
@@ -1708,7 +1758,7 @@ app.get("/api/pw/kid", async (req, res) => {
     });
   }
 
-  const url = `https://apiserver-tau.vercel.app/api/pw/kid?mpdUrl=${encodeURIComponent(mpdUrl)}`;
+  const url = `${change}/api/pw/kid?mpdUrl=${encodeURIComponent(mpdUrl)}`;
   return proxyJson(req, res, url);
 });
 
