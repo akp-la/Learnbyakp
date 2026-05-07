@@ -1647,6 +1647,24 @@ app.get("/api/pw/topics", async (req, res) => {
   }
 }
 
+  //=========eter========
+  app.get("/api/pw/video-url-details", async (req, res) => {
+  const { batchId, subjectId, childId } = req.query;
+
+  if (!batchId || !subjectId || !childId) {
+    return res.status(400).json({
+      success: false,
+      error: "Missing batchId, subjectId, or childId",
+    });
+  }
+
+  const url =
+    `${UPSTREAM}/api/pw/video-url-details?batchId=${encodeURIComponent(batchId)}` +
+    `&subjectId=${encodeURIComponent(subjectId)}` +
+    `&childId=${encodeURIComponent(childId)}`;
+
+  return proxyJson(req, res, url);
+});
 /**
  * 1) /api/pw/video
  * frontend call:
@@ -1723,9 +1741,9 @@ app.get("/api/pw/get-url", async (req, res) => {
  */
 app.get("/api/pw/attachments-url", async (req, res) => {
   try {
-    const { BatchId, SubjectId, ContentId } = req.query;
+    const { batchId, subjectId, contentId } = req.query;
 
-    if (!BatchId || !SubjectId || !ContentId) {
+    if (!batchId || !bubjectId || !contentId) {
       return res.status(400).json({
         success: false,
         message: "BatchId, SubjectId and ContentId are required"
@@ -1733,7 +1751,7 @@ app.get("/api/pw/attachments-url", async (req, res) => {
     }
 
     const targetUrl =
-      `https://apiserver-henna.vercel.app/api/pw/attachments-url` +
+      `https://apiserver-tau.vercel.app/api/pw/attachments-url` +
       `?BatchId=${encodeURIComponent(BatchId)}` +
       `&SubjectId=${encodeURIComponent(SubjectId)}` +
       `&ContentId=${encodeURIComponent(ContentId)}`;
