@@ -1648,145 +1648,47 @@ app.get("/api/pw/topics", async (req, res) => {
 }
 //=============video url ==========
 
-app.get("/api/pw/video-url-details", async (req, res) => {
-  try {
-    const {
-      batch_id,
-      subject_id,
-      video_id,
 
-      // optional flexible names
-      batchId,
-      subjectId,
-      videoId,
-      schedule_id,
-    } = req.query;
+  //=========eter========
+  app.get("/api/pw/video-url-details", async (req, res) => {
+  const { batchId, subjectId, childId } = req.query;
 
-    const finalBatchId = batch_id || batchId;
-    const finalSubjectId = subject_id || subjectId;
-    const finalVideoId = video_id || videoId ;
-    const bear = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3Nzg4OTkyMzIuNDIxLCJkYXRhIjp7Il9pZCI6IjY0YWQ4ODM5ZmU5ZTZhMDAxODRjMGI1ZSIsInVzZXJuYW1lIjoiOTU1OTk3NTM3MCIsImZpcnN0TmFtZSI6IkFrdWwiLCJsYXN0TmFtZSI6IlByYWphcGF0aSIsIm9yZ2FuaXphdGlvbiI6eyJfaWQiOiI1ZWIzOTNlZTk1ZmFiNzQ2OGE3OWQxODkiLCJ3ZWJzaXRlIjoicGh5c2ljc3dhbGxhaC5jb20iLCJuYW1lIjoiUGh5c2ljc3dhbGxhaCJ9LCJlbWFpbCI6ImFrdWxwcmFqYXBhdGkwMEBnbWFpbC5jb20iLCJyb2xlcyI6WyI1YjI3YmQ5NjU4NDJmOTUwYTc3OGM2ZWYiXSwiY291bnRyeUdyb3VwIjoiSU4iLCJvbmVSb2xlcyI6W10sInR5cGUiOiJVU0VSIn0sImp0aSI6IlV2ci1Sb3VOVExHMHowc0JHc21uekFfNjRhZDg4MzlmZTllNmEwMDE4NGMwYjVlIiwiaWF0IjoxNzc4Mjk0NDMyfQ.S0KON4RsadOEgpUVgSixaKc1zn4KLD8Via4FOcagSUI";
-    if (!finalBatchId || !finalSubjectId || !finalVideoId) {
-      return res.status(400).json({
-        success: false,
-        error: "batchid, subjectid and videoid are required",
-        example:
-          "/api/pw/schedule-details?batchid=698ad3519549b300a5e1cc6a&subjectid=69b569aeeffdf9567d75f816&videoid=69de3385e77ac452baa6950f",
-      });
-    }
-
-    if (bear) {
-      return res.status(500).json({
-        success: false,
-        error: "PW_TOKEN missing in environment variables",
-      });
-    }
-
-    const upstreamUrl = `https://api.penpencil.co/v1/batches/${encodeURIComponent(
-      finalBatchId
-    )}/subject/${encodeURIComponent(
-      finalSubjectId
-    )}/schedule/${encodeURIComponent(finalVideoId)}/schedule-details`;
-
-    const response = await fetch(upstreamUrl, {
-      method: "GET",
-      headers: {
-        accept: "application/json, text/plain, */*",
-        "content-type": "application/json",
-
-        authorization: process.env.PW_TOKEN || bear,
-        "client-id": process.env.PW_CLIENT_ID || "5eb393ee95fab7468a79d189",
-        "client-type": "WEB",
-        "client-version": "200",
-
-        origin: "https://www.pw.live",
-        referer: "https://www.pw.live/",
-
-        version: "0.0.1",
-        "x-sdk-version": "0.0.20",
-
-        devicetype: "desktop",
-        devicememory: "8192",
-        networktype: "4g",
-        screenresolution: "1366 x 768",
-
-        randomid:
-          typeof crypto !== "undefined" && crypto.randomUUID
-            ? crypto.randomUUID()
-            : `${Date.now()}-${Math.random()}`,
-
-        "user-agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
-      },
-    });
-
-    const text = await response.text();
-
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = text;
-    }
-
-    return res.status(response.status).json({
-      success: response.ok,
-      status: response.status,
-      batchid: finalBatchId,
-      subjectid: finalSubjectId,
-      videoid: finalVideoId,
-      upstreamUrl,
-      data,
-    });
-  } catch (error) {
-    console.error("PW schedule-details error:", error);
-
-    return res.status(500).json({
+  if (!batchId || !subjectId || !childId) {
+    return res.status(400).json({
       success: false,
-      error: error.message || "Internal server error",
+      error: "Missing batchId, subjectId, or childId",
     });
   }
-});  
-  //=========eter========
-//   app.get("/api/pw/video-url-details", async (req, res) => {
-//   const { batchId, subjectId, childId } = req.query;
 
-//   if (!batchId || !subjectId || !childId) {
-//     return res.status(400).json({
-//       success: false,
-//       error: "Missing batchId, subjectId, or childId",
-//     });
-//   }
+  const url =
+    `${UPSTREAM}/api/pw/video-url-details?batchId=${encodeURIComponent(batchId)}` +
+    `&subjectId=${encodeURIComponent(subjectId)}` +
+    `&childId=${encodeURIComponent(childId)}`;
 
-//   const url =
-//     `${UPSTREAM}/api/pw/video-url-details?batchId=${encodeURIComponent(batchId)}` +
-//     `&subjectId=${encodeURIComponent(subjectId)}` +
-//     `&childId=${encodeURIComponent(childId)}`;
+  return proxyJson(req, res, url);
+});
+/**
+ * 1) /api/pw/video
+ * frontend call:
+ * /api/pw/video?batchId=...&subjectId=...&childId=...
+ */
+app.get("/api/pw/video", async (req, res) => {
+  const { batchId, subjectId, childId } = req.query;
 
-//   return proxyJson(req, res, url);
-// });
-// /**
-//  * 1) /api/pw/video
-//  * frontend call:
-//  * /api/pw/video?batchId=...&subjectId=...&childId=...
-//  */
-// app.get("/api/pw/video", async (req, res) => {
-//   const { batchId, subjectId, childId } = req.query;
+  if (!batchId || !subjectId || !childId) {
+    return res.status(400).json({
+      success: false,
+      error: "Missing batchId, subjectId, or childId",
+    });
+  }
 
-//   if (!batchId || !subjectId || !childId) {
-//     return res.status(400).json({
-//       success: false,
-//       error: "Missing batchId, subjectId, or childId",
-//     });
-//   }
+  const url =
+    `${UPSTREAM}/api/pw/video?batchId=${encodeURIComponent(batchId)}` +
+    `&subjectId=${encodeURIComponent(subjectId)}` +
+    `&childId=${encodeURIComponent(childId)}`;
 
-//   const url =
-//     `${UPSTREAM}/api/pw/video?batchId=${encodeURIComponent(batchId)}` +
-//     `&subjectId=${encodeURIComponent(subjectId)}` +
-//     `&childId=${encodeURIComponent(childId)}`;
-
-//   return proxyJson(req, res, url);
-// });
+  return proxyJson(req, res, url);
+});
 
 /**
  * 2) /api/pw/videoplay
