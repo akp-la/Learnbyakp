@@ -1654,7 +1654,7 @@ app.get("/api/pw/topics", async (req, res) => {
       batch_id,
       video_id,
       batchId,
-      subject_id
+      subject_id,
       
       type = "BATCHES",
       videoContainerType = "DASH",
