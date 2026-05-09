@@ -1648,30 +1648,30 @@ app.get("/api/pw/topics", async (req, res) => {
 }
 //=============video url ==========
 
-  app.get("/api/pw/video-url-details", async (req, res) => {
+app.get("/api/pw/video", async (req, res) => {
   try {
     const {
       batch_id,
-      video_id,
-      batchId,
       subject_id,
-      
-      type = "BATCHES",
-      videoContainerType = "DASH",
-      reqType = "query",
-      clientVersion = "201",
+      video_id,
+
+      // optional flexible names
+      batchId,
+      subjectId,
+      videoId,
+      schedule_id,
     } = req.query;
 
-    // Flexible params support
     const finalBatchId = batch_id || batchId;
-    const finalVideoId = video_id || videoId;
+    const finalSubjectId = subject_id || subjectId;
+    const finalVideoId = video_id || videoId ;
     const bear = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3Nzg4OTkyMzIuNDIxLCJkYXRhIjp7Il9pZCI6IjY0YWQ4ODM5ZmU5ZTZhMDAxODRjMGI1ZSIsInVzZXJuYW1lIjoiOTU1OTk3NTM3MCIsImZpcnN0TmFtZSI6IkFrdWwiLCJsYXN0TmFtZSI6IlByYWphcGF0aSIsIm9yZ2FuaXphdGlvbiI6eyJfaWQiOiI1ZWIzOTNlZTk1ZmFiNzQ2OGE3OWQxODkiLCJ3ZWJzaXRlIjoicGh5c2ljc3dhbGxhaC5jb20iLCJuYW1lIjoiUGh5c2ljc3dhbGxhaCJ9LCJlbWFpbCI6ImFrdWxwcmFqYXBhdGkwMEBnbWFpbC5jb20iLCJyb2xlcyI6WyI1YjI3YmQ5NjU4NDJmOTUwYTc3OGM2ZWYiXSwiY291bnRyeUdyb3VwIjoiSU4iLCJvbmVSb2xlcyI6W10sInR5cGUiOiJVU0VSIn0sImp0aSI6IlV2ci1Sb3VOVExHMHowc0JHc21uekFfNjRhZDg4MzlmZTllNmEwMDE4NGMwYjVlIiwiaWF0IjoxNzc4Mjk0NDMyfQ.S0KON4RsadOEgpUVgSixaKc1zn4KLD8Via4FOcagSUI";
-    if (!finalBatchId || !finalVideoId) {
+    if (!finalBatchId || !finalSubjectId || !finalVideoId) {
       return res.status(400).json({
         success: false,
-        error: "batchid and videoid are required",
+        error: "batchid, subjectid and videoid are required",
         example:
-          "/api/pw/video-url-details?batchid=&videoid=69de3385e77ac452baa6950f",
+          "/api/pw/schedule-details?batchid=698ad3519549b300a5e1cc6a&subjectid=69b569aeeffdf9567d75f816&videoid=69de3385e77ac452baa6950f",
       });
     }
 
@@ -1682,27 +1682,19 @@ app.get("/api/pw/topics", async (req, res) => {
       });
     }
 
-    const url = new URL(
-      "https://api.penpencil.co/v1/videos/video-url-details"
-    );
+    const upstreamUrl = `https://api.penpencil.co/v1/batches/${encodeURIComponent(
+      finalBatchId
+    )}/subject/${encodeURIComponent(
+      finalSubjectId
+    )}/schedule/${encodeURIComponent(finalVideoId)}/schedule-details`;
 
-    url.searchParams.set("type", type);
-    url.searchParams.set("videoContainerType", videoContainerType);
-    url.searchParams.set("reqType", reqType);
-    url.searchparams.set("subject_id")
-    // PW API mapping
-    url.searchParams.set("childId", finalVideoId);
-    url.searchParams.set("parentId", finalBatchId);
-
-    url.searchParams.set("clientVersion", clientVersion);
-
-    const response = await fetch(url.toString(), {
+    const response = await fetch(upstreamUrl, {
       method: "GET",
       headers: {
-        accept: "*/*",
+        accept: "application/json, text/plain, */*",
         "content-type": "application/json",
 
-        authorization: process.env.PW_TOKEN || "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3Nzg4OTkyMzIuNDIxLCJkYXRhIjp7Il9pZCI6IjY0YWQ4ODM5ZmU5ZTZhMDAxODRjMGI1ZSIsInVzZXJuYW1lIjoiOTU1OTk3NTM3MCIsImZpcnN0TmFtZSI6IkFrdWwiLCJsYXN0TmFtZSI6IlByYWphcGF0aSIsIm9yZ2FuaXphdGlvbiI6eyJfaWQiOiI1ZWIzOTNlZTk1ZmFiNzQ2OGE3OWQxODkiLCJ3ZWJzaXRlIjoicGh5c2ljc3dhbGxhaC5jb20iLCJuYW1lIjoiUGh5c2ljc3dhbGxhaCJ9LCJlbWFpbCI6ImFrdWxwcmFqYXBhdGkwMEBnbWFpbC5jb20iLCJyb2xlcyI6WyI1YjI3YmQ5NjU4NDJmOTUwYTc3OGM2ZWYiXSwiY291bnRyeUdyb3VwIjoiSU4iLCJvbmVSb2xlcyI6W10sInR5cGUiOiJVU0VSIn0sImp0aSI6IlV2ci1Sb3VOVExHMHowc0JHc21uekFfNjRhZDg4MzlmZTllNmEwMDE4NGMwYjVlIiwiaWF0IjoxNzc4Mjk0NDMyfQ.S0KON4RsadOEgpUVgSixaKc1zn4KLD8Via4FOcagSUI",
+        authorization: process.env.PW_TOKEN || bear,
         "client-id": process.env.PW_CLIENT_ID || "5eb393ee95fab7468a79d189",
         "client-type": "WEB",
         "client-version": "200",
@@ -1717,72 +1709,6 @@ app.get("/api/pw/topics", async (req, res) => {
         devicememory: "8192",
         networktype: "4g",
         screenresolution: "1366 x 768",
-
-        frameratecapability: JSON.stringify({
-          videoQuality: "720p (HD)",
-        }),
-
-        drmcapability: JSON.stringify({
-          aesSupport: "yes",
-          fairPlayDrmSupport: "no",
-          playreadyDrmSupport: "no",
-          widevineDRMSupport: "yes",
-        }),
-
-        devicestreamingtechnology: JSON.stringify({
-          dash: {
-            isSupported: true,
-            formats: ["mp4", "m4a"],
-            codecs: ["avc1", "aac"],
-          },
-          hls: {
-            isSupported: false,
-            formats: [],
-            codecs: [],
-          },
-        }),
-
-        audiocodeccapability: JSON.stringify({
-          "AAC-LC": {
-            isSupported: true,
-            Profile: [
-              { container: "audio/mp4", supported: true },
-              { container: "audio/webm", supported: false },
-              { container: "audio/ogg", supported: false },
-            ],
-          },
-          "HE-AAC v1": {
-            isSupported: true,
-            Profile: [
-              { container: "audio/mp4", supported: true },
-              { container: "audio/webm", supported: false },
-              { container: "audio/ogg", supported: false },
-            ],
-          },
-          "HE-AAC v2": {
-            isSupported: true,
-            Profile: [
-              { container: "audio/mp4", supported: true },
-              { container: "audio/webm", supported: false },
-              { container: "audio/ogg", supported: false },
-            ],
-          },
-        }),
-
-        videocodeccapability: JSON.stringify({
-          Hevc: {
-            isSupported: "false",
-            Profile: [],
-          },
-          AV1: {
-            isSupported: "true",
-            Profile: [
-              { name: "Main" },
-              { name: "High" },
-              { name: "Professional" },
-            ],
-          },
-        }),
 
         randomid:
           typeof crypto !== "undefined" && crypto.randomUUID
@@ -1807,20 +1733,20 @@ app.get("/api/pw/topics", async (req, res) => {
       success: response.ok,
       status: response.status,
       batchid: finalBatchId,
+      subjectid: finalSubjectId,
       videoid: finalVideoId,
-      upstreamUrl: url.toString(),
+      upstreamUrl,
       data,
     });
   } catch (error) {
-    console.error("PW video-url-details error:", error);
+    console.error("PW schedule-details error:", error);
 
     return res.status(500).json({
       success: false,
       error: error.message || "Internal server error",
     });
   }
-});
-  
+});  
   //=========eter========
 //   app.get("/api/pw/video-url-details", async (req, res) => {
 //   const { batchId, subjectId, childId } = req.query;
