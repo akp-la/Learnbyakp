@@ -1659,7 +1659,7 @@ app.get("/api/pw/topics", async (req, res) => {
   }
 
   const url =
-    `${UPSTREAM}/api/pw/video-url-details?batchId=${encodeURIComponent(batchId)}` +
+    `${CHANGE}/api/pw/video-url-details?batchId=${encodeURIComponent(batchId)}` +
     `&subjectId=${encodeURIComponent(subjectId)}` +
     `&childId=${encodeURIComponent(childId)}`;
 
