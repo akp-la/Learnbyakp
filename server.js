@@ -1646,8 +1646,6 @@ app.get("/api/pw/topics", async (req, res) => {
     });
   }
 }
-//=============video url ==========
-
 
   //=========eter========
   app.get("/api/pw/video-url-details", async (req, res) => {
