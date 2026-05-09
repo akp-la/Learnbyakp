@@ -1651,12 +1651,11 @@ app.get("/api/pw/topics", async (req, res) => {
   app.get("/api/pw/video-url-details", async (req, res) => {
   try {
     const {
-      batchid,
-      videoid,
+      batch_id,
+      video_id,
       batchId,
-      videoId,
-      parentId,
-      childId,
+      subject_id
+      
       type = "BATCHES",
       videoContainerType = "DASH",
       reqType = "query",
@@ -1664,9 +1663,9 @@ app.get("/api/pw/topics", async (req, res) => {
     } = req.query;
 
     // Flexible params support
-    const finalBatchId = batchid || batchId || parentId;
-    const finalVideoId = videoid || videoId || childId;
-
+    const finalBatchId = batch_id || batchId;
+    const finalVideoId = video_id || videoId;
+    const bear = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3Nzg4OTkyMzIuNDIxLCJkYXRhIjp7Il9pZCI6IjY0YWQ4ODM5ZmU5ZTZhMDAxODRjMGI1ZSIsInVzZXJuYW1lIjoiOTU1OTk3NTM3MCIsImZpcnN0TmFtZSI6IkFrdWwiLCJsYXN0TmFtZSI6IlByYWphcGF0aSIsIm9yZ2FuaXphdGlvbiI6eyJfaWQiOiI1ZWIzOTNlZTk1ZmFiNzQ2OGE3OWQxODkiLCJ3ZWJzaXRlIjoicGh5c2ljc3dhbGxhaC5jb20iLCJuYW1lIjoiUGh5c2ljc3dhbGxhaCJ9LCJlbWFpbCI6ImFrdWxwcmFqYXBhdGkwMEBnbWFpbC5jb20iLCJyb2xlcyI6WyI1YjI3YmQ5NjU4NDJmOTUwYTc3OGM2ZWYiXSwiY291bnRyeUdyb3VwIjoiSU4iLCJvbmVSb2xlcyI6W10sInR5cGUiOiJVU0VSIn0sImp0aSI6IlV2ci1Sb3VOVExHMHowc0JHc21uekFfNjRhZDg4MzlmZTllNmEwMDE4NGMwYjVlIiwiaWF0IjoxNzc4Mjk0NDMyfQ.S0KON4RsadOEgpUVgSixaKc1zn4KLD8Via4FOcagSUI",
     if (!finalBatchId || !finalVideoId) {
       return res.status(400).json({
         success: false,
@@ -1676,7 +1675,7 @@ app.get("/api/pw/topics", async (req, res) => {
       });
     }
 
-    if (!process.env.PW_TOKEN) {
+    if (bear) {
       return res.status(500).json({
         success: false,
         error: "PW_TOKEN missing in environment variables",
@@ -1690,7 +1689,7 @@ app.get("/api/pw/topics", async (req, res) => {
     url.searchParams.set("type", type);
     url.searchParams.set("videoContainerType", videoContainerType);
     url.searchParams.set("reqType", reqType);
-
+    url.searchparams.set("subject_id")
     // PW API mapping
     url.searchParams.set("childId", finalVideoId);
     url.searchParams.set("parentId", finalBatchId);
