@@ -1648,7 +1648,7 @@ app.get("/api/pw/topics", async (req, res) => {
 }
 //=============video url ==========
 
-app.get("/api/pw/video", async (req, res) => {
+app.get("/api/pw/video-url-details", async (req, res) => {
   try {
     const {
       batch_id,
