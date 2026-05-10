@@ -1741,20 +1741,32 @@ app.get("/api/pw/get-url", async (req, res) => {
  */
 app.get("/api/pw/attachment-link", async (req, res) => {
   try {
-    const { BatchId, SubjectId, ContentId } = req.query;
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
 
-    if (!BatchId || !SubjectId || !ContentId) {
+    const batchId = req.query.batchId || req.query.BatchId;
+    const subjectId = req.query.subjectId || req.query.SubjectId;
+    const scheduleId = req.query.scheduleId || req.query.ContentId || req.query.contentId;
+
+    if (!batchId || !subjectId || !scheduleId) {
       return res.status(400).json({
         success: false,
-        error: "BatchId, SubjectId and ContentId are required"
+        error: "batchId, subjectId, and scheduleId are required",
+        received: {
+          batchId,
+          subjectId,
+          scheduleId,
+          query: req.query
+        }
       });
     }
 
     const upstreamUrl =
       `${CHANGE}/api/pw/attachment-link` +
-      `?BatchId=${encodeURIComponent(BatchId)}` +
-      `&SubjectId=${encodeURIComponent(SubjectId)}` +
-      `&ContentId=${encodeURIComponent(ContentId)}`;
+      `?BatchId=${encodeURIComponent(batchId)}` +
+      `&SubjectId=${encodeURIComponent(subjectId)}` +
+      `&ContentId=${encodeURIComponent(scheduleId)}`;
 
     const upstream = await fetch(upstreamUrl, {
       method: "GET",
@@ -1773,12 +1785,7 @@ app.get("/api/pw/attachment-link", async (req, res) => {
       parsed = { data: text };
     }
 
-    // IMPORTANT:
-    // Browser ko hamesha 200 bhejo,
-    // encrypted data ko as-it-is forward karo.
     return res.status(200).json({
-      success: true,
-      upstreamStatus: upstream.status,
       data: parsed?.data || parsed
     });
 
@@ -1792,7 +1799,6 @@ app.get("/api/pw/attachment-link", async (req, res) => {
     });
   }
 });
-
 app.get("/api/pw/attachment-url", async (req, res) => {
   try {
     const { BatchId, SubjectId, ContentId } = req.query;
