@@ -1781,7 +1781,7 @@ app.get("/api/pw/attachments-ur", async (req, res) => {
   }
 });
 
-app.get("/api/pw/attachment-link", async (req, res) => {
+app.get("/api/pw/attachment-url", async (req, res) => {
   try {
     const batchId = req.query.batchId || req.query.BatchId;
     const subjectId = req.query.subjectId || req.query.SubjectId;
