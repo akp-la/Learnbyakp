@@ -1739,48 +1739,6 @@ app.get("/api/pw/get-url", async (req, res) => {
  * frontend call:
  * /api/pw/attachments-url?BatchId=...&SubjectId=...&ContentId=...
  */
-app.get("/api/pw/attachments-url", async (req, res) => {
-  try {
-    const { batchId, subjectId, contentId } = req.query;
-
-    if (!batchId || !bubjectId || !contentId) {
-      return res.status(400).json({
-        success: false,
-        message: "BatchId, SubjectId and ContentId are required"
-      });
-    }
-
-    const targetUrl =
-      `https://apiserver-tau.vercel.app/api/pw/attachments-url` +
-      `?BatchId=${encodeURIComponent(BatchId)}` +
-      `&SubjectId=${encodeURIComponent(SubjectId)}` +
-      `&ContentId=${encodeURIComponent(ContentId)}`;
-
-    const response = await fetch(targetUrl, {
-      headers: {
-        accept: "application/json, text/plain, */*",
-        "user-agent": "Mozilla/5.0"
-      }
-    });
-
-    const text = await response.text();
-
-    res.status(response.status);
-    res.setHeader(
-      "content-type",
-      response.headers.get("content-type") || "application/json"
-    );
-    return res.send(text);
-  } catch (error) {
-    console.error("attachments-url proxy error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch attachments-url",
-      error: error.message
-    });
-  }
-});
-
 app.get("/api/pw/attachment-link", async (req, res) => {
   try {
     const { BatchId, SubjectId, ContentId } = req.query;
@@ -1792,13 +1750,13 @@ app.get("/api/pw/attachment-link", async (req, res) => {
       });
     }
 
-    const apiUrl =
+    const upstreamUrl =
       `${CHANGE}/api/pw/attachment-link` +
       `?BatchId=${encodeURIComponent(BatchId)}` +
       `&SubjectId=${encodeURIComponent(SubjectId)}` +
       `&ContentId=${encodeURIComponent(ContentId)}`;
 
-    const upstream = await fetch(apiUrl, {
+    const upstream = await fetch(upstreamUrl, {
       method: "GET",
       headers: {
         Accept: "application/json",
@@ -1812,50 +1770,75 @@ app.get("/api/pw/attachment-link", async (req, res) => {
     try {
       parsed = JSON.parse(text);
     } catch {
-      parsed = { raw: text };
+      parsed = { data: text };
     }
 
-    const encrypted =
-      typeof parsed?.data === "string"
-        ? parsed.data
-        : typeof parsed?.data?.data === "string"
-          ? parsed.data.data
-          : null;
+    // IMPORTANT:
+    // Browser ko hamesha 200 bhejo,
+    // encrypted data ko as-it-is forward karo.
+    return res.status(200).json({
+      success: true,
+      upstreamStatus: upstream.status,
+      data: parsed?.data || parsed
+    });
 
-    if (!encrypted) {
-      return res.status(200).json({
+  } catch (error) {
+    console.error("attachment-link proxy error:", error);
+
+    return res.status(500).json({
+      success: false,
+      error: "Internal server error while fetching attachment-link",
+      details: error.message
+    });
+  }
+});
+
+app.get("/api/pw/attachment-url", async (req, res) => {
+  try {
+    const { BatchId, SubjectId, ContentId } = req.query;
+
+    if (!BatchId || !SubjectId || !ContentId) {
+      return res.status(400).json({
         success: false,
-        upstreamStatus: upstream.status,
-        error: "Encrypted data not found",
-        raw: parsed
+        error: "BatchId, SubjectId and ContentId are required"
       });
     }
 
-    let decrypted;
+    const upstreamUrl =
+      `${CHANGE}/api/pw/attachment-url` +
+      `?BatchId=${encodeURIComponent(BatchId)}` +
+      `&SubjectId=${encodeURIComponent(SubjectId)}` +
+      `&ContentId=${encodeURIComponent(ContentId)}`;
+
+    const upstream = await fetch(upstreamUrl, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "Mozilla/5.0"
+      }
+    });
+
+    const text = await upstream.text();
+
+    let parsed;
     try {
-      decrypted = decryptPayloadNode(encrypted);
-    } catch (decryptError) {
-      return res.status(200).json({
-        success: false,
-        upstreamStatus: upstream.status,
-        error: "Decryption failed",
-        details: decryptError.message,
-        encrypted
-      });
+      parsed = JSON.parse(text);
+    } catch {
+      parsed = { data: text };
     }
 
     return res.status(200).json({
       success: true,
       upstreamStatus: upstream.status,
-      data: decrypted
+      data: parsed?.data || parsed
     });
 
   } catch (error) {
-    console.error("attachment-link error:", error);
+    console.error("attachment-url proxy error:", error);
 
     return res.status(500).json({
       success: false,
-      error: "Internal server error while fetching attachment-link",
+      error: "Internal server error while fetching attachment-url",
       details: error.message
     });
   }
