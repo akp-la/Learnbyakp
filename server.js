@@ -1798,39 +1798,68 @@ app.get("/api/pw/attachment-link", async (req, res) => {
       `&SubjectId=${encodeURIComponent(SubjectId)}` +
       `&ContentId=${encodeURIComponent(ContentId)}`;
 
-    const response = await fetch(apiUrl, {
+    const upstream = await fetch(apiUrl, {
       method: "GET",
       headers: {
-        "Accept": "application/json",
+        Accept: "application/json",
         "User-Agent": "Mozilla/5.0"
       }
     });
 
-    const text = await response.text();
+    const text = await upstream.text();
 
-    let data;
+    let parsed;
     try {
-      data = JSON.parse(text);
+      parsed = JSON.parse(text);
     } catch {
-      data = text;
+      parsed = { raw: text };
     }
 
-    return res.status(response.status).json({
-      success: response.ok,
-      status: response.status,
-      data
+    const encrypted =
+      typeof parsed?.data === "string"
+        ? parsed.data
+        : typeof parsed?.data?.data === "string"
+          ? parsed.data.data
+          : null;
+
+    if (!encrypted) {
+      return res.status(200).json({
+        success: false,
+        upstreamStatus: upstream.status,
+        error: "Encrypted data not found",
+        raw: parsed
+      });
+    }
+
+    let decrypted;
+    try {
+      decrypted = decryptPayloadNode(encrypted);
+    } catch (decryptError) {
+      return res.status(200).json({
+        success: false,
+        upstreamStatus: upstream.status,
+        error: "Decryption failed",
+        details: decryptError.message,
+        encrypted
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      upstreamStatus: upstream.status,
+      data: decrypted
     });
 
   } catch (error) {
-    console.error("Attachment link backend error:", error);
+    console.error("attachment-link error:", error);
 
     return res.status(500).json({
       success: false,
-      error: "Internal server error while fetching attachment link",
+      error: "Internal server error while fetching attachment-link",
       details: error.message
     });
   }
-});;
+});
 
   
 /**
