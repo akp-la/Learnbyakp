@@ -1739,7 +1739,7 @@ app.get("/api/pw/get-url", async (req, res) => {
  * frontend call:
  * /api/pw/attachments-url?BatchId=...&SubjectId=...&ContentId=...
  */
-app.get("/api/pw/attachments-ur", async (req, res) => {
+app.get("/api/pw/attachments-url", async (req, res) => {
   try {
     const { batchId, subjectId, contentId } = req.query;
 
@@ -1781,49 +1781,56 @@ app.get("/api/pw/attachments-ur", async (req, res) => {
   }
 });
 
-app.get("/api/pw/attachment-url", async (req, res) => {
+app.get("/api/pw/attachment-link", async (req, res) => {
   try {
-    const batchId = req.query.batchId || req.query.BatchId;
-    const subjectId = req.query.subjectId || req.query.SubjectId;
-    const scheduleId = req.query.scheduleId || req.query.ContentId || req.query.schedule_id;
+    const { BatchId, SubjectId, ContentId } = req.query;
 
-    if (!batchId || !subjectId || !scheduleId) {
+    if (!BatchId || !SubjectId || !ContentId) {
       return res.status(400).json({
         success: false,
-        message: "batchId, subjectId and scheduleId are required"
+        error: "BatchId, SubjectId and ContentId are required"
       });
     }
 
-    const targetUrl =
+    const apiUrl =
       `${CHANGE}/api/pw/attachment-link` +
-      `?batchId=${encodeURIComponent(batchId)}` +
-      `&subjectId=${encodeURIComponent(subjectId)}` +
-      `&scheduleId=${encodeURIComponent(scheduleId)}`;
+      `?BatchId=${encodeURIComponent(BatchId)}` +
+      `&SubjectId=${encodeURIComponent(SubjectId)}` +
+      `&ContentId=${encodeURIComponent(ContentId)}`;
 
-    const response = await fetch(targetUrl, {
+    const response = await fetch(apiUrl, {
+      method: "GET",
       headers: {
-        accept: "application/json, text/plain, */*",
-        "user-agent": "Mozilla/5.0"
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0"
       }
     });
 
     const text = await response.text();
 
-    res.status(response.status);
-    res.setHeader(
-      "content-type",
-      response.headers.get("content-type") || "application/json"
-    );
-    return res.send(text);
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
+
+    return res.status(response.status).json({
+      success: response.ok,
+      status: response.status,
+      data
+    });
+
   } catch (error) {
-    console.error("attachment-link proxy error:", error);
+    console.error("Attachment link backend error:", error);
+
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch attachment-link",
-      error: error.message
+      error: "Internal server error while fetching attachment link",
+      details: error.message
     });
   }
-});
+});;
 
   
 /**
