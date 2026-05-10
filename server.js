@@ -1739,7 +1739,7 @@ app.get("/api/pw/get-url", async (req, res) => {
  * frontend call:
  * /api/pw/attachments-url?BatchId=...&SubjectId=...&ContentId=...
  */
-app.get("/api/pw/attachments-url", async (req, res) => {
+app.get("/api/pw/attachments-ur", async (req, res) => {
   try {
     const { batchId, subjectId, contentId } = req.query;
 
@@ -1795,7 +1795,7 @@ app.get("/api/pw/attachment-link", async (req, res) => {
     }
 
     const targetUrl =
-      `https://apiserver-henna.vercel.app/api/pw/attachment-link` +
+      `${CHANGE}/api/pw/attachment-link` +
       `?batchId=${encodeURIComponent(batchId)}` +
       `&subjectId=${encodeURIComponent(subjectId)}` +
       `&scheduleId=${encodeURIComponent(scheduleId)}`;
