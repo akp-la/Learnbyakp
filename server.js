@@ -1764,9 +1764,9 @@ app.get("/api/pw/attachment-link", async (req, res) => {
 
     const upstreamUrl =
       `${CHANGE}/api/pw/attachment-link` +
-      `?BatchId=${encodeURIComponent(batchId)}` +
-      `&SubjectId=${encodeURIComponent(subjectId)}` +
-      `&ContentId=${encodeURIComponent(scheduleId)}`;
+      `?batchId=${encodeURIComponent(batchId)}` +
+      `&subjectId=${encodeURIComponent(subjectId)}` +
+      `&scheduleId=${encodeURIComponent(scheduleId)}`;
 
     const upstream = await fetch(upstreamUrl, {
       method: "GET",
