@@ -1799,7 +1799,7 @@ app.get("/api/pw/attachment-link", async (req, res) => {
     });
   }
 });
-app.get("/api/pw/attachment-url", async (req, res) => {
+app.get("/api/pw/attachments-url", async (req, res) => {
   try {
     const { BatchId, SubjectId, ContentId } = req.query;
 
