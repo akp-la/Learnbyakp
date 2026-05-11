@@ -1811,7 +1811,7 @@ app.get("/api/pw/attachment-url", async (req, res) => {
     }
 
     const upstreamUrl =
-      `${CHANGE}/api/pw/attachment-url` +
+      `${CHANGE}/api/pw/attachments-url` +
       `?BatchId=${encodeURIComponent(BatchId)}` +
       `&SubjectId=${encodeURIComponent(SubjectId)}` +
       `&ContentId=${encodeURIComponent(ContentId)}`;
@@ -1840,7 +1840,7 @@ app.get("/api/pw/attachment-url", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("attachment-url proxy error:", error);
+    console.error("attachments-url proxy error:", error);
 
     return res.status(500).json({
       success: false,
