@@ -924,72 +924,7 @@ app.get("/api/vibrant/live-proxy", async (req, res) => {
     });
   }
 });
-// carrear will 
 
-  const CAREERWILL_BASE = "https://web.careerwill.com";
-const CAREERWILL_BUILD_ID = "WuAwSZiJu-Vol1R998vVW";
-
-app.get("/api/careerwill/class", async (req, res) => {
-  try {
-    const {
-      type = "notes",
-      id,
-      view = "Grid",
-      batch_type = "all"
-    } = req.query;
-
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: "id is required"
-      });
-    }
-
-    const targetUrl = new URL(
-      `${CAREERWILL_BASE}/_next/data/${CAREERWILL_BUILD_ID}/class.json`
-    );
-
-    targetUrl.searchParams.set("type", type);
-    targetUrl.searchParams.set("id", id);
-    targetUrl.searchParams.set("view", view);
-    targetUrl.searchParams.set("batch_type", batch_type);
-
-    const response = await fetch(targetUrl.toString(), {
-      method: "GET",
-      headers: {
-        "accept": "application/json, text/plain, */*",
-        "user-agent": "Mozilla/5.0",
-        "referer": `${CAREERWILL_BASE}/class?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}&view=${encodeURIComponent(view)}&batch_type=${encodeURIComponent(batch_type)}`,
-        "origin": CAREERWILL_BASE
-      }
-    });
-
-    const text = await response.text();
-
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = text;
-    }
-
-    return res.status(response.status).json({
-      success: response.ok,
-      status: response.status,
-      source: targetUrl.toString(),
-      data
-    });
-
-  } catch (error) {
-    console.error("Careerwill class proxy error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message
-    });
-  }
-});
 /**
  * SEGMENT / NESTED PLAYLIST / KEY FILE / ABSOLUTE URL
  * Example:
@@ -1934,6 +1869,7 @@ app.get("/api/pw/kid", async (req, res) => {
   const url = `${CHANGE}/api/pw/kid?mpdUrl=${encodeURIComponent(mpdUrl)}`;
   return proxyJson(req, res, url);
 });
+  
 
 /**
  * 6) /api/pw/otp
