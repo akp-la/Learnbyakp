@@ -938,7 +938,7 @@ app.get("/apv/:file", (req, res) => {
 
         // Sirf tumhari site allow
         if (!referer.includes("learnbyakp.online")) {
-            return res.status(403).send("Forbidden");
+            return res.status(403).send("Some genius error. don't try again");
         }
 
         const fileName = req.params.file;
