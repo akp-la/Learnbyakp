@@ -1139,36 +1139,12 @@ function scheduleTask(callback){
     setTimeout(callback, 0);
   }
 }
-(function () {
 
-    const allowedDomain = "learnbyakp.online";
-
-    const ref = document.referrer || "";
-
-    // Direct open detect
-    if (ref === "") {
-
-        document.body.innerHTML = "";
-
-        throw new Error("Direct access blocked");
-
-    }
-
-    // Other domain detect
-    if (!ref.includes(allowedDomain)) {
-
-        document.body.innerHTML = "";
-
-        throw new Error("Invalid domain");
-
-    }
-
-})();
 /*
   Optional external script.
   Agar mobile me ab bhi lag aaye to is block ko comment kar dena.
 */
-const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
+ const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
 
 if(!isMobileDevice){
   const s = document.createElement("script");
