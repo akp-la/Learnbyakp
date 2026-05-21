@@ -7,6 +7,8 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
 const crypto = require("crypto");
+const path = require("path");
+const fs = require("fs");
 const fetch = require("node-fetch");
 const corsFn = cors();
 const CHANGE = "https://apiserver.deltastudy.site";
@@ -928,31 +930,47 @@ app.get("/api/vibrant/live-proxy", async (req, res) => {
 });
 //========dsdfd===
 
-  app.get("/apv/:file", (req, res) => {
+app.get("/apv/:file", (req, res) => {
 
-    const referer = req.get("referer") || "";
+    try {
 
-    // Sirf tumhari website allow
-    if (!referer.includes("learnbyakp.online")) {
-        return res.status(403).send("Forbidden");
+        const referer = req.get("referer") || "";
+
+        // Sirf tumhari site allow
+        if (!referer.includes("learnbyakp.online")) {
+            return res.status(403).send("Forbidden");
+        }
+
+        const fileName = req.params.file;
+
+        // Only JS
+        if (!fileName.endsWith(".js")) {
+            return res.status(404).send("Invalid file");
+        }
+
+        const filePath = path.join(
+            __dirname,
+            "apv",
+            fileName
+        );
+
+        // File exists check
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).send("File not found");
+        }
+
+        res.sendFile(filePath);
+
+    } catch (err) {
+
+        console.error(err);
+
+        res.status(500).send("Server Error");
+
     }
-
-    const fileName = req.params.file;
-
-    // Sirf .js files allow
-    if (!fileName.endsWith(".js")) {
-        return res.status(404).send("Invalid File");
-    }
-
-    const filePath = path.join(
-        __dirname,
-        "apv",
-        fileName
-    );
-
-    res.sendFile(filePath);
 
 });
+
 /**
  * SEGMENT / NESTED PLAYLIST / KEY FILE / ABSOLUTE URL
  * Example:
