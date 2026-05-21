@@ -80,31 +80,7 @@ async function deleteQueryBatch(db, query, resolve) {
   });
 }
 //app
-app.get("/apv/:file", (req, res) => {
 
-    const referer = req.get("referer") || "";
-
-    // Sirf tumhari website allow
-    if (!referer.includes("learnbyakp.online")) {
-        return res.status(403).send("Forbidden");
-    }
-
-    const fileName = req.params.file;
-
-    // Sirf .js files allow
-    if (!fileName.endsWith(".js")) {
-        return res.status(404).send("Invalid File");
-    }
-
-    const filePath = path.join(
-        __dirname,
-        "apv",
-        fileName
-    );
-
-    res.sendFile(filePath);
-
-});
 
 
 // ================== AUTH / EXPRESS APP ==================
@@ -950,7 +926,33 @@ app.get("/api/vibrant/live-proxy", async (req, res) => {
     });
   }
 });
+//========dsdfd===
 
+  app.get("/apv/:file", (req, res) => {
+
+    const referer = req.get("referer") || "";
+
+    // Sirf tumhari website allow
+    if (!referer.includes("learnbyakp.online")) {
+        return res.status(403).send("Forbidden");
+    }
+
+    const fileName = req.params.file;
+
+    // Sirf .js files allow
+    if (!fileName.endsWith(".js")) {
+        return res.status(404).send("Invalid File");
+    }
+
+    const filePath = path.join(
+        __dirname,
+        "apv",
+        fileName
+    );
+
+    res.sendFile(filePath);
+
+});
 /**
  * SEGMENT / NESTED PLAYLIST / KEY FILE / ABSOLUTE URL
  * Example:
