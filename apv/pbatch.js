@@ -26,6 +26,15 @@ const customStaticBatches = [
     isTrending: true,
     badgeText: "🔥 Trending",
     classTags: ["12+"]
+  },
+  {
+    batchId: "69fdacb8de150c68817ad2e9",
+    batchName: "NEEV Advanced 2027",
+    batchImage: "https://static.pw.live/5eb393ee95fab7468a79d189/ADMIN/af50d82b-2e58-4cf4-9c7a-5cc3a85654b7.png",
+    isCustomBatch: false,
+    isTrending: false,
+    badgeText: "🔥 Trending",
+    classTags: ["9"]
   }
 
   /*
