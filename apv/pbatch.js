@@ -35,6 +35,15 @@ const customStaticBatches = [
     isTrending: false,
     badgeText: "🔥 Trending",
     classTags: ["9"]
+  },
+  {
+    batchId: "6973841ae7f3b317d8295c7c",
+    batchName: "Udaan UP Board 2027 (English Medium)",
+    batchImage: "https://static.pw.live/5eb393ee95fab7468a79d189/ADMIN/0ead1fce-eb8e-48d0-b8e4-3488cf03d95f.png",
+    isCustomBatch: false,
+    isTrending: false,
+    badgeText: "🔥 Trending",
+    classTags: ["10"]
   }
 
   /*
