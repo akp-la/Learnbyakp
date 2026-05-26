@@ -729,7 +729,7 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
     }
 
     // 🔗 original API
-    const url = new URL(`${BASE}/api/vibrant/content`);
+    const url = new URL(`${BASE}/api/vibrant/course-hehe`);
 
     url.searchParams.set("course_id", course_id);
 
