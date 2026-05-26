@@ -539,7 +539,34 @@ res.json(data);
     res.status(500).json({ error: err.toString() });
   }
 });
-  
+//========science===
+
+  app.get("/api/science/previous-live", async (req, res) => {
+  try {
+    const courseid = req.query.course_id || req.query.c;
+
+    if (!courseid) {
+      return res.status(400).json({ error: "Missing courseid" });
+    }
+
+    // External API call
+    const url = `${BASE}/api/scienceandfun/previous-live?course_id=${courseid}`;
+    
+    const response = await fetchfn(url);
+
+if (!response.ok) {
+  return res.status(response.status).json({
+    error: "External API failed"
+  });
+}
+
+const data = await response.json();
+res.json(data);
+  } catch (err) {
+    console.error("/api/science/previous-live error:", err);
+    res.status(500).json({ error: err.toString() });
+  }
+});
 //=========uwqeuiweyqi====
  app.get("/api/missionjeet/course-details", async (req, res) => {
   try {
@@ -713,7 +740,19 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
       res.json({ error: e.toString() });
     }
   });
-  
+  //===================science====
+     app.get("/api/science/batches", async (req, res) => {
+    try {
+      const r = await fetchfn(
+        `${BASE}/api/scienceandfun/batches`
+      );
+      const data = await r.json();
+      res.json(data);
+    } catch (e) {
+      console.error("/api/science/batches error:", e);
+      res.json({ error: e.toString() });
+    }
+  });
 //==============
  app.get("/api/vibrant/content", async (req, res) => {
   try {
@@ -730,6 +769,54 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
 
     // 🔗 original API
     const url = new URL(`${BASE}/api/vibrant/course-hehe`);
+
+    url.searchParams.set("course_id", course_id);
+
+    // 👇 IMPORTANT: only send if exists
+    if (parent_id) {
+      url.searchParams.set("parent_id", parent_id);
+    }
+
+    const response = await fetchfn(url.toString());
+
+    if (!response.ok) {
+      throw new Error(`API failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // 🔥 normalize response
+    res.json({
+      status: 200,
+      data: data.data || data,
+      message: "success"
+    });
+
+  } catch (err) {
+    console.error("API ERROR:", err);
+
+    res.status(500).json({
+      status: 500,
+      message: err.message
+    });
+  }
+});
+  //==========science==========
+  app.get("/api/science/content", async (req, res) => {
+  try {
+    // 🔥 support both
+    const course_id = req.query.course_id;
+    const parent_id = req.query.parent_id || req.query.id;
+
+    if (!course_id) {
+      return res.status(400).json({
+        status: 400,
+        message: "Missing course_id"
+      });
+    }
+
+    // 🔗 original API
+    const url = new URL(`${BASE}/api/scienceandfun/content`);
 
     url.searchParams.set("course_id", course_id);
 
@@ -1063,71 +1150,6 @@ app.all("/api/vibrant/live-file", async (req, res) => {
   }
 });
   // vibrant live ====
- app.post("/api/vibrant/resolve-url", async (req, res) => {
-  try {
-    const {
-      path,
-      quality,
-      bitrate,
-      course_id,
-      video_id,
-      isLive
-    } = req.body || {};
-
-    if (!path || typeof path !== "string") {
-      return res.status(400).json({
-        success: false,
-        error: "path is required"
-      });
-    }
-
-    // Agar path already direct playable URL hai
-    if (
-      /^https?:\/\//i.test(path) &&
-      /\.(m3u8|mpd|mp4)(\?|$)/i.test(path)
-    ) {
-      return res.json({
-        success: true,
-        url: path
-      });
-    }
-
-    /*
-      Yaha tumhara authorized resolver logic aayega.
-      Ye function final playable URL return karega.
-      Example output:
-      https://domain.com/video/master.m3u8
-    */
-    const finalUrl = await getAuthorizedVibrantPlayableUrl({
-      path,
-      quality,
-      bitrate,
-      course_id,
-      video_id,
-      isLive
-    });
-
-    if (!finalUrl) {
-      return res.status(422).json({
-        success: false,
-        error: "Could not resolve authorized playable URL."
-      });
-    }
-
-    return res.json({
-      success: true,
-      url: finalUrl
-    });
-
-  } catch (err) {
-    console.error("resolve-url error:", err);
-
-    return res.status(500).json({
-      success: false,
-      error: "Internal server error while resolving URL"
-    });
-  }
-});
   // GET /api/vibrant/live?course_id=123
 app.get("/api/vibrant/live", async (req, res) => {
   try {
@@ -1142,6 +1164,56 @@ app.get("/api/vibrant/live", async (req, res) => {
 
     const upstreamUrl =
       `${CHANGE}/api/vibrant/live?course_id=${encodeURIComponent(courseId)}`;
+
+    const response = await fetch(upstreamUrl, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0"
+      }
+    });
+
+    const text = await response.text();
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
+
+    return res.status(response.status).json({
+      success: response.ok,
+      status: response.status,
+      source: "vibrant-live",
+      data
+    });
+
+  } catch (error) {
+    console.error("Vibrant live proxy error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch Vibrant live data",
+      error: error.message
+    });
+  }
+});
+
+  //======science==========
+  app.get("/api/science/live", async (req, res) => {
+  try {
+    const courseId = req.query.course_id || req.query.courseid || req.query.id;
+
+    if (!courseId) {
+      return res.status(400).json({
+        success: false,
+        message: "course_id is required"
+      });
+    }
+
+    const upstreamUrl =
+      `${CHANGE}/api/scienceandfun/live?course_id=${encodeURIComponent(courseId)}`;
 
     const response = await fetch(upstreamUrl, {
       method: "GET",
