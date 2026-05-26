@@ -12,7 +12,7 @@ const fs = require("fs");
 const fetch = require("node-fetch");
 const corsFn = cors();
 const CHANGE = "https://apiserver.deltastudy.site";
-const BASE = "https://apiserver.deltastudy.site";
+const BASE = "https://apiserver-m8we.onrender.com";
 const rateLimit = require("express-rate-limit");
 const app = express();
 app.use(rateLimit({ windowMs: 60 * 1000, max: 30 }));
