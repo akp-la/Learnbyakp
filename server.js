@@ -1018,7 +1018,7 @@ app.get("/api/vibrant/live-proxy", async (req, res) => {
   }
 });
 //========dsdfd===
-
+ const allowedSites = ["learnbyakp.online", "www.notjitu.in"];
 app.get("/apv/:file", (req, res) => {
 
     try {
@@ -1026,9 +1026,11 @@ app.get("/apv/:file", (req, res) => {
         const referer = req.get("referer") || "";
 
         // Sirf tumhari site allow
-        if (!referer.includes("learnbyakp.online")) {
-            return res.status(403).send("Some genius error. don't try again");
-        }
+       
+
+if (!allowedSites.some(site => referer.includes(site))) {
+    return res.status(403).send("Some genius error. don't try again");
+}
 
         const fileName = req.params.file;
 
