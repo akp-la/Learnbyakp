@@ -730,15 +730,15 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
     }
   });
 //===============ytryutuytyu======
-    app.get("/api/vibrant/batches", async (req, res) => {
+    app.get("/api/science/batches", async (req, res) => {
     try {
       const r = await fetchfn(
-        `${BASE}/api/vibrant/batches`
+        `${BASE}/api/scienceandfun/batches`
       );
       const data = await r.json();
       res.json(data);
     } catch (e) {
-      console.error("/api/vibrant/batches error:", e);
+      console.error("/api/batches error:", e);
       res.json({ error: e.toString() });
     }
   });
