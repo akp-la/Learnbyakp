@@ -44,6 +44,22 @@ const customStaticBatches = [
     isTrending: false,
     badgeText: "🔥 Trending",
     classTags: ["10"]
+  },{
+    batchId: "69d60382f4f4ea78af873744",
+    batchName: "NEEV Power Batch - Competitive 2027",
+    batchImage: "https://static.pw.live/5eb393ee95fab7468a79d189/ADMIN/738475c2-ba0c-450f-82f6-83a063c21502.png",
+    isCustomBatch: false,
+    isTrending: false,
+    badgeText: "🔥 Trending",
+    classTags: ["9"]
+  },{
+    batchId: "6994166c7213daadfe518a8b",
+    batchName: "NEEV Power Batch 2027 (English) (F0913EE)",
+    batchImage: "https://static.pw.live/5eb393ee95fab7468a79d189/ADMIN/738475c2-ba0c-450f-82f6-83a063c21502.png",
+    isCustomBatch: false,
+    isTrending: false,
+    badgeText: "🔥 Trending",
+    classTags: ["9"]
   }
 
   /*
