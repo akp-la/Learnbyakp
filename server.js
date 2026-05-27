@@ -878,7 +878,33 @@ app.get("/api/vibrant/video-details", async (req, res) => {
     res.status(500).json({ error: err.toString() });
   }
 });
-  
+  //===================science========
+  app.get("/api/science/video-details", async (req, res) => {
+  try {
+    // Support both old (r/e) and new (courseid/id) param formats
+    const video_id = req.query.D || req.query.video_id;
+    const course_id = req.query.P || req.query.course_id;
+
+    if (!course_id) {
+      return res.status(400).json({ error: "Missing courseid (r or courseid)" });
+    }
+
+    const url = new URL(`${BASE}/api/scienceandfun/video-details`);
+    url.searchParams.set("course_id", course_id);
+
+    if (video_id) {
+      url.searchParams.set("video_id", video_id);
+    }
+
+    const response = await fetchfn(url.toString());
+    const data = await response.json();
+
+    res.json(data);
+  } catch (err) {
+    console.error("/api/scienceand fun/video-details error:", err);
+    res.status(500).json({ error: err.toString() });
+  }
+});
   //ddfddfdfdf=======
 app.get("/api/nexttoppers/all-content", async (req, res) => {
   try {
