@@ -3,7 +3,7 @@ const AES_KEY_TEXT = "638udh3829162018";
 const AES_IV_TEXT = "fedcba9876543210";
 
 const params = new URLSearchParams(window.location.search);
-const courseId = params.get("course_id");
+const courseId = params.get("id");
 const givenTitle = params.get("title");
 
 const state = {
@@ -496,7 +496,7 @@ async function openContentItem(item) {
       window.location.href = item.file_link;
       return;
     }
-    window.location.href = `player?course_id=${encodeURIComponent(courseId)}&video_id=${encodeURIComponent(item.id)}`;
+    window.location.href = `splayer?course_id=${encodeURIComponent(courseId)}&video_id=${encodeURIComponent(item.id)}`;
     return;
   }
 
