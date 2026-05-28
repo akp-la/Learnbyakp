@@ -689,39 +689,34 @@ app.get('/play-video', (req, res) => {
     if (!token) {
         return res.status(400).json({ 
             error: true, 
-            message: "Token missing! Kripya URL mein token pass karein" 
+            message: "Token missing! /play-video?token=XYZ" 
         });
     }
 
     const targetUrl = `https://player.classx.co.in/app-player?token=${token}`;
-    console.log(`\nFetching video/player for token: ${token}`);
+    console.log(`\n🔹 Fetching token: ${token}`);
 
-    // ✅ FIXED: SSL certificate verify ko disable karein (local testing ke liye)
-    const options = {
-        rejectUnauthorized: false,  // ⭐ Important for self-signed certs
-        hostname: 'player.classx.co.in',
-        path: `/app-player?token=${token}`,
-        method: 'GET'
-    };
-
-    https.get(options, (proxyResponse) => {
-        // ✅ FIXED: Sirf zaroori headers copy karein
-        const headers = { ...proxyResponse.headers };
+    https.get(targetUrl, (proxyResponse) => {
+        console.log(`✅ Backend status: ${proxyResponse.statusCode}`);
         
-        // Remove headers jo conflict kar sakte hain
-        delete headers['transfer-encoding'];
-        delete headers['connection'];
+        // Headers set karein
+        res.writeHead(proxyResponse.statusCode, proxyResponse.headers);
         
-        res.writeHead(proxyResponse.statusCode, headers);
+        // Data pipe karein
         proxyResponse.pipe(res);
-
+        
     }).on('error', (err) => {
-        console.error('Proxy request mein error aayi:', err.message);
-        res.status(500).json({ 
-            error: true, 
-            message: "Backend server error", 
-            details: err.message 
-        });
+        console.error(`❌ Error: ${err.message}`);
+        console.error(`❌ Code: ${err.code}`);
+        
+        if (!res.headersSent) {
+            res.status(500).json({ 
+                error: true, 
+                message: "Backend error", 
+                details: err.message,
+                code: err.code
+            });
+        }
     });
 });
   //============ attttttttt======
