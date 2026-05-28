@@ -683,7 +683,43 @@ app.post("/api/pw/verify", async (req, res) => {
 });
   // -==========temp mail ===========
   
-  
+  app.get('/play-video', (req, res) => {
+    // 1. URL se token nikaalein
+    const token = req.query.token;
+
+    // Agar token nahi diya gaya hai, toh error show karein
+    if (!token) {
+        return res.status(400).json({ 
+            error: true, 
+            message: "Token missing! Kripya URL mein token pass karein (jaise: /play-video?token=12345)" 
+        });
+    }
+
+    // 2. Original target URL banayein
+    const targetUrl = `https://player.classx.co.in/app-player?token=${token}`;
+
+    console.log(`\nFetching video/player for token: ${token}`);
+
+    // 3. Backend se ClassX wale URL ko call karein
+    https.get(targetUrl, (proxyResponse) => {
+        
+        // 4. Original response ke headers (jaise Content-Type, Content-Length) client ko set karein
+        // Yeh video streaming aur proper formatting ke liye bohot zaroori hai
+        res.writeHead(proxyResponse.statusCode, proxyResponse.headers);
+
+        // 5. Data ko direct client (browser) ki taraf pipe (stream) kar dein
+        proxyResponse.pipe(res);
+
+    }).on('error', (err) => {
+        // Agar request fail ho jaye toh error handle karein
+        console.error('Proxy request mein error aayi:', err.message);
+        res.status(500).json({ 
+            error: true, 
+            message: "Backend server error", 
+            details: err.message 
+        });
+    });
+});
 //============ attttttttt======
 app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
   try {
