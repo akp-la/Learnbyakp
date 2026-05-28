@@ -683,35 +683,39 @@ app.post("/api/pw/verify", async (req, res) => {
 });
   // -==========temp mail ===========
   
-  app.get('/play-video', (req, res) => {
-    // 1. URL se token nikaalein
+app.get('/play-video', (req, res) => {
     const token = req.query.token;
 
-    // Agar token nahi diya gaya hai, toh error show karein
     if (!token) {
         return res.status(400).json({ 
             error: true, 
-            message: "Token missing! Kripya URL mein token pass karein (jaise: /play-video?token=12345)" 
+            message: "Token missing! Kripya URL mein token pass karein" 
         });
     }
 
-    // 2. Original target URL banayein
     const targetUrl = `https://player.classx.co.in/secure-player?token=${token}`;
-
     console.log(`\nFetching video/player for token: ${token}`);
 
-    // 3. Backend se ClassX wale URL ko call karein
-    https.get(targetUrl, (proxyResponse) => {
-        
-        // 4. Original response ke headers (jaise Content-Type, Content-Length) client ko set karein
-        // Yeh video streaming aur proper formatting ke liye bohot zaroori hai
-        res.writeHead(proxyResponse.statusCode, proxyResponse.headers);
+    // ✅ FIXED: SSL certificate verify ko disable karein (local testing ke liye)
+    const options = {
+        rejectUnauthorized: false,  // ⭐ Important for self-signed certs
+        hostname: 'player.classx.co.in',
+        path: `/app-player?token=${token}`,
+        method: 'GET'
+    };
 
-        // 5. Data ko direct client (browser) ki taraf pipe (stream) kar dein
+    https.get(options, (proxyResponse) => {
+        // ✅ FIXED: Sirf zaroori headers copy karein
+        const headers = { ...proxyResponse.headers };
+        
+        // Remove headers jo conflict kar sakte hain
+        delete headers['transfer-encoding'];
+        delete headers['connection'];
+        
+        res.writeHead(proxyResponse.statusCode, headers);
         proxyResponse.pipe(res);
 
     }).on('error', (err) => {
-        // Agar request fail ho jaye toh error handle karein
         console.error('Proxy request mein error aayi:', err.message);
         res.status(500).json({ 
             error: true, 
@@ -720,7 +724,7 @@ app.post("/api/pw/verify", async (req, res) => {
         });
     });
 });
-//============ attttttttt======
+  //============ attttttttt======
 app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
   try {
     const { courseid } = req.params;
