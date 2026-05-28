@@ -3032,7 +3032,7 @@ app.get("/api/pw/download", async (req, res) => {
   });
 
   return app;
-}
+
 
 // Express app instance (reuse)
 const appInstance = createApp();
