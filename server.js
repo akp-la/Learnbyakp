@@ -2,8 +2,6 @@
 const functions = require("firebase-functions/v1"); // v1 import
 const admin = require("firebase-admin");
 const cors = require("cors");
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
@@ -16,7 +14,6 @@ const corsFn = cors();
 const CHANGE = "https://apiserver.deltastudy.site";
 const BASE = "https://apiserver.deltastudy.site";
 const rateLimit = require("express-rate-limit");
-puppeteer.use(StealthPlugin());
 const app = express();
 app.use(rateLimit({ windowMs: 60 * 1000, max: 30 }));
 //  Use node-fetch via dynamic import (for proxy routes)
@@ -891,110 +888,7 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
 });
   //============yfdghf==========
   // Testing ke liye GET endpoint
-let browser = null;
-let page = null;
 
-// Browser initialize karein
-async function initBrowser() {
-  try {
-    browser = await puppeteer.launch({
-      headless: false, // Dhyan dein: false rakhein Cloudflare bypass ke liye
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--window-size=1920,1080'
-      ]
-    });
-    page = await browser.newPage();
-    
-    // Human-like settings
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-    await page.setViewport({ width: 1920, height: 1080 });
-    
-    console.log('✅ Browser initialized successfully');
-  } catch (error) {
-    console.error('Browser init error:', error);
-  }
-}
-
-app.get('/', (req, res) => {
-  res.json({ message: 'Token Proxy Server with Cloudflare bypass is running!' });
-});
-
-// Main Proxy endpoint
-app.get('/api/token-proxy', async (req, res) => {
-  if (!page) {
-    await initBrowser();
-  }
-  
-  try {
-    const params = new URLSearchParams(req.query).toString();
-    const url = params 
-      ? `https://stream.studyratna.cc/api/token-proxy.php?${params}`
-      : 'https://stream.studyratna.cc/api/token-proxy.php';
-    
-    console.log('Fetching:', url);
-    
-    // Page navigate karein (Cloudflare challenge automatically solve hoga)
-    await page.goto(url, {
-      waitUntil: 'networkidle0',
-      timeout: 30000
-    });
-    
-    // Wait for Cloudflare challenge to complete
-    await page.waitForTimeout(5000);
-    
-    // Response content nikalein
-    const content = await page.content();
-    const status = await page.evaluate(() => document.documentElement.innerHTML);
-    
-    // Check if it's still Cloudflare page
-    if (content.includes('Just a moment') || content.includes('cloudflare')) {
-      console.error('Still showing Cloudflare page, waiting more...');
-      await page.waitForTimeout(10000);
-      await page.reload({ waitUntil: 'networkidle0' });
-    }
-    
-    // Try to get JSON response
-    try {
-      const json = await page.evaluate(() => {
-        try {
-          return JSON.parse(document.body.textContent || document.body.innerText);
-        } catch (e) {
-          return null;
-        }
-      });
-      
-      if (json) {
-        return res.json(json);
-      }
-    } catch (e) {
-      console.log('Not JSON response');
-    }
-    
-    // Agar browser se directly response nahi mil raha, toh intercept karein
-    const response = await page.response();
-    if (response) {
-      const body = await response.text();
-      try {
-        const json = JSON.parse(body);
-        return res.json(json);
-      } catch (e) {
-        res.send(body);
-      }
-    } else {
-      res.send(content);
-    }
-    
-  } catch (error) {
-    console.error('Proxy error:', error.message);
-    res.status(500).json({
-      error: 'Failed to fetch token',
-      message: error.message
-    });
-  }
   //==============uyutyutyuu
 app.get("/api/vibrant/video-details", async (req, res) => {
   try {
@@ -3032,7 +2926,7 @@ app.get("/api/pw/download", async (req, res) => {
   });
 
   return app;
-
+}
 
 // Express app instance (reuse)
 const appInstance = createApp();
@@ -3044,9 +2938,4 @@ const PORT = process.env.PORT || 3000;
 
 appInstance.listen(PORT, () => {
   console.log("Server running on port " + PORT);
-});
-
-process.on('SIGINT', async () => {
-  if (browser) await browser.close();
-  process.exit(0);
 });
