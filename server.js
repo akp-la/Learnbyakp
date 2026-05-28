@@ -895,19 +895,43 @@ app.get('/api/token-proxy', async (req, res) => {
       {
         params: req.query, // GET parameters forward karein
         headers: {
-          'User-Agent': req.headers['user-agent'] || 'Node.js'
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'application/json, text/plain, */*',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Connection': 'keep-alive',
+          'Referer': 'https://stream.studyratna.cc/',
+          'Origin': 'https://stream.studyratna.cc',
+          'Sec-Fetch-Dest': 'empty',
+          'Sec-Fetch-Mode': 'cors',
+          'Sec-Fetch-Site': 'same-origin'
         },
-        timeout: 10000
+        timeout: 10000,
+        validateStatus: function (status) {
+          return status < 500; // All status codes < 500 ko accept karein
+        }
       }
     );
     
-    res.json(response.data);
+    // Response status code check karein
+    if (response.status === 403) {
+      console.error('403 Error from target API. Missing authentication?');
+      console.error('Response headers:', response.headers);
+      console.error('Response data:', response.data);
+    }
+    
+    res.status(response.status).json(response.data);
   } catch (error) {
     console.error('Proxy error:', error.message);
+    console.error('Error config:', error.config?.url);
+    console.error('Error response:', error.response?.data);
+    
     res.status(error.response?.status || 500).json({
       error: 'Failed to fetch token',
       message: error.message,
-      code: error.code
+      code: error.code,
+      status: error.response?.status,
+      data: error.response?.data
     });
   }
 });
