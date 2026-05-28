@@ -696,7 +696,7 @@ app.post("/api/pw/verify", async (req, res) => {
     }
 
     // 2. Original target URL banayein
-    const targetUrl = `https://player.classx.co.in/app-player?token=${token}`;
+    const targetUrl = `https://player.classx.co.in/secure-player?token=${token}`;
 
     console.log(`\nFetching video/player for token: ${token}`);
 
