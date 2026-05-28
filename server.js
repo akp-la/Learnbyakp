@@ -693,7 +693,7 @@ app.get('/play-video', (req, res) => {
         });
     }
 
-    const targetUrl = `https://player.classx.co.in/secure-player?token=${token}`;
+    const targetUrl = `https://player.classx.co.in/app-player?token=${token}`;
     console.log(`\nFetching video/player for token: ${token}`);
 
     // ✅ FIXED: SSL certificate verify ko disable karein (local testing ke liye)
