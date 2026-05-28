@@ -886,6 +886,28 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
     });
   }
 });
+  //============yfdghf==========
+  app.post('/api/token-proxy', async (req, res) => {
+  try {
+    const response = await axios.post(
+      'https://stream.studyratna.cc/api/token-proxy.php',
+      req.body, // Forward request body
+      {
+        headers: req.headers,
+        timeout: 10000
+      }
+    );
+    
+    res.json(response.data);
+  } catch (error) {
+    console.error('Proxy error:', error.message);
+    res.status(error.response?.status || 500).json({
+      error: 'Failed to fetch token',
+      message: error.message
+    });
+  }
+});
+
   //==============uyutyutyuu
 app.get("/api/vibrant/video-details", async (req, res) => {
   try {
