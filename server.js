@@ -887,13 +887,24 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
   }
 });
   //============yfdghf==========
-  app.post('/api/token-proxy', async (req, res) => {
+  // Testing ke liye GET endpoint
+app.get('/api/token-proxy', (req, res) => {
+  res.json({ 
+    message: 'Proxy server is running! Use POST method for actual token requests.' 
+  });
+});
+
+// Main Proxy endpoint (POST)
+app.post('/api/token-proxy', async (req, res) => {
   try {
     const response = await axios.post(
       'https://stream.studyratna.cc/api/token-proxy.php',
-      req.body, // Forward request body
+      req.body,
       {
-        headers: req.headers,
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': req.headers['user-agent'] || 'Node.js'
+        },
         timeout: 10000
       }
     );
@@ -903,11 +914,11 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
     console.error('Proxy error:', error.message);
     res.status(error.response?.status || 500).json({
       error: 'Failed to fetch token',
-      message: error.message
+      message: error.message,
+      code: error.code
     });
   }
 });
-
   //==============uyutyutyuu
 app.get("/api/vibrant/video-details", async (req, res) => {
   try {
