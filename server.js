@@ -888,21 +888,13 @@ app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
 });
   //============yfdghf==========
   // Testing ke liye GET endpoint
-app.get('/api/token-proxy', (req, res) => {
-  res.json({ 
-    message: 'Proxy server is running! Use POST method for actual token requests.' 
-  });
-});
-
-// Main Proxy endpoint (POST)
-app.post('/api/token-proxy', async (req, res) => {
+app.get('/api/token-proxy', async (req, res) => {
   try {
-    const response = await axios.post(
+    const response = await axios.get(
       'https://stream.studyratna.cc/api/token-proxy.php',
-      req.body,
       {
+        params: req.query, // GET parameters forward karein
         headers: {
-          'Content-Type': 'application/json',
           'User-Agent': req.headers['user-agent'] || 'Node.js'
         },
         timeout: 10000
