@@ -123,7 +123,7 @@
     }
 
     function showError(msg) {
-      contentArea.innerHTML = `<div class="empty"><h3>No content available</h3><p>no content found in this folder</p></div>`;
+      contentArea.innerHTML = `<div class="empty"><h3>No content available</h3><p>no content found in this folder: ${escapeHtml(msg)}</p></div>`;
       sectionCount.textContent = "0 items";
     }
 
