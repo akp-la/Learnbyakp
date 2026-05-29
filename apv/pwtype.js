@@ -36,7 +36,7 @@
     const videoSheetTitle = document.getElementById("videoSheetTitle");
     const playAppleBtn = document.getElementById("playAppleBtn");
     const playAndroidBtn = document.getElementById("playAndroidBtn");
-    
+  
     const videoCloseBtn = document.getElementById("videoCloseBtn");
 
     // 4. App State & Caching System
@@ -123,8 +123,8 @@
     }
 
     function showError(msg) {
-      contentArea.innerHTML = `<div class="empty"><h3>No content available</h3><p>no content found in this folder: ${escapeHtml(msg)}</p></div>`;
-      sectionCount.textContent = "0 items";
+      contentArea.innerHTML = `<div class="error"><h3>Something went wrong</h3><p>${escapeHtml(msg)}</p></div>`;
+      sectionCount.textContent = "Error";
     }
 
     function showEmpty(msg) {
@@ -404,48 +404,7 @@
       window.location.href = `${target}?video_id=${encodeURIComponent(currentVideo.findKey)}&subject_slug=${encodeURIComponent(subjectSlug)}&batch_id=${encodeURIComponent(batchId)}&schedule_id=${encodeURIComponent(currentVideo._id)}&subject_id=${encodeURIComponent(subjectId || subjectSlug)}&topicSlug=${encodeURIComponent(topicSlug)}`;
     }
 
-    async function downloadCurrentVideo() {
-      if (!currentVideo?.findKey) return alert("Missing required info.");
-      const key = currentVideo.findKey;
-      videoSheetBackdrop.classList.remove("show");
-
-      try {
-        let finalUrl = null;
-        try {
-          const res1 = await fetchJson(`${BASE_URL}/api/pw/videonew?batchId=${encodeURIComponent(batchId)}&subjectId=${encodeURIComponent(subjectId || subjectSlug)}&childId=${encodeURIComponent(key)}`);
-          if (res1.data) {
-            const d1 = await decryptPayload(res1.data);
-            if (d1.success && d1.data?.url) finalUrl = d1.data.signedUrl ? d1.data.url + d1.data.signedUrl : d1.data.url;
-          }
-        } catch (e) {}
-
-        if (!finalUrl) {
-          try {
-            const res2 = await fetchJson(`${BASE_URL}/api/pw/video?batchId=${encodeURIComponent(batchId)}&subjectId=${encodeURIComponent(subjectSlug)}&childId=${encodeURIComponent(key)}`);
-            if (res2.data) {
-              const d2 = await decryptPayload(res2.data);
-              if (d2.success && d2.data?.url) finalUrl = d2.data.signedUrl ? d2.data.url + d2.data.signedUrl : d2.data.url;
-            }
-          } catch (e) {}
-        }
-
-        if (!finalUrl) {
-          const res3 = await fetchJson(`${BASE_URL}/api/pw/videosuper?batchId=${encodeURIComponent(batchId)}&childId=${encodeURIComponent(key)}`).catch(()=>null);
-          if (res3?.success && res3.data?.video_url) finalUrl = res3.data.video_url;
-        }
-
-        if (!finalUrl) {
-          const res4 = await fetchJson(`${BASE_URL}/api/pw/videoplay?batchId=${encodeURIComponent(batchId)}&childId=${encodeURIComponent(key)}`).catch(()=>null);
-          if (res4?.success && res4.data?.video_url) finalUrl = res4.data.video_url;
-        }
-
-        if (!finalUrl) throw new Error("Could not retrieve a valid video URL.");
-
-        window.location.href = `/download?url=${encodeURIComponent(finalUrl.replace(/\.mpd/i, ".m3u8"))}`;
-      } catch (err) {
-        alert("Failed to get download link: " + err.message);
-      }
-    }
+    
 
     // Hook listeners
     pdfOpenBtn.addEventListener("click", () => handlePdfOpen("open"));
@@ -457,7 +416,7 @@
 
     playAppleBtn.addEventListener("click", () => playVideo("apple"));
     playAndroidBtn.addEventListener("click", () => playVideo("android"));
-   
+    
     videoCloseBtn.addEventListener("click", () => videoSheetBackdrop.classList.remove("show"));
 
     window.addEventListener("click", (e) => {
@@ -472,7 +431,7 @@
 
     // Boot
     setTab("lectures");
-
+  
     const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
 
 const s = document.createElement("script");
