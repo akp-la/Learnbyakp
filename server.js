@@ -569,34 +569,7 @@ res.json(data);
     res.status(500).json({ error: err.toString() });
   }
 });
-//=========uwqeuiweyqi====
- app.get("/api/missionjeet/course-details", async (req, res) => {
-  try {
-    const courseid = req.query.courseid;
 
-    if (!courseid) {
-      return res.status(400).json({ error: "Missing courseid" });
-    }
-
-    // External API call
-    const url = `${BASE}/api/missionjeet/course-details?courseid=${courseid}`;
-    
-    const response = await fetchfn(url);
-
-if (!response.ok) {
-  return res.status(response.status).json({
-    error: "External API failed"
-  });
-}
-
-const data = await response.json();
-res.json(data);
-  } catch (err) {
-    console.error("/api/missionjeet/course-details error:", err);
-    res.status(500).json({ error: err.toString() });
-  }
-});
-  const BASE_URL = `${BASE}`;
 //=============454534534==========
   app.post("/api/pw/login", async (req, res) => {
   try {
@@ -609,7 +582,7 @@ res.json(data);
       });
     }
 
-    const upstream1 = await fetch(`${BASE_URL}/api/pw/login`, {
+    const upstream1 = await fetch(`${BASE}/api/pw/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -720,35 +693,7 @@ app.get('/play-video', (req, res) => {
     });
 });
   //============ attttttttt======
-app.get("/api/missionjeet/all-content/:courseid", async (req, res) => {
-  try {
-    const { courseid } = req.params;
-    const id = req.query.id || courseid;  // Default id to courseid if missing
 
-    if (!courseid) {
-      return res.status(400).json({ error: "Missing :courseid param" });
-    }
-
-    // Build external URL matching exact path pattern
-    let externalUrl;
-    if (id && id !== courseid) {
-      externalUrl = `${BASE}/api/missionjeet/all-content/${courseid}?id=${id}`;
-    } else {
-      externalUrl = `${BASE}/api/missionjeet/all-content/${courseid}`;
-    }
-
-    const response = await fetchfn(externalUrl);
-    if (!response.ok) {
-      throw new Error(`External: ${response.status}`);
-    }
-    const data = await response.json();
-
-    res.json(data);
-  } catch (err) {
-    console.error("/api/missionjeet/all-content error:", err);
-    res.status(500).json({ error: err.toString() });
-  }
-});
   // ========= YOUR TWO PROXY ROUTES =========
 
   // Endpoint for /api/batches
@@ -1613,114 +1558,7 @@ app.get("/api/tempmail/health", (req, res) => {
 
   
   //jkdsyututyt======
-  app.get("/api/nexttoppers/course-details", async (req, res) => {
-  try {
-    const courseid = req.query.courseid;
-
-    if (!courseid) {
-      return res.status(400).json({ error: "Missing courseid" });
-    }
-
-    // External API call
-    const url = `${BASE}/api/nexttoppers/course-details?courseid=${courseid}`;
-    
-   const response = await fetchfn(url);
-
-if (!response.ok) {
-  return res.status(response.status).json({
-    error: "External API failed"
-  });
-}
-
-const data = await response.json();
-res.json(data);
-  } catch (err) {
-    console.error("/api/nexttoppers/course-details error:", err);
-    res.status(500).json({ error: err.toString() });
-  }
-});
-//tetyryr ytyu========
-app.get("/api/nexttoppers/content-details", async (req, res) => {
-  try {
-    const entityId = req.query.content_id;
-    const courseId = req.query.courseid;
-
-    if (!entityId || !courseId) {
-      return res.status(400).json({ error: "Missing content_id or courseid" });
-    }
-
-    const url = `${BASE}/api/nexttoppers/content-details?content_id=${entityId}&courseid=${courseId}`;
-
-    const response = await fetchfn(url);
-
-if (!response.ok) {
-  return res.status(response.status).json({
-    error: "External API failed"
-  });
-}
-
-
-
-    // ✅ check response ok or not
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: `External API error: ${response.status}`
-      });
-    }
-
-    const data = await response.json();
-
-    res.json(data);
-
-  } catch (err) {
-    console.error("/api/nexttoppers/content-details error:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-
-  // Endpoint for /api/nexttoppers/batches
- app.get("/api/nexttoppers/drm", async (req, res) => {
-  try {
-    const { videoid } = req.query;
-
-    if (!videoid) {
-      return res.status(400).json({ error: "videoid is required" });
-    }
-
-    const upstream = `${CHANGE}/api/nexttoppers/getVideoDetailsDrm?videoid=${encodeURIComponent(videoid)}`;
-
-    const response = await fetch(upstream, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json",
-        "Referer": "https://course.nexttoppers.com/"
-      }
-    });
-
-    const text = await response.text();
-
-    res.status(response.status).send(text);
-  } catch (err) {
-    console.error("DRM proxy error:", err);
-    res.status(500).json({ error: "Proxy failed" });
-  }
-});
  
-// Endpoint for /api/jeet/batches
-  app.get("/api/missionjeet/batches", async (req, res) => {
-    try {
-      const r = await fetchfn(
-        `${BASE}/api/missionjeet/batches`
-      );
-      const data = await r.json();
-      res.json(data);
-    } catch (e) {
-      console.error("/api/missionjeet/batches error:", e);
-      res.json({ error: e.toString() });
-    }
-  });
-
   // Endpoint for /api/pw/li
 
 //=============pw batch details
