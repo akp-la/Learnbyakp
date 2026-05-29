@@ -216,7 +216,7 @@ function loadEnrolledIds(){
 // Fetch JSON Local
 async function fetchLocalJSONBatches(){
   try{
-    const res = await fetch("../batches.json");
+    const res = await fetch("https://learnbyakp.onrender.com/batches.json");
     if(!res.ok) throw new Error("HTTP error! status: " + res.status);
     
     const json = await res.json();
