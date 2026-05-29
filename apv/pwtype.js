@@ -123,8 +123,8 @@
     }
 
     function showError(msg) {
-      contentArea.innerHTML = `<div class="error"><h3>Something went wrong</h3><p>${escapeHtml(msg)}</p></div>`;
-      sectionCount.textContent = "Error";
+      contentArea.innerHTML = `<div class="empty"><h3>No content available</h3><p>no content found in this folder</p></div>`;
+      sectionCount.textContent = "0 items";
     }
 
     function showEmpty(msg) {
