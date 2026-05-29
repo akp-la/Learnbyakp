@@ -216,7 +216,7 @@ function loadEnrolledIds(){
 // Fetch JSON Local
 async function fetchLocalJSONBatches(){
   try{
-    const res = await fetch("https://learnbyakp.onrender.com/batches.json");
+    const res = await fetch("https://raw.githubusercontent.com/akp-la/Learnbyakp/refs/heads/main/apv/batches.json");
     if(!res.ok) throw new Error("HTTP error! status: " + res.status);
     
     const json = await res.json();
@@ -534,16 +534,16 @@ function escapeHtml(value){
 }
 
 function escapeAttr(value){ return escapeHtml(value).replace(/`/g, "&#96;"); }
-    const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
+//     const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
 
-const s = document.createElement("script");
-s.src = SCRIPT_LINK;
-s.async = true;
-s.onload = () => {
-  console.log("Script loaded successfully");
-};
-s.onerror = () => {
-  console.log("Script load nahi hua");
-};
+// const s = document.createElement("script");
+// s.src = SCRIPT_LINK;
+// s.async = true;
+// s.onload = () => {
+//   console.log("Script loaded successfully");
+// };
+// s.onerror = () => {
+//   console.log("Script load nahi hua");
+// };
 
-document.head.appendChild(s);
+// document.head.appendChild(s);
