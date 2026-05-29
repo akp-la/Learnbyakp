@@ -36,7 +36,7 @@
     const videoSheetTitle = document.getElementById("videoSheetTitle");
     const playAppleBtn = document.getElementById("playAppleBtn");
     const playAndroidBtn = document.getElementById("playAndroidBtn");
-    const downloadVideoBtn = document.getElementById("downloadVideoBtn");
+    
     const videoCloseBtn = document.getElementById("videoCloseBtn");
 
     // 4. App State & Caching System
@@ -457,7 +457,7 @@
 
     playAppleBtn.addEventListener("click", () => playVideo("apple"));
     playAndroidBtn.addEventListener("click", () => playVideo("android"));
-    downloadVideoBtn.addEventListener("click", downloadCurrentVideo);
+   
     videoCloseBtn.addEventListener("click", () => videoSheetBackdrop.classList.remove("show"));
 
     window.addEventListener("click", (e) => {
