@@ -1579,7 +1579,7 @@ app.post("/api/pw/live", async (req, res) => {
       });
     }
 
-    const upstream = await fetchfn(`${UPSTREAM}/api/pw/live`, {
+    const upstream = await fetchfn(`${BASE}/api/pw/live`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1741,7 +1741,7 @@ app.get("/api/pw/video", async (req, res) => {
   }
 
   const url =
-    `${UPSTREAM}/api/pw/video?batchId=${encodeURIComponent(batchId)}` +
+    `${BASE}/api/pw/video?batchId=${encodeURIComponent(batchId)}` +
     `&subjectId=${encodeURIComponent(subjectId)}` +
     `&childId=${encodeURIComponent(childId)}`;
 
@@ -1764,7 +1764,7 @@ app.get("/api/pw/videoplay", async (req, res) => {
   }
 
   const url =
-    `${UPSTREAM}/api/pw/videoplay?batchId=${encodeURIComponent(batchId)}` +
+    `${BASE}/api/pw/videoplay?batchId=${encodeURIComponent(batchId)}` +
     `&subjectId=${encodeURIComponent(subjectId)}` +
     `&childId=${encodeURIComponent(childId)}`;
 
@@ -1946,7 +1946,7 @@ app.get("/api/pw/otp", async (req, res) => {
     });
   }
 
-  const url = `${UPSTREAM}/api/pw/otp?kid=${encodeURIComponent(kid)}`;
+  const url = `${BASE}/api/pw/otp?kid=${encodeURIComponent(kid)}`;
   return proxyJson(req, res, url);
 });
 
@@ -1984,7 +1984,7 @@ async function proxyGet(req, res, upstreamPath, queryMap = null) {
       }
     }
 
-    const url = `${UPSTREAM}${upstreamPath}?${params.toString()}`;
+    const url = `${BASE}${upstreamPath}?${params.toString()}`;
     const upstream = await fetchfn(url, {
       method: "GET",
       headers: {
