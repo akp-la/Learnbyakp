@@ -1380,7 +1380,43 @@ app.get("/api/nexttoppers/live", async (req, res) => {
     });
   }
 });
+//================fgdfg==========
 
+  app.get('/api/pw/dpp-quiz-proxy', async (req, res) => {
+    try {
+        // Target URL
+        const targetUrl = 'https://streamfiles.eu.org/api/dpp_quiz.php';
+
+        // Fake Headers create karna taaki API block na kare
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            // Agar API kisi specific website ko hi allow karti hai, toh uska Origin aur Referer yahan daalo
+             'Origin': 'https://streamfiles.eu.org/', 
+             'Referer': 'https://streamfiles.eu.org/' 
+        };
+
+        // Backend se request bhejna (yahan req.query me aapke frontend ke saare params automatic aayenge)
+        const response = await axios.get(targetUrl, {
+            params: req.query, 
+            headers: headers
+        });
+
+        // Response frontend ko bhej do
+        res.status(200).json({ success: true, data: response.data });
+
+    } catch (error) {
+        console.error('Error fetching DPP Quiz:', error.message);
+        
+        // Agar fir bhi 403 aaye backend par
+        if (error.response && error.response.status === 403) {
+            return res.status(403).json({ success: false, message: "Token expired or IP restricted" });
+        }
+        
+        res.status(500).json({ success: false, message: "Backend Proxy Error" });
+    }
+});
   //==========live api for nexttoppers======
   app.all("/api/vibrant/play", async (req, res) => {
   try {
