@@ -1,482 +1,213 @@
 
-    const API_BASE = "https://learnbyakp.onrender.com";
-    // NOTE: /api/vibrant/resolve-url hata diya gaya hai. Ab encrypted path isi page me decrypt hoga.
+        lucide.createIcons();
 
-    const qs = new URLSearchParams(location.search);
-    const courseId = qs.get("course_id");
-    const videoId = qs.get("video_id");
-    const isLive = qs.get("isLive") === "true";
+        const API = "https://vibrant-gloryfuel.onrender.com";
+        const params = new URLSearchParams(location.search);
+        const courseId = params.get('course');
+        const videoId = params.get('video');
+        const videoTitle = params.get('title') || 'Untitled Lesson';
 
-    const refs = {
-      playerWrap: document.getElementById("playerWrap"),
-      video: document.getElementById("video"),
-      loader: document.getElementById("loader"),
-      loadingText: document.getElementById("loadingText"),
-      loadingFill: document.getElementById("loadingFill"),
-      errorBox: document.getElementById("errorBox"),
-      errorText: document.getElementById("errorText"),
-      titleText: document.getElementById("titleText"),
+        let hls = null;
+        let qualities = [];
+        let currentQualityIdx = 0;
 
-      backBtn: document.getElementById("backBtn"),
-      qualityTopBtn: document.getElementById("qualityTopBtn"),
-      qualityBtn: document.getElementById("qualityBtn"),
-      qualityModal: document.getElementById("qualityModal"),
-      closeQuality: document.getElementById("closeQuality"),
-      qualityList: document.getElementById("qualityList"),
+        document.getElementById('video-title').textContent = videoTitle;
+        document.title = 'LearnByAKP | ' + videoTitle;
 
-      bigPlay: document.getElementById("bigPlay"),
-      playBtn: document.getElementById("playBtn"),
-      back10: document.getElementById("back10"),
-      for10: document.getElementById("for10"),
-      fullBtn: document.getElementById("fullBtn"),
-      muteBtn: document.getElementById("muteBtn"),
-      progressArea: document.getElementById("progressArea"),
-      progressFill: document.getElementById("progressFill"),
-      timeText: document.getElementById("timeText")
-    };
-
-    let player = null;
-    let videoData = null;
-    let selectedUrl = "";
-    let hideTimer = null;
-
-    function setLoading(show, text = "Loading...", progress = 0) {
-      refs.loader.classList.toggle("show", show);
-      refs.loadingText.textContent = text;
-      refs.loadingFill.style.width = progress + "%";
-    }
-
-    function showError(message) {
-      setLoading(false);
-      refs.errorText.textContent = message || "Something went wrong.";
-      refs.errorBox.classList.add("show");
-    }
-
-    function hideError() {
-      refs.errorBox.classList.remove("show");
-    }
-
-    async function fetchVideoDetails() {
-      if (!courseId || !videoId) {
-        throw new Error("URL me course_id ya video_id missing hai.");
-      }
-
-      setLoading(true, "Fetching video details...", 25);
-
-      const url =
-        `${API_BASE}/api/vibrant/video-details?video_id=${encodeURIComponent(videoId)}&course_id=${encodeURIComponent(courseId)}`;
-
-      const res = await fetch(url);
-
-      if (!res.ok) {
-        let msg = `Video details fetch failed. Status: ${res.status}`;
-        try {
-          const err = await res.json();
-          msg = err.error || err.message || msg;
-        } catch (_) {}
-        throw new Error(msg);
-      }
-
-      const json = await res.json();
-
-      if (json.status !== 200 || !json.data) {
-        throw new Error(json.message || "Invalid video details response.");
-      }
-
-      videoData = json.data;
-
-      refs.video.poster = videoData.thumbnail || "";
-      refs.titleText.textContent =
-        videoData.title ||
-        videoData.video_title ||
-        videoData.name ||
-        "LearnByAKP Player";
-
-      return videoData;
-    }
-
-
-    const AES_KEY_TEXT = "638udh3829162018";
-    const AES_IV_TEXT = "fedcba9876543210";
-
-    function looksLikeDirectUrl(value = "") {
-      return /^https?:\/\//i.test(String(value));
-    }
-
-    async function decryptVibrantLink(encryptedText) {
-      const raw = String(encryptedText || "").trim();
-      if (!raw) throw new Error("Selected quality ka path empty hai.");
-
-      // Agar API direct URL de rahi hai to decrypt ki zarurat nahi.
-      if (looksLikeDirectUrl(raw)) return raw;
-
-      try {
-        const firstPart = raw.split(":")[0];
-        const encryptedBinary = atob(firstPart);
-        const encryptedBytes = new Uint8Array(encryptedBinary.length);
-
-        for (let i = 0; i < encryptedBinary.length; i++) {
-          encryptedBytes[i] = encryptedBinary.charCodeAt(i);
+        if (!courseId || !videoId) {
+            showError('Invalid Authorization. Please launch from the dashboard.');
+        } else {
+            loadVideo(courseId, videoId);
         }
 
-        const keyBytes = new TextEncoder().encode(AES_KEY_TEXT);
-        const ivBytes = new TextEncoder().encode(AES_IV_TEXT);
-
-        const cryptoKey = await crypto.subtle.importKey(
-          "raw",
-          keyBytes,
-          { name: "AES-CBC", length: 128 },
-          false,
-          ["decrypt"]
-        );
-
-        const decrypted = await crypto.subtle.decrypt(
-          { name: "AES-CBC", iv: ivBytes },
-          cryptoKey,
-          encryptedBytes.buffer
-        );
-
-        let text = new TextDecoder().decode(decrypted);
-
-        // Kuch responses me PKCS padding text ke end me aa sakti hai, isliye safe trim.
-        const padding = text.charCodeAt(text.length - 1);
-        if (padding > 0 && padding <= 16) {
-          const paddingText = text.slice(-padding);
-          const validPadding = Array.from(paddingText).every(ch => ch.charCodeAt(0) === padding);
-          if (validPadding) text = text.slice(0, -padding);
+        function buildProxyUrl(rawUrl) {
+            return API + '/proxy-video?url=' + encodeURIComponent(rawUrl);
         }
 
-        text = text.trim();
-        if (!looksLikeDirectUrl(text)) {
-          throw new Error("Decrypt hua, lekin valid video URL nahi mila.");
-        }
-        return text;
-      } catch (error) {
-        console.error("Decrypt failed:", error);
-        throw new Error("Video URL decrypt nahi ho paya. AES key/IV ya encrypted path check karo.");
-      }
-    }
-
-    function getSources() {
-      if (!videoData) return [];
-
-      if (isLive) {
-        if (Array.isArray(videoData.livestream_links) && videoData.livestream_links.length) {
-          return videoData.livestream_links;
+        function destroyPlayer() {
+            if (hls) { try { hls.destroy(); } catch(e) {} hls = null; }
+            const video = document.getElementById('video-player');
+            video.removeAttribute('src');
+            video.innerHTML = '';
         }
 
-        if (videoData.recording_schedule) {
-          return [
-            {
-              quality: "Live",
-              path: `https://liveclasses.cloud-front.in/live/${videoData.recording_schedule}_appxabr.m3u8`
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(-50%) translateY(0)';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(-50%) translateY(20px)';
+            }, 2500);
+        }
+
+        function showError(msg) {
+            const errorPopup = document.getElementById('errorPopup');
+            errorPopup.textContent = msg;
+            errorPopup.classList.add('show');
+            setTimeout(() => errorPopup.classList.remove('show'), 4000);
+        }
+
+        function initHlsPlayback(url) {
+            const video = document.getElementById('video-player');
+            const videoShell = document.getElementById('videoShell');
+
+            if (Hls.isSupported()) {
+                hls = new Hls({ enableWorker: false, debug: false });
+                hls.loadSource(url);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    video.play().catch(() => {});
+                    videoShell.classList.remove('paused');
+                });
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                    if (data.fatal) showError('Stream interrupted.');
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url;
+                video.addEventListener('loadedmetadata', () => {
+                    video.play().catch(() => {});
+                    videoShell.classList.remove('paused');
+                });
+            } else {
+                showError('Browser does not support this video format.');
             }
-          ];
         }
 
-        return [];
-      }
+        async function loadVideo(courseId, videoId) {
+            try {
+                const r = await fetch(API + '/api/v1/vibrant/video?video_id=' + videoId + '&course_id=' + courseId);
+                const d = await r.json();
 
-      if (Array.isArray(videoData.download_links) && videoData.download_links.length) {
-        return videoData.download_links;
-      }
+                if (!d.success) throw new Error(d.message || 'Server restricted access.');
+                if (!d.qualities || d.qualities.length === 0) throw new Error('No playable streams found.');
 
-      if (videoData.file_link) {
-        return [
-          {
-            quality: "Default",
-            path: videoData.file_link
-          }
-        ];
-      }
+                qualities = d.qualities;
 
-      return [];
-    }
+                document.getElementById('videoLoader').classList.add('hidden');
 
-    function openQualityModal() {
-      const sources = getSources();
-      refs.qualityList.innerHTML = "";
+                let metaText = '';
+                if (d.duration) metaText += d.duration;
+                if (d.date) metaText += (metaText ? ' • ' : '') + d.date;
+                document.getElementById('video-meta').textContent = metaText || 'Secure Encrypted Stream';
 
-      if (!sources.length) {
-        refs.qualityList.innerHTML = `
-          <button class="quality-item" type="button">
-            <span>No source found</span>
-            <span>×</span>
-          </button>
-        `;
-      } else {
-        sources.forEach((item, index) => {
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "quality-item";
-          btn.innerHTML = `
-            <span>🎬 ${item.quality || "Quality " + (index + 1)}</span>
-            <span>›</span>
-          `;
+                if (d.thumbnail) document.getElementById('video-player').poster = d.thumbnail;
 
-          btn.onclick = () => selectQuality(item);
-          refs.qualityList.appendChild(btn);
+                setupQualitySelect();
+                initHlsPlayback(buildProxyUrl(qualities[0].url));
+
+            } catch (e) {
+                document.getElementById('videoLoader').classList.add('hidden');
+                showError(e.message || 'Network error.');
+            }
+        }
+
+        function setupQualitySelect() {
+            const qualitySelect = document.querySelector('#qualitySelect');
+            qualitySelect.innerHTML = '';
+
+            qualities.forEach((q, i) => {
+                const label = q.label || q.quality || q.height + 'p' || 'Source';
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = label;
+                qualitySelect.appendChild(option);
+            });
+
+            qualitySelect.value = currentQualityIdx;
+
+            qualitySelect.addEventListener('change', (e) => {
+                const idx = parseInt(e.target.value);
+                currentQualityIdx = idx;
+                destroyPlayer();
+                initHlsPlayback(buildProxyUrl(qualities[idx].url));
+                showToast('Quality changed to ' + (qualities[idx].label || qualities[idx].quality || qualities[idx].height + 'p'));
+            });
+        }
+
+        // Player Controls
+        const video = document.getElementById('video-player');
+        const videoShell = document.getElementById('videoShell');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const centerPlayBtn = document.getElementById('centerPlayBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const progressHandle = document.getElementById('progressHandle');
+        const currentTimeEl = document.getElementById('currentTime');
+        const durationEl = document.getElementById('duration');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const speedSelect = document.getElementById('speedSelect');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const moreBtn = document.getElementById('moreBtn');
+        const moreMenu = document.getElementById('moreMenu');
+
+        function togglePlay() {
+            if (video.paused) {
+                video.play();
+                videoShell.classList.remove('paused');
+            } else {
+                video.pause();
+                videoShell.classList.add('paused');
+            }
+        }
+
+        playPauseBtn.addEventListener('click', togglePlay);
+        centerPlayBtn.addEventListener('click', togglePlay);
+
+        video.addEventListener('play', () => videoShell.classList.remove('paused'));
+        video.addEventListener('pause', () => videoShell.classList.add('paused'));
+
+        video.addEventListener('timeupdate', () => {
+            const pct = (video.currentTime / video.duration) * 100 || 0;
+            progressFill.style.transform = `scaleX(${pct / 100})`;
+            progressHandle.style.left = `${pct}%`;
+            currentTimeEl.textContent = formatTime(video.currentTime);
         });
-      }
 
-      refs.qualityModal.classList.add("show");
-    }
+        video.addEventListener('loadedmetadata', () => {
+            durationEl.textContent = formatTime(video.duration);
+        });
 
-    function closeQualityModal() {
-      refs.qualityModal.classList.remove("show");
-    }
+        progressBar.addEventListener('click', (e) => {
+            const rect = progressBar.getBoundingClientRect();
+            const pct = (e.clientX - rect.left) / rect.width;
+            video.currentTime = pct * video.duration;
+        });
 
-    async function resolveVideoUrl(item) {
-      const encryptedOrDirectPath = item.path || item.url || item.file_link || "";
-      return decryptVibrantLink(encryptedOrDirectPath);
-    }
+        volumeSlider.addEventListener('input', (e) => {
+            video.volume = e.target.value;
+        });
 
-    async function selectQuality(item) {
-      closeQualityModal();
-      hideError();
+        speedSelect.addEventListener('change', (e) => {
+            video.playbackRate = parseFloat(e.target.value);
+            showToast('Speed: ' + e.target.value + 'x');
+        });
 
-      try {
-        setLoading(true, "Decrypting URL...", 60);
+        fullscreenBtn.addEventListener('click', () => {
+            const root = document.querySelector('.vp-root');
+            if (!document.fullscreenElement) {
+                root.requestFullscreen?.();
+            } else {
+                document.exitFullscreen?.();
+            }
+        });
 
-        const finalUrl = await resolveVideoUrl(item);
-        selectedUrl = finalUrl;
+        moreBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            moreMenu.classList.toggle('open');
+        });
 
-        if (isLive) {
-          setLoading(true, "Initializing live player...", 75);
-          await loadVideo(finalUrl);
-          setLoading(false);
-          showControls();
-        } else {
-          setLoading(true, "Redirecting to player...", 90);
+        document.addEventListener('click', (e) => {
+            if (!moreBtn.contains(e.target)) {
+                moreMenu.classList.remove('open');
+            }
+        });
 
-          const redirectUrl =
-            "https://appx-play.akamai.net.in/video-player?url=" +
-            encodeURIComponent(finalUrl);
-
-          window.location.href = redirectUrl;
+        function formatTime(sec) {
+            if (!sec || !isFinite(sec)) return '0:00';
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return m + ':' + (s < 10 ? '0' : '') + s;
         }
-
-      } catch (err) {
-        console.error(err);
-        showError(err.message || "Failed to resolve selected quality URL.");
-      }
-    }
-
-    async function loadVideo(url) {
-      destroyPlayer();
-
-      if (!window.shaka) {
-        throw new Error("Shaka Player load nahi hua.");
-      }
-
-      shaka.polyfill.installAll();
-
-      if (!shaka.Player.isBrowserSupported()) {
-        throw new Error("Ye browser Shaka Player support nahi karta.");
-      }
-
-      player = new shaka.Player(refs.video);
-
-      player.addEventListener("error", function (event) {
-        console.error("Shaka Error:", event.detail);
-        showError("Player error. Dusri quality try karo.");
-      });
-
-      await player.load(url);
-
-      try {
-        await refs.video.play();
-      } catch (_) {}
-
-      updatePlayState();
-    }
-
-    function destroyPlayer() {
-      if (player) {
-        try {
-          player.destroy();
-        } catch (_) {}
-        player = null;
-      }
-    }
-
-    function formatTime(sec) {
-      if (!Number.isFinite(sec) || sec < 0) return "00:00";
-
-      const h = Math.floor(sec / 3600);
-      const m = Math.floor((sec % 3600) / 60);
-      const s = Math.floor(sec % 60);
-
-      if (h > 0) {
-        return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-      }
-
-      return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-    }
-
-    function updateProgress() {
-      const v = refs.video;
-
-      if (isLive || !Number.isFinite(v.duration)) {
-        refs.timeText.textContent = isLive ? "LIVE" : "00:00 / 00:00";
-        return;
-      }
-
-      const percent = (v.currentTime / v.duration) * 100;
-      refs.progressFill.style.width = percent + "%";
-      refs.timeText.textContent = `${formatTime(v.currentTime)} / ${formatTime(v.duration)}`;
-    }
-
-    function togglePlay() {
-      if (!selectedUrl) {
-        openQualityModal();
-        return;
-      }
-
-      if (refs.video.paused) {
-        refs.video.play().catch(() => {});
-      } else {
-        refs.video.pause();
-      }
-    }
-
-    function updatePlayState() {
-      const paused = refs.video.paused;
-      refs.playerWrap.classList.toggle("paused", paused);
-      refs.playBtn.textContent = paused ? "▶" : "⏸";
-      refs.bigPlay.textContent = paused ? "▶" : "⏸";
-    }
-
-    function showControls() {
-      refs.playerWrap.classList.add("show-controls");
-
-      clearTimeout(hideTimer);
-      hideTimer = setTimeout(() => {
-        refs.playerWrap.classList.remove("show-controls");
-      }, 3000);
-    }
-
-    function seekBy(sec) {
-      if (!Number.isFinite(refs.video.duration)) return;
-
-      refs.video.currentTime = Math.max(
-        0,
-        Math.min(refs.video.duration, refs.video.currentTime + sec)
-      );
-    }
-
-    function toggleFullscreen() {
-      if (!document.fullscreenElement) {
-        refs.playerWrap.requestFullscreen?.();
-      } else {
-        document.exitFullscreen?.();
-      }
-    }
-
-    function toggleMute() {
-      refs.video.muted = !refs.video.muted;
-      refs.muteBtn.textContent = refs.video.muted ? "🔇" : "🔊";
-    }
-
-    function bindEvents() {
-      refs.backBtn.onclick = () => {
-        if (history.length > 1) history.back();
-        else location.href = "/";
-      };
-
-      refs.qualityTopBtn.onclick = openQualityModal;
-      refs.qualityBtn.onclick = openQualityModal;
-      refs.closeQuality.onclick = closeQualityModal;
-
-      refs.qualityModal.onclick = e => {
-        if (e.target === refs.qualityModal) closeQualityModal();
-      };
-
-      refs.playBtn.onclick = togglePlay;
-      refs.bigPlay.onclick = togglePlay;
-      refs.video.onclick = togglePlay;
-
-      refs.back10.onclick = () => seekBy(-10);
-      refs.for10.onclick = () => seekBy(10);
-      refs.fullBtn.onclick = toggleFullscreen;
-      refs.muteBtn.onclick = toggleMute;
-
-      refs.video.addEventListener("play", updatePlayState);
-      refs.video.addEventListener("pause", updatePlayState);
-      refs.video.addEventListener("timeupdate", updateProgress);
-      refs.video.addEventListener("loadedmetadata", updateProgress);
-
-      refs.progressArea.onclick = e => {
-        if (!Number.isFinite(refs.video.duration)) return;
-
-        const rect = refs.progressArea.getBoundingClientRect();
-        const percent = (e.clientX - rect.left) / rect.width;
-        refs.video.currentTime = refs.video.duration * Math.max(0, Math.min(1, percent));
-      };
-
-      ["mousemove", "touchstart", "click"].forEach(eventName => {
-        refs.playerWrap.addEventListener(eventName, showControls, { passive: true });
-      });
-
-      document.addEventListener("keydown", e => {
-        if (e.code === "Space") {
-          e.preventDefault();
-          togglePlay();
-        }
-
-        if (e.code === "ArrowRight") seekBy(10);
-        if (e.code === "ArrowLeft") seekBy(-10);
-        if (e.code === "KeyF") toggleFullscreen();
-        if (e.code === "KeyM") toggleMute();
-      });
-    }
-
-    async function init() {
-      bindEvents();
-
-      try {
-        setLoading(true, "Initializing...", 10);
-
-        await fetchVideoDetails();
-
-        setLoading(true, "Awaiting quality selection...", 50);
-
-        const sources = getSources();
-
-        if (!sources.length) {
-          throw new Error("No playable source found.");
-        }
-
-        setLoading(false);
-
-        if (sources.length === 1) {
-          await selectQuality(sources[0]);
-        } else {
-          openQualityModal();
-        }
-
-      } catch (err) {
-        console.error(err);
-        showError(err.message || "Player initialize failed.");
-      }
-    }
-
-    window.addEventListener("beforeunload", destroyPlayer);
-
-    init();
-
     
-    const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
-
-const s = document.createElement("script");
-s.src = SCRIPT_LINK;
-s.async = true;
-s.onload = () => {
-  console.log("Script loaded successfully");
-};
-s.onerror = () => {
-  console.log("Script load nahi hua");
-};
-
-document.head.appendChild(s);
- 
