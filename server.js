@@ -1214,24 +1214,22 @@ app.get("/api/vibrant/live", async (req, res) => {
 });
 //=========pw api==========
   
-  app.get('/video', async (req, res) => {
+app.get('/video', async (req, res) => {
   try {
     // Tumhare side se aane wale parameters
     const { 
       video_id, 
-      subjecslug, 
+      subject_slug, 
       batch_id, 
-      topicslug,
-      parentId,
-      scheduleId, 
+      schedule_id, 
       subject_id 
     } = req.query;
 
-    // Validation - sab parameters required hain
-    if (!video_id || !subjecslug || !batch_id || !scheduleId || !subject_id || !topicslug || !parentId) {
+    // Sirf batch_id aur subject_id required hain
+    if (!batch_id || !subject_id) {
       return res.status(400).json({
         error: 'Missing required parameters',
-        required: ['video_id', 'subject_slug', 'batch_id', 'schedule_id', 'subject_id']
+        required: ['batch_id', 'subject_id']
       });
     }
 
@@ -1240,23 +1238,23 @@ app.get("/api/vibrant/live", async (req, res) => {
       type: 'BATCHES',
       videoContainerType: 'DASH',
       reqType: 'query',
-      childId: childId,           // schedule_id -> childId
-      parentId: parentId,             // batch_id -> parentId
+      childId: schedule_id || batch_id,      // schedule_id priority, warna batch_id
+      parentId: batch_id,                    // batch_id -> parentId
       clientVersion: '201',
       
       // Additional parameters jo API ko chahiye
       batchSlug: batch_id,
       batchSubjectId: subject_id,
-      subjectSlug: subjecslug,
-      topicSlug: topicslug,
-      scheduleId: scheduleId,
+      subjectSlug: subject_id,
+      topicSlug: 'all',
+      scheduleId: schedule_id || batch_id,
       type: 'penpencilvdo',
       isPPJEnabled: 'true',
-      entryPoint: `BATCH_LECTURE_VIDEOS_${schedule_id}`,
+      entryPoint: `BATCH_LECTURE_VIDEOS_${schedule_id || batch_id}`,
       learn2Earn: 'true',
-      parentId: parentId,
+      parentId: batch_id,
       vType: 'BATCHES',
-      childId: scheduleId
+      childId: schedule_id || batch_id
     };
 
     const response = await axios.get('https://api.penpencil.co/v1/videos/video-url-details', {
@@ -1280,8 +1278,7 @@ app.get("/api/vibrant/live", async (req, res) => {
       error: error.response?.data || error.message
     });
   }
-});
-  //======science==========
+});  //======science==========
   app.get("/api/science/live", async (req, res) => {
   try {
     const courseId = req.query.course_id || req.query.courseid || req.query.id;
