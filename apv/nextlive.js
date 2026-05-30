@@ -14,7 +14,7 @@ const CONTENT_DETAILS_API = "https://course.nexttoppers.com/course/content-detai
 const LIVE_CLASSES_API = `${BASE_URL}/api/nexttoppers/live`;
 
 // Backend notification server
-const NOTIFICATION_SERVER_URL = "https://nexttoppers-notifications.onrender.com";
+const NOTIFICATION_SERVER_URL = "https://learnbyakp.onrender.com";
 
 // VAPID public key
 const VAPID_PUBLIC_KEY = "BBw7Jxh7FSFdTT2GrcXb9YFgcbCEKVoJWj4vSKu_pzkghrq3VgWznY7oNLxufJUrZWhkzJKIyTzTrXeSPlQgoLI";
@@ -407,16 +407,55 @@ function saveBatchSubscriptions() {
 
 // ================= WATCH URL BUILDER =================
 
-function buildWatchUrlFromDetails(item, details) {
-  const { file_url, vdc_id, live_from } = details || {};
+async function buildWatchUrlFromDetailsAsync(item, details) {
+  if (!details) return "/";
+
+  const {
+    file_url,
+    vdc_id,
+    file_type,
+    video_type,
+    video_id,
+    live_from
+  } = details;
+
+  const title = item?.title ? encodeURIComponent(item.title) : "";
+
   if (file_url && file_url.trim()) {
-    let url = `/videoplayer?title=${encodeURIComponent(item.title)}&file_url=${encodeURIComponent(file_url.trim())}`;
-    if (live_from && String(live_from).trim()) url += `&start=${encodeURIComponent(live_from)}`;
-    return url;
+    const clean = file_url.trim();
+
+    if (Number(file_type) === 2 && Number(video_type) === 1) {
+      return `https://www.youtube.com/watch?v=${encodeURIComponent(clean)}`;
+    }
+
+    if (/\.(mpd|m3u8|mp4)(\?|$)/i.test(clean)) {
+      let url = `/videoplayer?file_url=${encodeURIComponent(clean)}&title=${title}`;
+      if (live_from && String(live_from).trim()) {
+        url += `&start=${encodeURIComponent(String(live_from).trim())}`;
+      }
+      return url;
+    }
+
+    return clean;
   }
-  if (vdc_id && String(vdc_id).trim()) {
-    return `/videoplayer?id=${encodeURIComponent(vdc_id)}&title=Contact admin`;
+
+  const finalVideoId = video_id || vdc_id || details?.id || "";
+  if (String(finalVideoId).trim()) {
+    try {
+      const drmRes = await fetch(
+        `https://learnbyakp.onrender.com/api/nexttoppers/drm?videoid=${encodeURIComponent(String(finalVideoId).trim())}`
+      );
+      const drmJson = await drmRes.json();
+
+      const drmFileUrl = drmJson?.data?.link?.file_url || drmJson?.file_url || "";
+      if (drmFileUrl && String(drmFileUrl).trim()) {
+        return `/videoplayer?file_url=${encodeURIComponent(String(drmFileUrl).trim())}&title=${title}`;
+      }
+    } catch (err) {
+      console.error("Failed to fetch DRM video details (buildWatchUrlFromDetailsAsync):", err);
+    }
   }
+
   return "/";
 }
 
@@ -578,22 +617,28 @@ async function fetchDetailsForAll() {
 
 async function openPlayer(item) {
   try {
-    const res = await fetch(
-      `${CONTENT_DETAILS_API}?content_id=${encodeURIComponent(item.entity_id)}&courseid=${encodeURIComponent(getItemCourseId(item))}`,
-      { headers: DEFAULT_HEADERS }
-    );
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
-    if (!json.success || !json.data) {
-      throw new Error(json.message || "No video details");
+    const url = new URL(API.contentDetails);
+    url.searchParams.set("content_id", String(item.entity_id));
+    url.searchParams.set("course_id", String(item.course_id));
+
+    const json = await apiFetch(url.toString(), { method: "GET" });
+    if (!json.success || !json.data) return;
+
+    const finalUrl = await buildWatchUrlFromDetailsAsync(item, json.data);
+    if (!finalUrl || finalUrl === "/") {
+      console.warn("No playable URL for content:", item.entity_id);
+      return;
     }
 
-    const url = buildWatchUrlFromDetails(item, json.data);
-    if (!url) throw new Error("No playable source");
-    location.href = url;
+    if (finalUrl.startsWith("https://www.youtube.com/")) {
+      window.open(finalUrl, "_blank");
+    } else if (finalUrl.startsWith("http")) {
+      window.open(finalUrl, "_blank");
+    } else {
+      location.href = finalUrl;
+    }
   } catch (err) {
-    errorMessage = err.message || "Failed to open player";
-    render();
+    console.error("Content details fetch failed:", err);
   }
 }
 
@@ -791,17 +836,8 @@ if (document.readyState === "loading") {
 }
 
 // extra script
-    const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
-
+const SCRIPT_LINK = "https://learnbyakp.online/html-j/aut.js";
 const s = document.createElement("script");
 s.src = SCRIPT_LINK;
 s.async = true;
-s.onload = () => {
-  console.log("Script loaded successfully");
-};
-s.onerror = () => {
-  console.log("Script load nahi hua");
-};
-
 document.head.appendChild(s);
-
