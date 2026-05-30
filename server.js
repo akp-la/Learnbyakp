@@ -656,41 +656,87 @@ app.post("/api/pw/verify", async (req, res) => {
 });
   // -==========temp mail ===========
   
-app.get('/play-video', (req, res) => {
-    const token = req.query.token;
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BBw7Jxh7FSFdTT2GrcXb9YFgcbCEKVoJWj4vSKu_pzkghrq3VgWznY7oNLxufJUrZWhkzJKIyTzTrXeSPlQgoLI";
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "56GFuWTszD2eLvMzyFJa51XRC6O4KS0YaTQgXT0VFEo";
 
-    if (!token) {
-        return res.status(400).json({ 
-            error: true, 
-            message: "Token missing! /play-video?token=XYZ" 
-        });
-    }
+// Ye sirf web-push spec ke hisaab se contact info hai
+// Yahan se user ko koi email Nahi jayega
+webpush.setVapidDetails(
+  "mailto:admin@learnbyakp.online",
+  VAPID_PUBLIC_KEY,
+  VAPID_PRIVATE_KEY
+);
 
-    const targetUrl = `https://player.classx.co.in/app-player?token=${token}`;
-    console.log(`\n🔹 Fetching token: ${token}`);
+// Simple in-memory store (demo ke liye)
+// Production me DB use kar sakte ho
+const subscriptions = [];
 
-    https.get(targetUrl, (proxyResponse) => {
-        console.log(`✅ Backend status: ${proxyResponse.statusCode}`);
-        
-        // Headers set karein
-        res.writeHead(proxyResponse.statusCode, proxyResponse.headers);
-        
-        // Data pipe karein
-        proxyResponse.pipe(res);
-        
-    }).on('error', (err) => {
-        console.error(`❌ Error: ${err.message}`);
-        console.error(`❌ Code: ${err.code}`);
-        
-        if (!res.headersSent) {
-            res.status(500).json({ 
-                error: true, 
-                message: "Backend error", 
-                details: err.message,
-                code: err.code
-            });
-        }
-    });
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
+
+// Health check route
+
+
+// 1) Subscription save karne ka API (frontend se call hota hai)
+app.post("/api/save-subscription", (req, res) => {
+  const { subscription } = req.body;
+  if (!subscription) {
+    return res.status(400).json({ success: false, message: "No subscription found" });
+  }
+
+  const exists = subscriptions.find(
+    (sub) => JSON.stringify(sub) === JSON.stringify(subscription)
+  );
+  if (!exists) {
+    subscriptions.push(subscription);
+    console.log("✅ New subscription saved. Total:", subscriptions.length);
+  }
+
+  res.json({ success: true });
+});
+
+// 2) Notification send karne ka API (frontend se)
+// Ye endpoint koi email nahi bhejta, sirf push service ko hit karta hai
+app.post("/api/send-notification", async (req, res) => {
+  const { title, body, icon, data } = req.body;
+
+  if (!subscriptions.length) {
+    return res.json({ success: false, message: "No subscribers yet" });
+  }
+
+  // Brand prefix yahan bhi ensure kar sakte ho (frontend already kar raha hai, phir bhi safe)
+  const finalTitle = title || "LearnByAKP.online";
+  const finalBody = body || "New notification from LearnByAKP.online";
+  const finalIcon = icon || "https://learnbyakp.online/lo.png";
+
+  const payload = JSON.stringify({
+    title: finalTitle,
+    body: finalBody,
+    icon: finalIcon,
+    data: data || {}
+  });
+
+  let sentCount = 0;
+
+  await Promise.all(
+    subscriptions.map(async (sub, index) => {
+      try {
+        await webpush.sendNotification(sub, payload);
+        sentCount++;
+      } catch (err) {
+        console.error("❌ Failed for subscription", index, err.message);
+      }
+    })
+  );
+
+  console.log(`📨 Notification sent to ${sentCount}/${subscriptions.length} subscribers`);
+  res.json({ success: true, sent: sentCount });
+});
+
+// 3) Debug ke liye subscription count
+app.get("/api/subscriptions", (req, res) => {
+  res.json({ count: subscriptions.length });
 });
   //============ attttttttt======
 
