@@ -1,22 +1,40 @@
 // ============================================
-// MISSIONJEET LIVE + PUSH NOTIFICATIONS
+// MISSIONJEET LIVE + PUSH NOTIFICATIONS (NextToppers-style)
 // ============================================
 
 const BASE_URL = "https://learnbyakp.onrender.com";
 const FALLBACK_IMAGE = "https://decicqog4ulhy.cloudfront.net/0/admin_v2/uploads/courses/thumbnail/7524245_1_WhatsApp%20Image%202026-03-02%20at%204.19.45%20PM.jpeg";
-const PAGE_NOTIFY_NAMESPACE = location.pathname.replace(/[^a-z0-9]/gi, "_").toLowerCase() || "default_page";
-const NOTIFY_STORAGE_KEY = `nt_live_notify_settings_v1_${PAGE_NOTIFY_NAMESPACE}`;
+
+// MissionJeet-specific localStorage namespace (NextToppers se alag)
+const PAGE_NOTIFY_NAMESPACE = `missionjeet_${location.pathname.replace(/[^a-z0-9]/gi, "_").toLowerCase() || "default_page"}`;
+const NOTIFY_STORAGE_KEY = `mj_live_notify_settings_v1_${PAGE_NOTIFY_NAMESPACE}`;
 
 const URL_PARAMS = new URLSearchParams(window.location.search);
 const PAGE_COURSE_ID = String(URL_PARAMS.get("id") || "").trim();
 
+// MissionJeet live API
 const LIVE_CLASSES_API = `${BASE_URL}/api/missionjeet/live`;
-const CONTENT_DETAILS_API = `${BASE_URL}/api/missionjeet/content-details`;
-const BATCHES_API = `${BASE_URL}/api/missionjeet/batches`;
 
-// Push server + VAPID
-const NOTIFICATION_SERVER_URL = "https://nexttoppers-notifications.onrender.com";
-const VAPID_PUBLIC_KEY = "YOUR_VAPID_PUBLIC_KEY_HERE";
+// NextToppers-style content-details API (same as other page)
+const CONTENT_DETAILS_API = "https://course.nexttoppers.com/course/content-details";
+
+// Common push server + VAPID (NextToppers + MissionJeet dono ke liye same)
+const NOTIFICATION_SERVER_URL = "https://learnbyakp-push.onrender.com"; // apna actual URL
+const VAPID_PUBLIC_KEY = "BBw7Jxh7FSFdTT2GrcXb9YFgcbCEKVoJWj4vSKu_pzkghrq3VgWznY7oNLxufJUrZWhkzJKIyTzTrXeSPlQgoLI";
+
+// Same headers pattern as other NextToppers page
+const DEFAULT_HEADERS = window.APP_CREDENTIALS.getHeaders('missionjeetBatch', {
+      accept: 'application/json, text/plain, */*',
+      'content-type': 'application/json',
+      origin: 'https://missionjeet.in',
+      platform: '3',
+      referer: 'https://missionjeet.in/',
+      'user-agent': navigator.userAgent,
+      version: '1'
+    }) || {
+  accept: "application/json, text/plain, */*",
+  "content-type": "application/json"
+};
 
 let liveItems = [];
 let upcomingItems = [];
@@ -26,12 +44,72 @@ let errorMessage = null;
 let countdownInterval = null;
 let pollingInterval = null;
 let searchText = "";
-
-let availableBatches = [];
-let batchesLoading = false;
 let pushSubscription = null;
 
+// ⭐ MissionJeet ke batches yahan hardcode karo (NextToppers-style)
+const courses = [
+  {
+        id: 184,
+        title: "Drona 2.0 NEET Class 11th",
+        thumbnail: "https://dulae92u7241v.cloudfront.net/1772100600/admin_v2/uploads/courses/thumbnail/241318_131_drona%202.0%20NEET%20banner%20app.png",
+        offer_price: "Free",
+        mrp: "6000",
+        is_trending: "Trending",
+        start_date: "1772821801",
+        end_date: "1843410599"
+      },{
+        id: 185,
+        title: "Drona 2.0 JEE Class 11th",
+        thumbnail: "https://dulae92u7241v.cloudfront.net/1772100600/admin_v2/uploads/courses/thumbnail/2967410_131_drona%202.0%20JEE%20banner%20app.png",
+        offer_price: "Free",
+        mrp: "6000",
+        is_trending: "Trending",
+        start_date: "1772821801",
+        end_date: "1843410599"
+      },{
+        id: 151,
+        title: "Drona JEE class 11th",
+        thumbnail: "https://dulae92u7241v.cloudfront.net/1772100600/admin_v2/uploads/courses/thumbnail/7574748_131_Class%2011th%20Mission%20Jeet%20JEE%20App%20Banners.jpg",
+        offer_price: "Free",
+        mrp: "6000",
+        is_trending: "Trending",
+        start_date: "1772821801",
+        end_date: "1843410599"
+      },
+      {
+        id: 152,
+        title: "Drona NEET class 11th",
+        thumbnail: "https://dulae92u7241v.cloudfront.net/1772100600/admin_v2/uploads/courses/thumbnail/4072473_131_Class%2011th%20Mission%20Jeets%20NEET%20App%20Banners.jpg",
+        offer_price: "Free",
+        mrp: "6000",
+        is_trending: "Trending",
+        start_date: "1772821801",
+        end_date: "1843410599"
+      }
+  // Zaroorat ho to aur batches add kar sakte ho
+];
+
+// MissionJeet ke notifications ka apna state
 const notifyState = loadNotifyState();
+
+// Cached DOM elements
+const elements = {};
+
+function cacheElements() {
+  elements.liveTab = document.getElementById("liveTab");
+  elements.upcomingTab = document.getElementById("upcomingTab");
+  elements.notifyAllBtn = document.getElementById("notifyAllBtn");
+  elements.searchInput = document.getElementById("searchInput");
+  elements.contentBox = document.getElementById("contentBox");
+  elements.resultsInfo = document.getElementById("resultsInfo");
+  elements.errorBox = document.getElementById("errorBox");
+  elements.errorText = document.getElementById("errorText");
+  elements.permissionModal = document.getElementById("permissionModal");
+  elements.permissionStatusText = document.getElementById("permissionStatusText");
+  elements.batchModal = document.getElementById("batchModal");
+  elements.batchList = document.getElementById("batchList");
+  elements.enableBtn = document.getElementById("enableNotificationsBtn");
+}
 
 // ================= LOCAL STORAGE STATE =================
 
@@ -91,9 +169,7 @@ function formatDate(ts) {
 
 function getCountdown(ts) {
   const diff = new Date(Number(ts) * 1000) - new Date();
-  if (diff <= 0) {
-    return "Starting soon...";
-  }
+  if (diff <= 0) return "Starting soon...";
   const hours = Math.floor((diff / 3600000) % 24);
   const minutes = Math.floor((diff / 60000) % 60);
   const seconds = Math.floor((diff / 1000) % 60);
@@ -122,7 +198,6 @@ function matchesSearch(item, query, type) {
   ].join(" "));
 
   if (searchableText.includes(normalizedQuery)) return true;
-
   return queryWords.every(word => searchableText.includes(word));
 }
 
@@ -144,8 +219,8 @@ function escapeHtml(str) {
 
 function setActiveTab(tab) {
   currentTab = tab;
-  document.getElementById("liveTab").classList.toggle("active", tab === "live");
-  document.getElementById("upcomingTab").classList.toggle("active", tab === "upcoming");
+  elements.liveTab?.classList.toggle("active", tab === "live");
+  elements.upcomingTab?.classList.toggle("active", tab === "upcoming");
   render();
 }
 
@@ -164,7 +239,7 @@ function matchesPageCourse(item) {
   return getItemCourseId(item) === PAGE_COURSE_ID;
 }
 
-// per-lecture unique key: course + entity + live_from
+// per-lecture unique key: course + entity + live_from (MissionJeet bhi same)
 function getItemNotifyKey(item) {
   const courseId = getItemCourseId(item) || "no-course";
   const entityId = item.entity_id || item.id || "no-entity";
@@ -191,28 +266,27 @@ function getNotificationPermission() {
 }
 
 function updatePermissionStatusText() {
-  const el = document.getElementById("permissionStatusText");
+  if (!elements.permissionStatusText) return;
   const permission = getNotificationPermission();
-  if (!el) return;
-  if (permission === "granted") el.textContent = "Notifications are already enabled";
-  else if (permission === "denied") el.textContent = "Notifications are blocked in browser settings";
-  else if (permission === "unsupported") el.textContent = "This browser does not support notifications";
-  else el.textContent = "Notification permission required";
+  if (permission === "granted") elements.permissionStatusText.textContent = "Notifications enabled ✓";
+  else if (permission === "denied") elements.permissionStatusText.textContent = "Notifications are blocked in browser";
+  else if (permission === "unsupported") elements.permissionStatusText.textContent = "This browser does not support notifications";
+  else elements.permissionStatusText.textContent = "Notification permission required";
 }
 
 function openPermissionModal() {
+  elements.permissionModal?.classList.remove("hidden");
   updatePermissionStatusText();
-  document.getElementById("permissionModal").classList.remove("hidden");
 }
 
 function closePermissionModal() {
-  document.getElementById("permissionModal").classList.add("hidden");
+  elements.permissionModal?.classList.add("hidden");
 }
 
 async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return null;
   try {
-    const registration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+    const registration = await navigator.serviceWorker.register("https://learnbyakp.online/sw.js", { scope: "/" });
     console.log("SW registered:", registration);
     return registration;
   } catch (err) {
@@ -225,7 +299,6 @@ function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = window.atob(base64);
-  const outputArray = new Uint8Array.rawData.length;
   const arr = new Uint8Array(rawData.length);
   for (let i = 0; i < rawData.length; ++i) arr[i] = rawData.charCodeAt(i);
   return arr;
@@ -298,7 +371,7 @@ async function sendPushNotification(title, body, icon, data = {}) {
       body: JSON.stringify({
         title: brandTitle,
         body: brandBody,
-        icon: icon || FALLBACK_IMAGE,
+        icon: icon || "https://learnbyakp.online/lo.png",
         data
       })
     });
@@ -310,78 +383,33 @@ async function sendPushNotification(title, body, icon, data = {}) {
   }
 }
 
-// ================= BATCHES =================
-
-async function fetchMissionJeetBatches() {
-  if (batchesLoading) return;
-
-  batchesLoading = true;
-  const batchList = document.getElementById("batchList");
-  batchList.innerHTML = `<div class="muted">Loading batches...</div>`;
-
-  try {
-    const res = await fetch(BATCHES_API);
-    if (!res.ok) throw new Error(`Failed to fetch batches (${res.status})`);
-
-    const json = await res.json();
-    if (!json?.success || !Array.isArray(json?.data)) {
-      throw new Error(json?.message || "Invalid batches response");
-    }
-
-    const rows = json.data.flatMap(section => {
-      if (!Array.isArray(section?.list)) return [];
-      return section.list;
-    });
-
-    availableBatches = rows
-      .map((item) => ({
-        id: String(item.id || ""),
-        title: item.title || `Batch ${item.id || ""}`,
-        thumbnail: item.thumbnail || "",
-        offer_price: item.offer_price || "",
-        is_trending: item.is_trending || "",
-        start_date: item.start_date || "",
-        end_date: item.end_date || ""
-      }))
-      .filter((item) => item.id);
-
-    renderBatchOptions();
-  } catch (err) {
-    batchList.innerHTML = `<div class="muted">${escapeHtml(err.message || "Could not load batches.")}</div>`;
-  } finally {
-    batchesLoading = false;
-  }
-}
+// ================= BATCHES (HARDCODED, /batches API REMOVE) =================
 
 function getAvailableBatches() {
-  return [...availableBatches]
+  return courses
     .filter(course => !PAGE_COURSE_ID || String(course.id) === PAGE_COURSE_ID)
     .sort((a, b) => a.title.localeCompare(b.title));
 }
 
 async function openBatchModal() {
-  document.getElementById("batchModal").classList.remove("hidden");
-  if (!availableBatches.length) {
-    await fetchMissionJeetBatches();
-  } else {
-    renderBatchOptions();
-  }
+  elements.batchModal?.classList.remove("hidden");
+  renderBatchOptions();
 }
 
 function closeBatchModal() {
-  document.getElementById("batchModal").classList.add("hidden");
+  elements.batchModal?.classList.add("hidden");
 }
 
 function renderBatchOptions() {
-  const batchList = document.getElementById("batchList");
-  const courses = getAvailableBatches();
+  const list = getAvailableBatches();
+  if (!elements.batchList) return;
 
-  if (!courses.length) {
-    batchList.innerHTML = `<div class="muted">No batches found yet.</div>`;
+  if (!list.length) {
+    elements.batchList.innerHTML = `<div class="muted">No batches found.</div>`;
     return;
   }
 
-  batchList.innerHTML = courses.map(course => `
+  elements.batchList.innerHTML = list.map(course => `
     <label class="batch-item" style="align-items:flex-start;">
       <input
         type="checkbox"
@@ -398,7 +426,7 @@ function renderBatchOptions() {
         >
         <div style="min-width:0;">
           <div style="font-weight:700; color:#111827;">${escapeHtml(course.title)}</div>
-          <div class="muted" style="font-size:12px; margin-top:3px;">Price: ₹ Free</div>
+          <div class="muted" style="font-size:12px; margin-top:3px;">Price: ${escapeHtml(course.offer_price || "₹ Free")}</div>
           ${
             course.is_trending
               ? `<div style="font-size:12px; color:#dc2626; font-weight:700; margin-top:3px;">${escapeHtml(course.is_trending)}</div>`
@@ -411,7 +439,7 @@ function renderBatchOptions() {
 }
 
 function saveBatchSubscriptions() {
-  const selected = Array.from(document.querySelectorAll("#batchList input[type='checkbox']:checked"))
+  const selected = Array.from(elements.batchList.querySelectorAll("input[type='checkbox']:checked"))
     .map(el => String(el.value));
   notifyState.selectedCourses = selected;
   saveNotifyState();
@@ -420,41 +448,84 @@ function saveBatchSubscriptions() {
   processNotifications();
 }
 
-// ================= WATCH URL BUILDER + PLAYER =================
+// ================= WATCH URL BUILDER + PLAYER (NextToppers-style content-details) =================
 
-function buildWatchUrlFromDetails(item, details) {
-  const { file_url, vdc_id, live_from } = details || {};
+async function buildWatchUrlFromDetailsAsync(item, details) {
+  if (!details) return "/";
+
+  const {
+    file_url,
+    vdc_id,
+    file_type,
+    video_type,
+    video_id,
+    live_from
+  } = details;
+
+  const title = item?.title ? encodeURIComponent(item.title) : "";
+
   if (file_url && file_url.trim()) {
-    let url = `/videoplayer?title=${encodeURIComponent(item.title)}&file_url=${encodeURIComponent(file_url.trim())}`;
-    if (live_from && String(live_from).trim()) {
-      url += `&start=${encodeURIComponent(live_from)}`;
+    const clean = file_url.trim();
+
+    if (Number(file_type) === 2 && Number(video_type) === 1) {
+      return `https://www.youtube.com/watch?v=${encodeURIComponent(clean)}`;
     }
-    return url;
+
+    if (/\.(mpd|m3u8|mp4)(\?|$)/i.test(clean)) {
+      let url = `/videoplayer?file_url=${encodeURIComponent(clean)}&title=${title}`;
+      if (live_from && String(live_from).trim()) {
+        url += `&start=${encodeURIComponent(String(live_from).trim())}`;
+      }
+      return url;
+    }
+
+    return clean;
   }
-  if (vdc_id && String(vdc_id).trim()) {
-    return `/videoplayer?id=${encodeURIComponent(vdc_id)}&title=please contact with admin`;
+
+  const finalVideoId = video_id || vdc_id || details?.id || "";
+  if (String(finalVideoId).trim()) {
+    try {
+      const drmRes = await fetch(
+        `https://learnbyakp.onrender.com/api/nexttoppers/drm?videoid=${encodeURIComponent(String(finalVideoId).trim())}`
+      );
+      const drmJson = await drmRes.json();
+
+      const drmFileUrl = drmJson?.data?.link?.file_url || drmJson?.file_url || "";
+      if (drmFileUrl && String(drmFileUrl).trim()) {
+        return `/videoplayer?file_url=${encodeURIComponent(String(drmFileUrl).trim())}&title=${title}`;
+      }
+    } catch (err) {
+      console.error("Failed to fetch DRM video details (buildWatchUrlFromDetailsAsync):", err);
+    }
   }
+
   return "/";
 }
 
 async function openPlayer(item) {
   try {
-    const res = await fetch(
-      `${CONTENT_DETAILS_API}?content_id=${encodeURIComponent(item.entity_id)}&courseid=${encodeURIComponent(getItemCourseId(item))}`
-    );
-    if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
+    const url = new URL(API.contentDetails);
+    url.searchParams.set("content_id", String(item.entity_id));
+    url.searchParams.set("course_id", String(item.course_id));
 
-    const json = await res.json();
-    if (!json.success || !json.data) {
-      throw new Error(json.message || "Could not fetch video details.");
+    const json = await apiFetch(url.toString(), { method: "GET" });
+    if (!json.success || !json.data) return;
+
+    const finalUrl = await buildWatchUrlFromDetailsAsync(item, json.data);
+    if (!finalUrl || finalUrl === "/") {
+      console.warn("No playable URL for content:", item.entity_id);
+      return;
     }
 
-    const url = buildWatchUrlFromDetails(item, json.data);
-    if (!url) throw new Error("No playable source found.");
-    location.href = url;
+    if (finalUrl.startsWith("https://www.youtube.com/")) {
+      window.open(finalUrl, "_blank");
+    } else if (finalUrl.startsWith("http")) {
+      window.open(finalUrl, "_blank");
+    } else {
+      location.href = finalUrl;
+    }
   } catch (err) {
-    errorMessage = err.message || "Failed to open player";
-    render();
+    console.error("Content details fetch failed:", err);
   }
 }
 
@@ -594,7 +665,8 @@ async function fetchDetailsForAll() {
     all.map(async (item) => {
       try {
         const res = await fetch(
-          `${CONTENT_DETAILS_API}?content_id=${encodeURIComponent(item.entity_id)}&courseid=${encodeURIComponent(getItemCourseId(item))}`
+          `${CONTENT_DETAILS_API}?content_id=${encodeURIComponent(item.entity_id)}&courseid=${encodeURIComponent(getItemCourseId(item))}`,
+          { headers: DEFAULT_HEADERS }
         );
         if (!res.ok) return { id: item.id, entity_id: item.entity_id, details: null };
         const json = await res.json();
@@ -725,33 +797,38 @@ function renderCards(items) {
   `;
 }
 
+function totalItemsText(n) {
+  return `${n} result${n !== 1 ? "s" : ""}`;
+}
+
 function renderResultsInfo(filteredCount, totalCount) {
-  const resultsInfo = document.getElementById("resultsInfo");
   const selectedCoursesCount = notifyState.selectedCourses.length;
+  if (!elements.resultsInfo) return;
 
   if (!searchText.trim()) {
-    resultsInfo.textContent = `${totalCount} result${totalCount !== 1 ? "s" : ""} in ${currentTab}${selectedCoursesCount ? ` • ${selectedCoursesCount} batch notification active` : ""}`;
-    return;
+    elements.resultsInfo.textContent =
+      `${totalItemsText(totalCount)} in ${currentTab}` +
+      (selectedCoursesCount ? ` • ${selectedCoursesCount} batch notification active` : "");
+  } else {
+    elements.resultsInfo.textContent =
+      `${filteredCount} of ${totalCount} result${totalCount !== 1 ? "s" : ""} for "${searchText}" in ${currentTab}` +
+      (selectedCoursesCount ? ` • ${selectedCoursesCount} batch notification active` : "");
   }
-
-  resultsInfo.textContent = `${filteredCount} of ${totalCount} result${totalCount !== 1 ? "s" : ""} for "${searchText}" in ${currentTab}${selectedCoursesCount ? ` • ${selectedCoursesCount} batch notification active` : ""}`;
 }
 
 function render() {
-  const errorBox = document.getElementById("errorBox");
-  const errorText = document.getElementById("errorText");
-  const contentBox = document.getElementById("contentBox");
-
-  if (errorMessage) {
-    errorBox.classList.remove("hidden");
-    errorText.textContent = errorMessage;
-  } else {
-    errorBox.classList.add("hidden");
+  if (elements.errorBox) {
+    if (errorMessage) {
+      elements.errorBox.classList.remove("hidden");
+      elements.errorText.textContent = errorMessage;
+    } else {
+      elements.errorBox.classList.add("hidden");
+    }
   }
 
   if (loading) {
-    document.getElementById("resultsInfo").textContent = "Loading...";
-    contentBox.innerHTML = renderSkeleton();
+    if (elements.resultsInfo) elements.resultsInfo.textContent = "Loading...";
+    elements.contentBox.innerHTML = renderSkeleton();
     restartCountdownUpdater();
     return;
   }
@@ -760,7 +837,7 @@ function render() {
   const filteredItems = getFilteredItems();
 
   renderResultsInfo(filteredItems.length, totalItems);
-  contentBox.innerHTML = filteredItems.length ? renderCards(filteredItems) : renderEmpty(currentTab);
+  elements.contentBox.innerHTML = filteredItems.length ? renderCards(filteredItems) : renderEmpty(currentTab);
   restartCountdownUpdater();
 }
 
@@ -785,28 +862,30 @@ function startPolling() {
 // ================= INIT =================
 
 function bindEvents() {
-  document.getElementById("liveTab").addEventListener("click", () => setActiveTab("live"));
-  document.getElementById("upcomingTab").addEventListener("click", () => setActiveTab("upcoming"));
-  document.getElementById("notifyAllBtn").addEventListener("click", handleNotifyAllClick);
-  document.getElementById("searchInput").addEventListener("input", (e) => {
+  elements.liveTab?.addEventListener("click", () => setActiveTab("live"));
+  elements.upcomingTab?.addEventListener("click", () => setActiveTab("upcoming"));
+  elements.notifyAllBtn?.addEventListener("click", handleNotifyAllClick);
+  elements.searchInput?.addEventListener("input", (e) => {
     searchText = e.target.value || "";
     render();
   });
+  elements.enableBtn?.addEventListener("click", enableNotifications);
 
-  // Permission modal ka "Enable" button ke liye
-  const enableBtn = document.getElementById("enableNotificationsBtn");
-  if (enableBtn) enableBtn.addEventListener("click", enableNotifications);
+  window.handleIndividualNotify = handleIndividualNotify;
+  window.handleWatch = handleWatch;
+  window.saveBatchSubscriptions = saveBatchSubscriptions;
+  window.closeBatchModal = closeBatchModal;
 }
 
 async function init() {
+  cacheElements();
   bindEvents();
   updatePermissionStatusText();
   await registerServiceWorker();
   await fetchLiveClasses();
   startPolling();
 
-  // extra script
-  const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
+  const SCRIPT_LINK = "https://learnbyakp.online/html-j/aut.js";
   const s = document.createElement("script");
   s.src = SCRIPT_LINK;
   s.async = true;
