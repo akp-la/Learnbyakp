@@ -1212,73 +1212,9 @@ app.get("/api/vibrant/live", async (req, res) => {
     });
   }
 });
-//=========pw api==========
+
   
-app.get('/video', async (req, res) => {
-  try {
-    // Tumhare side se aane wale parameters
-    const { 
-      video_id, 
-      subject_slug, 
-      batch_id, 
-      schedule_id, 
-      subject_id 
-    } = req.query;
-
-    // Sirf batch_id aur subject_id required hain
-    if (!batch_id || !subject_id) {
-      return res.status(400).json({
-        error: 'Missing required parameters',
-        required: ['batch_id', 'subject_id']
-      });
-    }
-
-    // API ko bhejne wale parameters (mapping)
-    const apiParams = {
-      type: 'BATCHES',
-      videoContainerType: 'DASH',
-      reqType: 'query',
-      childId: schedule_id || batch_id,      // schedule_id priority, warna batch_id
-      parentId: batch_id,                    // batch_id -> parentId
-      clientVersion: '201',
-      
-      // Additional parameters jo API ko chahiye
-      batchSlug: batch_id,
-      batchSubjectId: subject_id,
-      subjectSlug: subject_id,
-      topicSlug: 'all',
-      scheduleId: schedule_id || batch_id,
-      type: 'penpencilvdo',
-      isPPJEnabled: 'true',
-      entryPoint: `BATCH_LECTURE_VIDEOS_${schedule_id || batch_id}`,
-      learn2Earn: 'true',
-      parentId: batch_id,
-      vType: 'BATCHES',
-      childId: schedule_id || batch_id
-    };
-
-    const response = await axios.get('https://api.penpencil.co/v1/videos/video-url-details', {
-      params: apiParams,
-      headers: {
-        'authorization': 'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODAzMDE5NTQuNjM0LCJkYXRhIjp7Il9pZCI6IjY0YWQ4ODM5ZmU5ZTZhMDAxODRjMGI1ZSIsInVzZXJuYW1lIjoiOTU1OTk3NTM3MCIsImZpcnN0TmFtZSI6IkFrdWwiLCJsYXN0TmFtZSI6IlByYWphcGF0aSIsIm9yZ2FuaXphdGlvbiI6eyJfaWQiOiI1ZWIzOTNlZTk1ZmFiNzQ2OGE3OWQxODkiLCJ3ZWJzaXRlIjoicGh5c2ljc3dhbGxhaC5jb20iLCJuYW1lIjoiUGh5c2ljc3dhbGxhaCJ9LCJlbWFpbCI6ImFrdWxwcmFqYXBhdGkwMEBnbWFpbC5jb20iLCJyb2xlcyI6WyI1YjI3YmQ5NjU4NDJmOTUwYTc3OGM2ZWYiXSwiY291bnRyeUdyb3VwIjoiSU4iLCJvbmVSb2xlcyI6W10sInR5cGUiOiJVU0VSIn0sImp0aSI6InlvVVZBMnZHVDZHS09tX0ZmTUhyQWdfNjRhZDg4MzlmZTllNmEwMDE4NGMwYjVlIiwiaWF0IjoxNzc5Njk3MTU0fQ.QY5BHYvmVh0WF4g3Myb34p22QW5Yy8HLdzMgAKFEm-k',
-        'client-id': '5eb393ee95fab7468a79d189',
-        'client-type': 'WEB',
-        'client-version': '200',
-        'content-type': 'application/json',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36',
-        'origin': 'https://www.pw.live',
-        'referer': 'https://www.pw.live/'
-      }
-    });
-
-    res.status(200).json(response.data);
-  } catch (error) {
-    console.error('Error:', error.response?.data || error.message);
-    res.status(error.response?.status || 500).json({
-      error: error.response?.data || error.message
-    });
-  }
-});  //======science==========
+  //======science==========
   app.get("/api/science/live", async (req, res) => {
   try {
     const courseId = req.query.course_id || req.query.courseid || req.query.id;
