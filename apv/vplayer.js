@@ -3,8 +3,8 @@
 
         const API = "https://vibrant-gloryfuel.onrender.com";
         const params = new URLSearchParams(location.search);
-        const courseId = params.get('course');
-        const videoId = params.get('video');
+        const courseId = params.get('course_id') ||params.get('course');
+        const videoId = params.get('video_id') || params.get('video');
         const videoTitle = params.get('title') || 'Untitled Lesson';
 
         let hls = null;
