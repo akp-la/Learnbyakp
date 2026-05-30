@@ -1,5 +1,5 @@
 
-    
+    // === GloryFuel style logic adapted to this UI ===
 
     const API ="https://vibrant-gloryfuel.onrender.com";
     const params = new URLSearchParams(location.search);
@@ -458,10 +458,14 @@
       }
 
       if (btn?.dataset.action === "play") {
-        window.location.href =
-          "player.html?course=" + encodeURIComponent(courseId) + "&video=" + encodeURIComponent(id);
-        return;
-      }
+  const videoId = id; // already extracted from card.dataset.id or btn.dataset.id
+  const videoTitle = card.querySelector(".card-title")?.textContent || "LearnByAKP";
+  window.location.href =
+    "player.html?course=" + encodeURIComponent(courseId) +
+    "&video=" + encodeURIComponent(videoId) +
+    "&title=" + encodeURIComponent(videoTitle);
+  return;
+}
 
       if (btn?.dataset.action === "open-pdf") {
         const link = btn.dataset.link;
@@ -472,27 +476,33 @@
 
     // live clicks
     el.liveGrid.addEventListener("click", (e) => {
-      const btn = e.target.closest("[data-action]");
-      if (!btn) return;
-      const id = btn.dataset.id;
-      if (btn.dataset.action === "watch-live") {
-        window.location.href =
-          "player.html?course=" + encodeURIComponent(courseId) +
-          "&video=" + encodeURIComponent(id) +
-          "&isLive=true";
-      }
-    });
+  const btn = e.target.closest("[data-action]");
+  if (!btn) return;
+  const card = btn.closest("[data-type]");
+  const id = btn.dataset.id;
+  if (btn.dataset.action === "watch-live") {
+    const title = card?.querySelector(".card-title")?.textContent || "Live Session";
+    window.location.href =
+      "player.html?course=" + encodeURIComponent(courseId) +
+      "&video=" + encodeURIComponent(id) +
+      "&title=" + encodeURIComponent(title) +
+      "&isLive=true";
+  }
+});
 
-    el.previousGrid.addEventListener("click", (e) => {
-      const btn = e.target.closest("[data-action]");
-      if (!btn) return;
-      const id = btn.dataset.id;
-      if (btn.dataset.action === "watch-prev") {
-        window.location.href =
-          "player.html?course=" + encodeURIComponent(courseId) +
-          "&video=" + encodeURIComponent(id);
-      }
-    });
+el.previousGrid.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-action]");
+  if (!btn) return;
+  const card = btn.closest("[data-type]");
+  const id = btn.dataset.id;
+  if (btn.dataset.action === "watch-prev") {
+    const title = card?.querySelector(".card-title")?.textContent || "Previous Live";
+    window.location.href =
+      "player.html?course=" + encodeURIComponent(courseId) +
+      "&video=" + encodeURIComponent(id) +
+      "&title=" + encodeURIComponent(title);
+  }
+});
 
     // tabs
     el.contentTab.addEventListener("click", () => switchMainTab("content"));
@@ -537,24 +547,5 @@
     });
 
     // initial load
-
-
     if (courseId) renderContent();
-
-
-const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
-
-if(!isMobileDevice){
-  const s = document.createElement("script");
-  s.src = SCRIPT_LINK;
-  s.async = true;
-  s.onload = () => {
-    console.log("Script loaded successfully");
-  };
-  s.onerror = () => {
-    console.log("Script load nahi hua");
-  };
-
-  document.head.appendChild(s);
-}
-  
+ 
