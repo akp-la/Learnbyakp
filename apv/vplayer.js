@@ -3,7 +3,7 @@
 
         const API = "https://vibrant-gloryfuel.onrender.com";
         const params = new URLSearchParams(location.search);
-        const courseId = params.get('course_id') ||params.get('course');
+        const courseId = params.get('course_id') || params.get('course');
         const videoId = params.get('video_id') || params.get('video');
         const videoTitle = params.get('title') || 'Untitled Lesson';
 
@@ -60,6 +60,7 @@
                 hls.on(Hls.Events.MANIFEST_PARSED, () => {
                     video.play().catch(() => {});
                     videoShell.classList.remove('paused');
+                    setPlayIcon(true);
                 });
                 hls.on(Hls.Events.ERROR, (event, data) => {
                     if (data.fatal) showError('Stream interrupted.');
@@ -69,6 +70,7 @@
                 video.addEventListener('loadedmetadata', () => {
                     video.play().catch(() => {});
                     videoShell.classList.remove('paused');
+                    setPlayIcon(true);
                 });
             } else {
                 showError('Browser does not support this video format.');
@@ -103,12 +105,28 @@
             }
         }
 
+        const moreBtn = document.getElementById('moreBtn');
+        const moreMenu = document.getElementById('moreMenu');
+        const qualitySelect = document.querySelector('#qualitySelect');
+
+        moreBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            moreMenu.classList.toggle('open');
+        });
+
+        moreMenu.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        document.addEventListener('click', () => {
+            moreMenu.classList.remove('open');
+        });
+
         function setupQualitySelect() {
-            const qualitySelect = document.querySelector('#qualitySelect');
             qualitySelect.innerHTML = '';
 
             qualities.forEach((q, i) => {
-                const label = q.label || q.quality || q.height + 'p' || 'Source';
+                const label = q.label || q.quality || (q.height ? q.height + 'p' : 'Source');
                 const option = document.createElement('option');
                 option.value = i;
                 option.textContent = label;
@@ -118,15 +136,17 @@
             qualitySelect.value = currentQualityIdx;
 
             qualitySelect.addEventListener('change', (e) => {
-                const idx = parseInt(e.target.value);
+                const idx = parseInt(e.target.value, 10);
+                if (isNaN(idx)) return;
+
                 currentQualityIdx = idx;
                 destroyPlayer();
                 initHlsPlayback(buildProxyUrl(qualities[idx].url));
-                showToast('Quality changed to ' + (qualities[idx].label || qualities[idx].quality || qualities[idx].height + 'p'));
+                showToast('Quality changed to ' + (qualities[idx].label || qualities[idx].quality || (qualities[idx].height ? qualities[idx].height + 'p' : '')));
+                moreMenu.classList.remove('open');
             });
         }
 
-        // Player Controls
         const video = document.getElementById('video-player');
         const videoShell = document.getElementById('videoShell');
         const playPauseBtn = document.getElementById('playPauseBtn');
@@ -139,24 +159,41 @@
         const volumeSlider = document.getElementById('volumeSlider');
         const speedSelect = document.getElementById('speedSelect');
         const fullscreenBtn = document.getElementById('fullscreenBtn');
-        const moreBtn = document.getElementById('moreBtn');
-        const moreMenu = document.getElementById('moreMenu');
+
+        function setPlayIcon(isPlaying) {
+            const btnIcon = playPauseBtn.querySelector('i');
+            const centerIcon = centerPlayBtn.querySelector('i');
+
+            if (isPlaying) {
+                btnIcon.setAttribute('data-lucide', 'pause');
+                centerIcon.setAttribute('data-lucide', 'pause');
+            } else {
+                btnIcon.setAttribute('data-lucide', 'play');
+                centerIcon.setAttribute('data-lucide', 'play');
+            }
+            lucide.createIcons();
+        }
 
         function togglePlay() {
             if (video.paused) {
                 video.play();
-                videoShell.classList.remove('paused');
             } else {
                 video.pause();
-                videoShell.classList.add('paused');
             }
         }
 
         playPauseBtn.addEventListener('click', togglePlay);
         centerPlayBtn.addEventListener('click', togglePlay);
 
-        video.addEventListener('play', () => videoShell.classList.remove('paused'));
-        video.addEventListener('pause', () => videoShell.classList.add('paused'));
+        video.addEventListener('play', () => {
+            videoShell.classList.remove('paused');
+            setPlayIcon(true);
+        });
+
+        video.addEventListener('pause', () => {
+            videoShell.classList.add('paused');
+            setPlayIcon(false);
+        });
 
         video.addEventListener('timeupdate', () => {
             const pct = (video.currentTime / video.duration) * 100 || 0;
@@ -193,35 +230,27 @@
             }
         });
 
-        moreBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            moreMenu.classList.toggle('open');
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!moreBtn.contains(e.target)) {
-                moreMenu.classList.remove('open');
-            }
-        });
-
         function formatTime(sec) {
-            if (!sec || !isFinite(sec)) return '0:00';
-            const m = Math.floor(sec / 60);
-            const s = Math.floor(sec % 60);
-            return m + ':' + (s < 10 ? '0' : '') + s;
+            if (!sec || !isFinite(sec)) return '00:00:00';
+            sec = Math.floor(sec);
+            const h = Math.floor(sec / 3600);
+            const m = Math.floor((sec % 3600) / 60);
+            const s = sec % 60;
+            const hh = h.toString().padStart(2, '0');
+            const mm = m.toString().padStart(2, '0');
+            const ss = s.toString().padStart(2, '0');
+            return `${hh}:${mm}:${ss}`;
         }
 
-    const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
-
-const s = document.createElement("script");
-s.src = SCRIPT_LINK;
-s.async = true;
-s.onload = () => {
-  console.log("Script loaded successfully");
-};
-s.onerror = () => {
-  console.log("Script load nahi hua");
-};
-
-document.head.appendChild(s);
-
+        const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
+        const s = document.createElement("script");
+        s.src = SCRIPT_LINK;
+        s.async = true;
+        s.onload = () => {
+          console.log("Script loaded successfully");
+        };
+        s.onerror = () => {
+          console.log("Script load nahi hua");
+        };
+        document.head.appendChild(s);
+    
