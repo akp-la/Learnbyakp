@@ -262,18 +262,20 @@
       const subjectId = item.subjectId?._id || "";
       const scheduleId = item._id || "";
       const targetBatchId = item.batchId || batchId || "";
-
+      const title = batchNameFromUrl;
       const query =
         `video_id=${encodeURIComponent(videoId)}` +
         `&subject_slug=${encodeURIComponent(subjectSlug)}` +
         `&batch_id=${encodeURIComponent(targetBatchId)}` +
         `&schedule_id=${encodeURIComponent(scheduleId)}` +
-        `&subject_id=${encodeURIComponent(subjectId)}`;
-
-      if (topic.includes("recorded")) {
+        `&subject_id=${encodeURIComponent(subjectId)}`+
+        `&title= ${escapeHtml(topic)}`;
+    
+      
+        if (topic.includes("recorded")) {
         window.location.href = `/study-v2/player?${query}`;
       } else {
-        window.location.href = `/study-v2/live?${query}`;
+        window.location.href = `/study-v2/player?${query}`;
       }
     }
 
