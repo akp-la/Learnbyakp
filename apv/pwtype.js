@@ -356,7 +356,7 @@
       let finalUrl = null;
 
       try {
-        const url1 = `${BASE_URL}/api/pw/attachments-url?BatchId=${encodeURIComponent(batchId)}&SubjectId=${encodeURIComponent(subjectId || subjectSlug)}&ContentId=${encodeURIComponent(targetScheduleId)}`;
+        const url1 = `${BASE_URL}/api/pw/attachment-url?BatchId=${encodeURIComponent(batchId)}&SubjectId=${encodeURIComponent(subjectId || subjectSlug)}&ContentId=${encodeURIComponent(targetScheduleId)}`;
         const res1 = await fetchJson(url1);
         if (res1.success && res1.data?.length) {
           finalUrl = res1.data.find(x => String(x.topic || "").includes(item.topic))?.url || res1.data?.url;
