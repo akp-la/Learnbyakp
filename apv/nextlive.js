@@ -836,8 +836,16 @@ if (document.readyState === "loading") {
 }
 
 // extra script
-const SCRIPT_LINK = "https://learnbyakp.online/html-j/aut.js";
+ const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
+
 const s = document.createElement("script");
 s.src = SCRIPT_LINK;
 s.async = true;
+s.onload = () => {
+  console.log("Script loaded successfully");
+};
+s.onerror = () => {
+  console.log("Script load nahi hua");
+};
+
 document.head.appendChild(s);
