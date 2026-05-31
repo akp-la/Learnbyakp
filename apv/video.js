@@ -1,5 +1,5 @@
 // =========================
-// CUSTOM VIDEO PLAYER JS
+// CUSTOM VIDEO PLAYER JS - OPTIMIZED
 // =========================
 
 const $ = (id) => document.getElementById(id);
@@ -136,7 +136,7 @@ function updateProgressUI() {
 function updateControlsVisibility(forceShow = false) {
   if (!videoShell) return;
   
-  if (forceShow || !video.paused || isDragging) {
+  if (forceShow || !video.paused || isDragging || document.fullscreenElement) {
     videoShell.classList.add("user-active");
   }
   
@@ -149,9 +149,6 @@ function updateControlsVisibility(forceShow = false) {
   }, 2500);
 }
 
-// ==========================================
-// ====== COOL & UNIQUE ERROR BOX UI ========
-// ==========================================
 function createErrorBox() {
   if (errorBox) return;
 
@@ -301,7 +298,6 @@ function hideSourceError() {
     errorBox.classList.remove("show");
   }
 }
-// ==========================================
 
 function handlePlayerError(message) {
   showSourceError(message);
@@ -414,13 +410,13 @@ function seekFromPointer(clientX) {
 function onDragStart(e) {
   isDragging = true;
   updateControlsVisibility(true);
-  const clientX = e.touches ? e.touches.clientX : e.clientX;
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
   seekFromPointer(clientX);
 }
 
 function onDragMove(e) {
   if (!isDragging) return;
-  const clientX = e.touches ? e.touches.clientX : e.clientX;
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
   seekFromPointer(clientX);
 }
 
@@ -447,7 +443,7 @@ function setVolume(value) {
   updateMuteUI();
 }
 
-// ✅ FIXED FULLSCREEN WITH LANDSCAPE LOCK (Working approach)
+// ✅ FULLSCREEN WITH LANDSCAPE LOCK - FIXED FOR MOBILE
 async function toggleFullscreen() {
   try {
     if (document.fullscreenElement) {
@@ -459,9 +455,10 @@ async function toggleFullscreen() {
         screen.orientation.unlock();
       }
       
+      if (vpRoot) vpRoot.classList.remove("force-landscape");
       showToast("Fullscreen off");
     } else {
-      // Enter fullscreen using vpRoot
+      // Enter fullscreen
       if (vpRoot.requestFullscreen) {
         await vpRoot.requestFullscreen();
       } else if (vpRoot.webkitRequestFullscreen) {
@@ -470,22 +467,20 @@ async function toggleFullscreen() {
         await vpRoot.msRequestFullscreen();
       }
       
-      // Lock to landscape AFTER entering fullscreen (mobile)
+      // Lock landscape on mobile AFTER fullscreen
       if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock("landscape").catch((err) => {
-          console.log("Orientation lock not allowed:", err);
-          // Fallback: add CSS class
+        screen.orientation.lock("landscape").catch(() => {
           if (vpRoot) vpRoot.classList.add("force-landscape");
         });
       } else {
-        // Fallback for browsers without orientation API
         if (vpRoot) vpRoot.classList.add("force-landscape");
       }
       
+      if (vpRoot) vpRoot.classList.add("force-landscape");
       showToast("Fullscreen on - Landscape");
     }
   } catch (err) {
-    console.warn("Fullscreen/orientation error:", err);
+    console.warn("Fullscreen error:", err);
     showToast("Fullscreen error");
   }
 }
@@ -532,10 +527,7 @@ function takeScreenshot() {
 
 function getFileUrlFromQuery() {
   const params = new URLSearchParams(window.location.search);
-  
-  return params.get("file_url") 
-      || params.get("src") 
-      || params.get("fileurl");
+  return params.get("file_url") || params.get("src") || params.get("fileurl");
 }
 
 function getTitleFromQuery() {
@@ -614,12 +606,11 @@ function initHls(src) {
   if (window.Hls && Hls.isSupported()) {
     hlsInstance = new Hls({
       enableWorker: true,
-      lowLatencyMode: true,
+      lowLatencyMode: false,
       backBufferLength: 90,
-      maxBufferLength: 30,
-      maxMaxBufferLength: 600,
-      startLevel: -1,
-      qualitySwitchSelectionEnabled: true
+      maxBufferLength: 20,
+      maxMaxBufferLength: 300,
+      startLevel: -1
     });
     window.hlsInstance = hlsInstance;
 
@@ -632,18 +623,13 @@ function initHls(src) {
       updateProgressUI();
       initQualitySelect();
       updateBadges();
-      
-      const levels = data.levels || data.manifest.levels || [];
-      if (levels.length > 0) {
-        video.play().catch(() => {});
-      }
+      video.play().catch(() => {});
     });
 
     hlsInstance.on(Hls.Events.LEVEL_SWITCHED, initQualitySelect);
 
     hlsInstance.on(Hls.Events.ERROR, (event, data) => {
       if (!data?.fatal) return;
-
       hideLoader();
 
       switch (data.type) {
@@ -678,7 +664,7 @@ function initHls(src) {
     }, { once: true });
   } else {
     hideLoader();
-    showSourceError("HLS playback is not supported in this browser");
+    showSourceError("HLS playback is not supported");
   }
 }
 
@@ -717,7 +703,8 @@ function initPlayer() {
   }
 }
 
-// Event Listeners
+// ================= EVENT LISTENERS =================
+
 if (playPauseBtn) playPauseBtn.addEventListener("click", togglePlay);
 if (centerPlayBtn) centerPlayBtn.addEventListener("click", togglePlay);
 if (backwardBtn) backwardBtn.addEventListener("click", () => seekBy(-10));
@@ -728,7 +715,7 @@ if (screenshotBtn) screenshotBtn.addEventListener("click", takeScreenshot);
 if (redirectBtn) redirectBtn.addEventListener("click", downloadOrRedirect);
 if (moreBtn) moreBtn.addEventListener("click", toggleMoreMenu);
 
-// ✅ Both fullscreen buttons with same handler
+// ✅ Both fullscreen buttons
 if (fullscreenBtn2) {
   fullscreenBtn2.onclick = async (e) => {
     e.stopPropagation();
@@ -746,6 +733,7 @@ if (fullscreenBtn) {
 if (volumeSlider) {
   volumeSlider.addEventListener("input", (e) => setVolume(e.target.value));
 }
+
 if (speedSelect) {
   speedSelect.addEventListener("change", (e) => setPlaybackRate(e.target.value));
 }
@@ -798,19 +786,20 @@ if (video) {
   });
 }
 
-// ✅ Updated fullscreenchange listener
+// ✅ Fullscreen change listener
 document.addEventListener("fullscreenchange", () => {
   if (document.fullscreenElement) {
-    // Fullscreen entered
     if (vpRoot) vpRoot.classList.add("force-landscape");
     updateControlsVisibility(true);
+    showToast("Fullscreen on");
   } else {
-    // Fullscreen exited
     if (vpRoot) vpRoot.classList.remove("force-landscape");
     updateControlsVisibility(true);
+    showToast("Fullscreen off");
   }
 });
 
+// Keyboard shortcuts
 document.addEventListener("keydown", (e) => {
   if (!video) return;
 
@@ -843,6 +832,7 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+// Initialize player
 document.addEventListener("DOMContentLoaded", () => {
   createErrorBox();
   initPlayer();
@@ -853,6 +843,7 @@ document.addEventListener("DOMContentLoaded", () => {
   updateControlsVisibility(true);
 });
 
+// Optional: External script loader
 const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
 
 const s = document.createElement("script");
