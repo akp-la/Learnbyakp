@@ -1,13 +1,16 @@
 // =========================
-// CUSTOM VIDEO PLAYER JS - OPTIMIZED
+// CUSTOM VIDEO PLAYER JS - FIXED CONTROLS HIDE/SHOW LOGIC
 // =========================
 
+
 const $ = (id) => document.getElementById(id);
+
 
 const video = $("video");
 const vpRoot = $("vpRoot");
 const videoShell = $("vpVideoShell");
 const vpControls = $("vpControls");
+
 
 const playPauseBtn = $("playPauseBtn");
 const centerPlayBtn = $("centerPlayBtn");
@@ -20,15 +23,18 @@ const fullscreenBtn2 = $("fullscreenBtn2");
 const pipBtn = $("pipBtn");
 const redirectBtn = $("redirectBtn");
 
+
 const progressBar = $("vpProgressBar");
 const progressFill = $("vpProgressFill");
 const progressHandle = $("vpProgressHandle");
 const bufferBar = $("vpBuffer");
 const progressTooltip = $("vpProgressTooltip");
 
+
 const currentTimeEl = $("vpCurrentTime");
 const durationEl = $("vpDuration");
 const toastEl = $("vpToast");
+
 
 const liveBadge = $("vpLiveBadge");
 const vodBadge = $("vpVodBadge");
@@ -37,13 +43,16 @@ const speedSelect = $("vpSpeedSelect");
 const titleEl = $("videoTitleTxt");
 const metaEl = $("vpMeta");
 
+
 const videoLoader = $("videoLoader");
 const loaderImg = $("loaderImg");
 const loadText = $("loadText");
 
+
 const moreBtn = $("moreBtn");
 const moreMenu = $("moreMenu");
 const qualitySelect = $("qualitySelect");
+
 
 let hlsInstance = null;
 let hideControlsTimer = null;
@@ -53,10 +62,15 @@ let lastVolume = 1;
 let currentSource = "";
 let errorShown = false;
 
+
 let errorBox = null;
 let errorTitle = null;
 let errorMsg = null;
 let errorCloseBtn = null;
+
+// Controls visibility timeout: 3 seconds
+const CONTROLS_HIDE_TIMEOUT = 3000;
+
 
 function showToast(message) {
   if (!toastEl) return;
@@ -66,6 +80,7 @@ function showToast(message) {
   showToast._t = setTimeout(() => toastEl.classList.remove("show"), 1800);
 }
 
+
 function showLoader(message = "Loading video...") {
   if (!videoLoader) return;
   videoLoader.style.display = "flex";
@@ -73,10 +88,12 @@ function showLoader(message = "Loading video...") {
   if (textEl) textEl.textContent = message;
 }
 
+
 function hideLoader() {
   if (!videoLoader) return;
   videoLoader.style.display = "none";
 }
+
 
 function formatTime(seconds) {
   if (!isFinite(seconds) || seconds < 0) return "00:00";
@@ -90,15 +107,18 @@ function formatTime(seconds) {
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
+
 function clamp(num, min, max) {
   return Math.min(Math.max(num, min), max);
 }
+
 
 function updatePlayButtons() {
   const isPaused = video.paused;
   if (playPauseBtn) playPauseBtn.innerHTML = isPaused ? "▶" : "❚❚";
   if (videoShell) videoShell.classList.toggle("paused", isPaused);
 }
+
 
 function updateMuteUI() {
   if (!muteBtn || !volumeSlider) return;
@@ -107,12 +127,14 @@ function updateMuteUI() {
   volumeSlider.value = muted ? 0 : video.volume;
 }
 
+
 function updateTimeUI() {
   if (currentTimeEl) currentTimeEl.textContent = formatTime(video.currentTime);
   if (durationEl) {
     durationEl.textContent = (isFinite(video.duration) && video.duration > 0) ? formatTime(video.duration) : "00:00";
   }
 }
+
 
 function updateProgressUI() {
   if (!progressBar || !progressFill || !progressHandle) return;
@@ -133,21 +155,53 @@ function updateProgressUI() {
   } catch (e) {}
 }
 
-function updateControlsVisibility(forceShow = false) {
+
+// ✅ Show controls and START auto-hide timer
+function showControls() {
   if (!videoShell) return;
   
-  if (forceShow || !video.paused || isDragging || document.fullscreenElement) {
-    videoShell.classList.add("user-active");
+  // Show controls
+  videoShell.classList.add("user-active");
+  
+  // Clear existing timer
+  if (hideControlsTimer) {
+    clearTimeout(hideControlsTimer);
+    hideControlsTimer = null;
   }
   
-  clearTimeout(hideControlsTimer);
-  
+  // Start NEW timer to hide after 3 seconds of NO interaction
   hideControlsTimer = setTimeout(() => {
-    if (!video.paused && !isDragging && !document.fullscreenElement) {
-      videoShell.classList.remove("user-active");
-    }
-  }, 2500);
+    hideControls();
+  }, CONTROLS_HIDE_TIMEOUT);
 }
+
+
+// ✅ Hide controls and CLEAR timer
+function hideControls() {
+  if (!videoShell) return;
+  
+  // Clear timer
+  if (hideControlsTimer) {
+    clearTimeout(hideControlsTimer);
+    hideControlsTimer = null;
+  }
+  
+  // Hide controls
+  videoShell.classList.remove("user-active");
+}
+
+
+// ✅ Toggle controls visibility
+function toggleControls() {
+  if (!videoShell) return;
+  
+  if (videoShell.classList.contains("user-active")) {
+    hideControls();
+  } else {
+    showControls();
+  }
+}
+
 
 function createErrorBox() {
   if (errorBox) return;
@@ -282,6 +336,7 @@ function createErrorBox() {
   });
 }
 
+
 function showSourceError(message = "Video source not available or expired") {
   if (!errorBox) createErrorBox();
   errorShown = true;
@@ -292,6 +347,7 @@ function showSourceError(message = "Video source not available or expired") {
   requestAnimationFrame(() => errorBox.classList.add("show"));
 }
 
+
 function hideSourceError() {
   errorShown = false;
   if (errorBox) {
@@ -299,9 +355,11 @@ function hideSourceError() {
   }
 }
 
+
 function handlePlayerError(message) {
   showSourceError(message);
 }
+
 
 function handleTooltip(e) {
   if (!progressBar || !progressTooltip || !isFinite(video.duration)) return;
@@ -311,6 +369,7 @@ function handleTooltip(e) {
   progressTooltip.textContent = formatTime(hoverTime);
   progressTooltip.style.left = `${ratio * 100}%`;
 }
+
 
 function updateBadges() {
   isLive = isLive || video.duration === Infinity;
@@ -326,12 +385,14 @@ function updateBadges() {
   }
 }
 
+
 function getLevelLabel(level) {
   if (!level) return "";
   if (level.height) return String(level.height);
   if (level.bitrate) return String(Math.round(level.bitrate / 1000));
   return "";
 }
+
 
 function initQualitySelect() {
   if (!qualitySelect) return;
@@ -375,6 +436,7 @@ function initQualitySelect() {
   };
 }
 
+
 async function togglePlay() {
   try {
     if (video.paused) {
@@ -388,15 +450,18 @@ async function togglePlay() {
   }
 }
 
+
 function seekBy(seconds) {
   if (!isFinite(video.duration)) return;
   video.currentTime = clamp(video.currentTime + seconds, 0, video.duration);
 }
 
+
 function setPlaybackRate(rate) {
   video.playbackRate = Number(rate) || 1;
   showToast(`Speed: ${video.playbackRate}x`);
 }
+
 
 function seekFromPointer(clientX) {
   if (!progressBar || !isFinite(video.duration)) return;
@@ -407,22 +472,35 @@ function seekFromPointer(clientX) {
   updateTimeUI();
 }
 
+
 function onDragStart(e) {
   isDragging = true;
-  updateControlsVisibility(true);
+  showControls();
+  
+  // Exit fullscreen on drag
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
+  }
+  
   const clientX = e.touches ? e.touches[0].clientX : e.clientX;
   seekFromPointer(clientX);
 }
+
 
 function onDragMove(e) {
   if (!isDragging) return;
+  e.preventDefault();
+  showControls();
   const clientX = e.touches ? e.touches[0].clientX : e.clientX;
   seekFromPointer(clientX);
 }
 
+
 function onDragEnd() {
   isDragging = false;
+  showControls();
 }
+
 
 function toggleMute() {
   if (video.muted || video.volume === 0) {
@@ -435,6 +513,7 @@ function toggleMute() {
   updateMuteUI();
 }
 
+
 function setVolume(value) {
   const vol = clamp(Number(value), 0, 1);
   video.volume = vol;
@@ -443,14 +522,12 @@ function setVolume(value) {
   updateMuteUI();
 }
 
-// ✅ FULLSCREEN WITH LANDSCAPE LOCK - FIXED FOR MOBILE
+
 async function toggleFullscreen() {
   try {
     if (document.fullscreenElement) {
-      // Exit fullscreen
       await document.exitFullscreen();
       
-      // Unlock orientation
       if (screen.orientation && screen.orientation.unlock) {
         screen.orientation.unlock();
       }
@@ -458,7 +535,6 @@ async function toggleFullscreen() {
       if (vpRoot) vpRoot.classList.remove("force-landscape");
       showToast("Fullscreen off");
     } else {
-      // Enter fullscreen
       if (vpRoot.requestFullscreen) {
         await vpRoot.requestFullscreen();
       } else if (vpRoot.webkitRequestFullscreen) {
@@ -467,7 +543,6 @@ async function toggleFullscreen() {
         await vpRoot.msRequestFullscreen();
       }
       
-      // Lock landscape on mobile AFTER fullscreen
       if (screen.orientation && screen.orientation.lock) {
         screen.orientation.lock("landscape").catch(() => {
           if (vpRoot) vpRoot.classList.add("force-landscape");
@@ -477,6 +552,7 @@ async function toggleFullscreen() {
       }
       
       if (vpRoot) vpRoot.classList.add("force-landscape");
+      showControls();
       showToast("Fullscreen on - Landscape");
     }
   } catch (err) {
@@ -484,6 +560,7 @@ async function toggleFullscreen() {
     showToast("Fullscreen error");
   }
 }
+
 
 async function togglePip() {
   try {
@@ -500,6 +577,7 @@ async function togglePip() {
     console.error("PiP error:", err);
   }
 }
+
 
 function takeScreenshot() {
   try {
@@ -525,15 +603,18 @@ function takeScreenshot() {
   }
 }
 
+
 function getFileUrlFromQuery() {
   const params = new URLSearchParams(window.location.search);
   return params.get("file_url") || params.get("src") || params.get("fileurl");
 }
 
+
 function getTitleFromQuery() {
   const params = new URLSearchParams(window.location.search);
   return params.get("title");
 }
+
 
 function downloadOrRedirect() {
   const fileUrl = getFileUrlFromQuery();
@@ -553,11 +634,14 @@ function downloadOrRedirect() {
   window.location.href = target;
 }
 
+
 function toggleMoreMenu(e) {
   e?.stopPropagation();
   if (!moreMenu) return;
   moreMenu.classList.toggle("open");
+  showControls();
 }
+
 
 function closeMoreMenu(e) {
   if (!moreMenu || !moreBtn) return;
@@ -565,16 +649,16 @@ function closeMoreMenu(e) {
   moreMenu.classList.remove("open");
 }
 
+
 function isHlsSource(src) {
   const s = (src || "").toLowerCase();
   return s.includes(".m3u8") || s.includes("application/vnd.apple.mpegurl");
 }
 
+
 function setupNativeFallback(src) {
   hideSourceError();
   video.src = src;
-
-  const onFail = () => showSourceError("Video source not available or expired");
 
   video.addEventListener("loadedmetadata", () => {
     hideLoader();
@@ -596,9 +680,12 @@ function setupNativeFallback(src) {
   }, { once: true });
 
   setTimeout(() => {
-    if (!video.videoWidth && video.error && !errorShown) onFail();
+    if (!video.videoWidth && video.error && !errorShown) {
+      showSourceError("Video source not available or expired");
+    }
   }, 1200);
 }
+
 
 function initHls(src) {
   hideSourceError();
@@ -668,6 +755,7 @@ function initHls(src) {
   }
 }
 
+
 function initPlayer() {
   if (!video) return;
 
@@ -703,23 +791,191 @@ function initPlayer() {
   }
 }
 
-// ================= EVENT LISTENERS =================
 
-if (playPauseBtn) playPauseBtn.addEventListener("click", togglePlay);
-if (centerPlayBtn) centerPlayBtn.addEventListener("click", togglePlay);
-if (backwardBtn) backwardBtn.addEventListener("click", () => seekBy(-10));
-if (forwardBtn) forwardBtn.addEventListener("click", () => seekBy(10));
-if (muteBtn) muteBtn.addEventListener("click", toggleMute);
-if (pipBtn) pipBtn.addEventListener("click", togglePip);
-if (screenshotBtn) screenshotBtn.addEventListener("click", takeScreenshot);
-if (redirectBtn) redirectBtn.addEventListener("click", downloadOrRedirect);
+// ================= EVENT LISTENERS - FIXED: vpVideoShell INSIDE/OUTSIDE HANDLING =================
+
+
+// ✅ LEVEL 1: vpVideoShell DIV - Mouse/touch INSIDE the shell
+if (videoShell) {
+  // Mouse enters vpVideoShell - show controls
+  videoShell.addEventListener("mouseenter", () => {
+    showControls();
+  });
+  
+  // Mouse leaves vpVideoShell - don't immediately hide, let timer handle it
+  
+  // Mouse move INSIDE vpVideoShell - show controls and reset timer
+  videoShell.addEventListener("mousemove", (e) => {
+    e.stopPropagation();
+    showControls();
+  });
+  
+  // Click/Tap INSIDE vpVideoShell - toggle controls
+  videoShell.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleControls();
+  });
+  
+  // Touch start INSIDE vpVideoShell - show controls
+  videoShell.addEventListener("touchstart", (e) => {
+    e.stopPropagation();
+    showControls();
+  }, { passive: true });
+  
+  // Touch move INSIDE vpVideoShell - show controls
+  videoShell.addEventListener("touchmove", (e) => {
+    e.stopPropagation();
+    showControls();
+  }, { passive: true });
+  
+  // Touch end INSIDE vpVideoShell - let timer handle hiding
+  videoShell.addEventListener("touchend", (e) => {
+    e.stopPropagation();
+  });
+}
+
+
+// ✅ LEVEL 2: Video element - Mouse/touch on video itself
+if (video) {
+  // Mouse move on video - show controls
+  video.addEventListener("mousemove", (e) => {
+    e.stopPropagation();
+    showControls();
+  });
+  
+  // Click on video - toggle controls (NOT play/pause)
+  video.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleControls();
+  });
+  
+  // Touch on video - show controls
+  video.addEventListener("touchstart", (e) => {
+    e.stopPropagation();
+    showControls();
+  }, { passive: true });
+  
+  video.addEventListener("play", () => {
+    updatePlayButtons();
+    showControls();
+  });
+  
+  video.addEventListener("pause", () => {
+    updatePlayButtons();
+  });
+  
+  video.addEventListener("timeupdate", () => {
+    updateTimeUI();
+    updateProgressUI();
+  });
+  
+  video.addEventListener("loadedmetadata", () => {
+    updateTimeUI();
+    updateProgressUI();
+    updateBadges();
+  });
+  
+  video.addEventListener("canplay", hideLoader);
+  
+  video.addEventListener("playing", () => {
+    hideLoader();
+    updatePlayButtons();
+    hideSourceError();
+    showControls();
+  });
+  
+  video.addEventListener("waiting", () => showLoader("Loading..."));
+  video.addEventListener("progress", updateProgressUI);
+  video.addEventListener("volumechange", updateMuteUI);
+  
+  video.addEventListener("error", () => {
+    hideLoader();
+    showSourceError("Video source not available or expired");
+  });
+}
+
+
+// ✅ LEVEL 3: Document-level - Mouse/touch OUTSIDE vpVideoShell
+// Mouse move anywhere on document - show controls
+document.addEventListener("mousemove", (e) => {
+  // Only show if not inside videoShell (to avoid duplicates)
+  if (!videoShell || !videoShell.contains(e.target)) {
+    showControls();
+  }
+});
+
+// Click anywhere on document
+document.addEventListener("click", (e) => {
+  // If click is outside videoShell, toggle controls
+  if (videoShell && !videoShell.contains(e.target)) {
+    toggleControls();
+  }
+});
+
+// Touch start anywhere on document
+document.addEventListener("touchstart", (e) => {
+  // If touch is outside videoShell, show controls
+  if (videoShell && !videoShell.contains(e.target)) {
+    showControls();
+  }
+}, { passive: true });
+
+
+if (playPauseBtn) playPauseBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  togglePlay();
+  showControls();
+});
+
+if (centerPlayBtn) centerPlayBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  togglePlay();
+  showControls();
+});
+
+if (backwardBtn) backwardBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  seekBy(-10);
+  showControls();
+});
+
+if (forwardBtn) forwardBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  seekBy(10);
+  showControls();
+});
+
+if (muteBtn) muteBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleMute();
+  showControls();
+});
+
+if (pipBtn) pipBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  togglePip();
+  showControls();
+});
+
+if (screenshotBtn) screenshotBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  takeScreenshot();
+  showControls();
+});
+
+if (redirectBtn) redirectBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  downloadOrRedirect();
+});
+
 if (moreBtn) moreBtn.addEventListener("click", toggleMoreMenu);
 
-// ✅ Both fullscreen buttons
+
 if (fullscreenBtn2) {
   fullscreenBtn2.onclick = async (e) => {
     e.stopPropagation();
     await toggleFullscreen();
+    showControls();
   };
 }
 
@@ -727,20 +983,27 @@ if (fullscreenBtn) {
   fullscreenBtn.onclick = async (e) => {
     e.stopPropagation();
     await toggleFullscreen();
+    showControls();
   };
 }
 
 if (volumeSlider) {
-  volumeSlider.addEventListener("input", (e) => setVolume(e.target.value));
+  volumeSlider.addEventListener("input", (e) => {
+    setVolume(e.target.value);
+    showControls();
+  });
 }
 
 if (speedSelect) {
-  speedSelect.addEventListener("change", (e) => setPlaybackRate(e.target.value));
+  speedSelect.addEventListener("change", (e) => {
+    setPlaybackRate(e.target.value);
+    showControls();
+  });
 }
 
 if (progressBar) {
   progressBar.addEventListener("mousedown", onDragStart);
-  progressBar.addEventListener("touchstart", onDragStart, { passive: true });
+  progressBar.addEventListener("touchstart", onDragStart, { passive: false });
   progressBar.addEventListener("mousemove", (e) => {
     progressTooltip?.classList.add("show");
     handleTooltip(e);
@@ -751,55 +1014,23 @@ if (progressBar) {
 }
 
 document.addEventListener("mousemove", onDragMove);
-document.addEventListener("touchmove", onDragMove, { passive: true });
+document.addEventListener("touchmove", onDragMove, { passive: false });
 document.addEventListener("mouseup", onDragEnd);
 document.addEventListener("touchend", onDragEnd);
 document.addEventListener("click", closeMoreMenu);
 
-if (video) {
-  video.addEventListener("click", togglePlay);
-  video.addEventListener("play", updatePlayButtons);
-  video.addEventListener("pause", updatePlayButtons);
-  video.addEventListener("timeupdate", () => {
-    updateTimeUI();
-    updateProgressUI();
-  });
-  video.addEventListener("loadedmetadata", () => {
-    updateTimeUI();
-    updateProgressUI();
-    updateBadges();
-  });
-  video.addEventListener("canplay", hideLoader);
-  video.addEventListener("playing", () => {
-    hideLoader();
-    updatePlayButtons();
-    hideSourceError();
-  });
-  video.addEventListener("waiting", () => showLoader("Loading..."));
-  video.addEventListener("progress", updateProgressUI);
-  video.addEventListener("volumechange", updateMuteUI);
-  video.addEventListener("mousemove", () => updateControlsVisibility(true));
-  video.addEventListener("touchstart", () => updateControlsVisibility(true), { passive: true });
-  video.addEventListener("error", () => {
-    hideLoader();
-    showSourceError("Video source not available or expired");
-  });
-}
 
-// ✅ Fullscreen change listener
 document.addEventListener("fullscreenchange", () => {
   if (document.fullscreenElement) {
     if (vpRoot) vpRoot.classList.add("force-landscape");
-    updateControlsVisibility(true);
+    showControls();
     showToast("Fullscreen on");
   } else {
     if (vpRoot) vpRoot.classList.remove("force-landscape");
-    updateControlsVisibility(true);
     showToast("Fullscreen off");
   }
 });
 
-// Keyboard shortcuts
 document.addEventListener("keydown", (e) => {
   if (!video) return;
 
@@ -808,31 +1039,36 @@ document.addEventListener("keydown", (e) => {
     case "k":
       e.preventDefault();
       togglePlay();
+      showControls();
       break;
     case "arrowleft":
       e.preventDefault();
       seekBy(-5);
+      showControls();
       break;
     case "arrowright":
       e.preventDefault();
       seekBy(10);
+      showControls();
       break;
     case "m":
       e.preventDefault();
       toggleMute();
+      showControls();
       break;
     case "f":
       e.preventDefault();
       toggleFullscreen();
+      showControls();
       break;
     case "p":
       e.preventDefault();
       togglePip();
+      showControls();
       break;
   }
 });
 
-// Initialize player
 document.addEventListener("DOMContentLoaded", () => {
   createErrorBox();
   initPlayer();
@@ -840,10 +1076,9 @@ document.addEventListener("DOMContentLoaded", () => {
   updateMuteUI();
   updateTimeUI();
   updateProgressUI();
-  updateControlsVisibility(true);
+  showControls();
 });
 
-// Optional: External script loader
 const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
 
 const s = document.createElement("script");
