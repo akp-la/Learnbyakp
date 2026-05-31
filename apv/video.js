@@ -16,6 +16,7 @@ const forwardBtn = $("forwardBtn");
 const muteBtn = $("muteBtn");
 const volumeSlider = $("volumeSlider");
 const fullscreenBtn = $("fullscreenBtn");
+const fullscreenBtn2 = $("fullscreenBtn2");
 const pipBtn = $("pipBtn");
 const redirectBtn = $("redirectBtn");
 
@@ -132,13 +133,17 @@ function updateProgressUI() {
   } catch (e) {}
 }
 
-function showControlsTemporarily() {
+function updateControlsVisibility(forceShow = false) {
   if (!videoShell) return;
-  videoShell.classList.add("user-active");
+  
+  if (forceShow || !video.paused || isDragging) {
+    videoShell.classList.add("user-active");
+  }
+  
   clearTimeout(hideControlsTimer);
-
+  
   hideControlsTimer = setTimeout(() => {
-    if (!video.paused && !isDragging) {
+    if (!video.paused && !isDragging && !document.fullscreenElement) {
       videoShell.classList.remove("user-active");
     }
   }, 2500);
@@ -150,7 +155,6 @@ function showControlsTemporarily() {
 function createErrorBox() {
   if (errorBox) return;
 
-  // Inject unique CSS dynamically
   const style = document.createElement("style");
   style.innerHTML = `
     #vpErrorBox {
@@ -288,7 +292,6 @@ function showSourceError(message = "Video source not available or expired") {
   if (errorTitle) errorTitle.textContent = "Video Not Found";
   if (errorMsg) errorMsg.textContent = message;
   
-  // Using requestAnimationFrame to ensure smooth CSS transition application
   requestAnimationFrame(() => errorBox.classList.add("show"));
 }
 
@@ -378,8 +381,11 @@ function initQualitySelect() {
 
 async function togglePlay() {
   try {
-    if (video.paused) await video.play();
-    else video.pause();
+    if (video.paused) {
+      await video.play();
+    } else {
+      video.pause();
+    }
   } catch (err) {
     console.error("Play/Pause error:", err);
     handlePlayerError("Unable to play this video");
@@ -407,7 +413,7 @@ function seekFromPointer(clientX) {
 
 function onDragStart(e) {
   isDragging = true;
-  showControlsTemporarily();
+  updateControlsVisibility(true);
   const clientX = e.touches ? e.touches.clientX : e.clientX;
   seekFromPointer(clientX);
 }
@@ -441,12 +447,46 @@ function setVolume(value) {
   updateMuteUI();
 }
 
+// ✅ FIXED FULLSCREEN WITH LANDSCAPE LOCK (Working approach)
 async function toggleFullscreen() {
   try {
-    if (!document.fullscreenElement) await vpRoot.requestFullscreen();
-    else await document.exitFullscreen();
+    if (document.fullscreenElement) {
+      // Exit fullscreen
+      await document.exitFullscreen();
+      
+      // Unlock orientation
+      if (screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock();
+      }
+      
+      showToast("Fullscreen off");
+    } else {
+      // Enter fullscreen using vpRoot
+      if (vpRoot.requestFullscreen) {
+        await vpRoot.requestFullscreen();
+      } else if (vpRoot.webkitRequestFullscreen) {
+        await vpRoot.webkitRequestFullscreen();
+      } else if (vpRoot.msRequestFullscreen) {
+        await vpRoot.msRequestFullscreen();
+      }
+      
+      // Lock to landscape AFTER entering fullscreen (mobile)
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock("landscape").catch((err) => {
+          console.log("Orientation lock not allowed:", err);
+          // Fallback: add CSS class
+          if (vpRoot) vpRoot.classList.add("force-landscape");
+        });
+      } else {
+        // Fallback for browsers without orientation API
+        if (vpRoot) vpRoot.classList.add("force-landscape");
+      }
+      
+      showToast("Fullscreen on - Landscape");
+    }
   } catch (err) {
-    console.error("Fullscreen error:", err);
+    console.warn("Fullscreen/orientation error:", err);
+    showToast("Fullscreen error");
   }
 }
 
@@ -456,8 +496,11 @@ async function togglePip() {
       showToast("PiP not supported");
       return;
     }
-    if (document.pictureInPictureElement) await document.exitPictureInPicture();
-    else await video.requestPictureInPicture();
+    if (document.pictureInPictureElement) {
+      await document.exitPictureInPicture();
+    } else {
+      await video.requestPictureInPicture();
+    }
   } catch (err) {
     console.error("PiP error:", err);
   }
@@ -487,8 +530,6 @@ function takeScreenshot() {
   }
 }
 
-
-
 function getFileUrlFromQuery() {
   const params = new URLSearchParams(window.location.search);
   
@@ -497,28 +538,28 @@ function getFileUrlFromQuery() {
       || params.get("fileurl");
 }
 
-    function getTitleFromQuery() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("title");
-    }
+function getTitleFromQuery() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("title");
+}
 
-    function downloadOrRedirect() {
-      const fileUrl = getFileUrlFromQuery();
-      const title = getTitleFromQuery();
+function downloadOrRedirect() {
+  const fileUrl = getFileUrlFromQuery();
+  const title = getTitleFromQuery();
 
-      if (!fileUrl) {
-        alert("URL me ?file_url= nahi mila.");
-        return;
-      }
+  if (!fileUrl) {
+    alert("URL me ?file_url= nahi mila.");
+    return;
+  }
 
-      const encodedFile = encodeURIComponent(fileUrl);
-      const encodedTitle = title ? encodeURIComponent(title) : "";
-      let target = `dow?file_url=${encodedFile}`;
-      if (encodedTitle) {
-        target += `&title=${encodedTitle}`;
-      }
-      window.location.href = target;
-    }
+  const encodedFile = encodeURIComponent(fileUrl);
+  const encodedTitle = title ? encodeURIComponent(title) : "";
+  let target = `dow?file_url=${encodedFile}`;
+  if (encodedTitle) {
+    target += `&title=${encodedTitle}`;
+  }
+  window.location.href = target;
+}
 
 function toggleMoreMenu(e) {
   e?.stopPropagation();
@@ -574,20 +615,28 @@ function initHls(src) {
     hlsInstance = new Hls({
       enableWorker: true,
       lowLatencyMode: true,
-      backBufferLength: 90
+      backBufferLength: 90,
+      maxBufferLength: 30,
+      maxMaxBufferLength: 600,
+      startLevel: -1,
+      qualitySwitchSelectionEnabled: true
     });
     window.hlsInstance = hlsInstance;
 
     hlsInstance.loadSource(src);
     hlsInstance.attachMedia(video);
 
-    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+    hlsInstance.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
       hideLoader();
       updateTimeUI();
       updateProgressUI();
       initQualitySelect();
       updateBadges();
-      video.play().catch(() => {});
+      
+      const levels = data.levels || data.manifest.levels || [];
+      if (levels.length > 0) {
+        video.play().catch(() => {});
+      }
     });
 
     hlsInstance.on(Hls.Events.LEVEL_SWITCHED, initQualitySelect);
@@ -639,7 +688,7 @@ function initPlayer() {
   createErrorBox();
 
   const urlParams = new URLSearchParams(window.location.search);
-  const paramSrc = urlParams.get("src") || urlParams.get("file_url") || urlParams.get("fileurl") ;
+  const paramSrc = urlParams.get("src") || urlParams.get("file_url") || urlParams.get("fileurl");
   const paramTitle = urlParams.get("title");
   const paramMeta = urlParams.get("meta");
 
@@ -668,16 +717,31 @@ function initPlayer() {
   }
 }
 
+// Event Listeners
 if (playPauseBtn) playPauseBtn.addEventListener("click", togglePlay);
 if (centerPlayBtn) centerPlayBtn.addEventListener("click", togglePlay);
 if (backwardBtn) backwardBtn.addEventListener("click", () => seekBy(-10));
 if (forwardBtn) forwardBtn.addEventListener("click", () => seekBy(10));
 if (muteBtn) muteBtn.addEventListener("click", toggleMute);
-if (fullscreenBtn) fullscreenBtn.addEventListener("click", toggleFullscreen);
 if (pipBtn) pipBtn.addEventListener("click", togglePip);
 if (screenshotBtn) screenshotBtn.addEventListener("click", takeScreenshot);
 if (redirectBtn) redirectBtn.addEventListener("click", downloadOrRedirect);
 if (moreBtn) moreBtn.addEventListener("click", toggleMoreMenu);
+
+// ✅ Both fullscreen buttons with same handler
+if (fullscreenBtn2) {
+  fullscreenBtn2.onclick = async (e) => {
+    e.stopPropagation();
+    await toggleFullscreen();
+  };
+}
+
+if (fullscreenBtn) {
+  fullscreenBtn.onclick = async (e) => {
+    e.stopPropagation();
+    await toggleFullscreen();
+  };
+}
 
 if (volumeSlider) {
   volumeSlider.addEventListener("input", (e) => setVolume(e.target.value));
@@ -726,16 +790,25 @@ if (video) {
   video.addEventListener("waiting", () => showLoader("Loading..."));
   video.addEventListener("progress", updateProgressUI);
   video.addEventListener("volumechange", updateMuteUI);
-  video.addEventListener("mousemove", showControlsTemporarily);
-  video.addEventListener("touchstart", showControlsTemporarily, { passive: true });
+  video.addEventListener("mousemove", () => updateControlsVisibility(true));
+  video.addEventListener("touchstart", () => updateControlsVisibility(true), { passive: true });
   video.addEventListener("error", () => {
     hideLoader();
     showSourceError("Video source not available or expired");
   });
 }
 
+// ✅ Updated fullscreenchange listener
 document.addEventListener("fullscreenchange", () => {
-  showToast(document.fullscreenElement ? "Fullscreen on" : "Fullscreen off");
+  if (document.fullscreenElement) {
+    // Fullscreen entered
+    if (vpRoot) vpRoot.classList.add("force-landscape");
+    updateControlsVisibility(true);
+  } else {
+    // Fullscreen exited
+    if (vpRoot) vpRoot.classList.remove("force-landscape");
+    updateControlsVisibility(true);
+  }
 });
 
 document.addEventListener("keydown", (e) => {
@@ -777,10 +850,10 @@ document.addEventListener("DOMContentLoaded", () => {
   updateMuteUI();
   updateTimeUI();
   updateProgressUI();
-  showControlsTemporarily();
+  updateControlsVisibility(true);
 });
 
- const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
+const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
 
 const s = document.createElement("script");
 s.src = SCRIPT_LINK;
