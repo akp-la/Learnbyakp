@@ -1,15 +1,18 @@
 // =========================
-// CUSTOM VIDEO PLAYER JS - FIXED CONTROLS HIDE/SHOW LOGIC
+// CUSTOM VIDEO PLAYER JS - FIXED CONTROLS + DOUBLE TAP SEEK
 // =========================
 
 
+
 const $ = (id) => document.getElementById(id);
+
 
 
 const video = $("video");
 const vpRoot = $("vpRoot");
 const videoShell = $("vpVideoShell");
 const vpControls = $("vpControls");
+
 
 
 const playPauseBtn = $("playPauseBtn");
@@ -24,6 +27,7 @@ const pipBtn = $("pipBtn");
 const redirectBtn = $("redirectBtn");
 
 
+
 const progressBar = $("vpProgressBar");
 const progressFill = $("vpProgressFill");
 const progressHandle = $("vpProgressHandle");
@@ -31,9 +35,11 @@ const bufferBar = $("vpBuffer");
 const progressTooltip = $("vpProgressTooltip");
 
 
+
 const currentTimeEl = $("vpCurrentTime");
 const durationEl = $("vpDuration");
 const toastEl = $("vpToast");
+
 
 
 const liveBadge = $("vpLiveBadge");
@@ -44,14 +50,17 @@ const titleEl = $("videoTitleTxt");
 const metaEl = $("vpMeta");
 
 
+
 const videoLoader = $("videoLoader");
 const loaderImg = $("loaderImg");
 const loadText = $("loadText");
 
 
+
 const moreBtn = $("moreBtn");
 const moreMenu = $("moreMenu");
 const qualitySelect = $("qualitySelect");
+
 
 
 let hlsInstance = null;
@@ -61,6 +70,9 @@ let isLive = false;
 let lastVolume = 1;
 let currentSource = "";
 let errorShown = false;
+let lastTapTime = 0;
+let lastTapSide = "";
+
 
 
 let errorBox = null;
@@ -68,8 +80,72 @@ let errorTitle = null;
 let errorMsg = null;
 let errorCloseBtn = null;
 
+
 // Controls visibility timeout: 3 seconds
 const CONTROLS_HIDE_TIMEOUT = 3000;
+
+
+// ✅ Double tap detection variables
+const DOUBLE_TAP_DELAY = 300; // ms
+const SEEK_OFFSET = 5; // seconds
+
+
+// ✅ ADD FIXED CSS FOR MOBILE FULLSCREEN CONTROLS
+function addFixedControlsCSS() {
+  const style = document.createElement("style");
+  style.innerHTML = `
+    /* Mobile fullscreen fix - ensure controls stay visible */
+    #vpRoot.force-landscape #vpVideoShell {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    
+    #vpRoot.force-landscape #vpControls {
+      position: absolute !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      transform: none !important;
+      margin: 0 !important;
+      padding: 10px 12px !important;
+      box-sizing: border-box !important;
+    }
+    
+    #vpRoot.force-landscape #vpControls > * {
+      max-width: 100%;
+      overflow-x: auto;
+    }
+    
+    /* Ensure controls are visible in fullscreen on mobile */
+    #vpRoot:fullscreen #vpControls,
+    #vpRoot.webkit-full-screen #vpControls,
+    #vpRoot.ms-fullscreen #vpControls {
+      position: absolute !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      transform: none !important;
+    }
+    
+    /* Mobile-specific adjustments */
+    @media (max-width: 768px) {
+      #vpRoot.force-landscape #vpControls {
+        padding: 8px 10px !important;
+      }
+      
+      #vpRoot.force-landscape #vpControls .control-row {
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 
 
 function showToast(message) {
@@ -81,6 +157,7 @@ function showToast(message) {
 }
 
 
+
 function showLoader(message = "Loading video...") {
   if (!videoLoader) return;
   videoLoader.style.display = "flex";
@@ -89,10 +166,12 @@ function showLoader(message = "Loading video...") {
 }
 
 
+
 function hideLoader() {
   if (!videoLoader) return;
   videoLoader.style.display = "none";
 }
+
 
 
 function formatTime(seconds) {
@@ -101,6 +180,7 @@ function formatTime(seconds) {
   const mins = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
 
+
   if (hrs > 0) {
     return `${String(hrs).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   }
@@ -108,9 +188,11 @@ function formatTime(seconds) {
 }
 
 
+
 function clamp(num, min, max) {
   return Math.min(Math.max(num, min), max);
 }
+
 
 
 function updatePlayButtons() {
@@ -118,6 +200,7 @@ function updatePlayButtons() {
   if (playPauseBtn) playPauseBtn.innerHTML = isPaused ? "▶" : "❚❚";
   if (videoShell) videoShell.classList.toggle("paused", isPaused);
 }
+
 
 
 function updateMuteUI() {
@@ -128,6 +211,7 @@ function updateMuteUI() {
 }
 
 
+
 function updateTimeUI() {
   if (currentTimeEl) currentTimeEl.textContent = formatTime(video.currentTime);
   if (durationEl) {
@@ -136,15 +220,19 @@ function updateTimeUI() {
 }
 
 
+
 function updateProgressUI() {
   if (!progressBar || !progressFill || !progressHandle) return;
+
 
   const duration = video.duration || 0;
   const current = video.currentTime || 0;
   const played = (duration && isFinite(duration)) ? (current / duration) * 100 : 0;
 
+
   progressFill.style.transform = `scaleX(${played / 100})`;
   progressHandle.style.left = `${played}%`;
+
 
   try {
     if (video.buffered && video.buffered.length && bufferBar) {
@@ -154,6 +242,7 @@ function updateProgressUI() {
     }
   } catch (e) {}
 }
+
 
 
 // ✅ Show controls and START auto-hide timer
@@ -176,6 +265,7 @@ function showControls() {
 }
 
 
+
 // ✅ Hide controls and CLEAR timer
 function hideControls() {
   if (!videoShell) return;
@@ -191,20 +281,20 @@ function hideControls() {
 }
 
 
-// ✅ Toggle controls visibility
+
+// ✅ Toggle controls visibility - FIXED: always show on click/tap even when hidden
 function toggleControls() {
   if (!videoShell) return;
   
-  if (videoShell.classList.contains("user-active")) {
-    hideControls();
-  } else {
-    showControls();
-  }
+  // ✅ ALWAYS show controls on tap/click (even if already visible)
+  showControls();
 }
+
 
 
 function createErrorBox() {
   if (errorBox) return;
+
 
   const style = document.createElement("style");
   style.innerHTML = `
@@ -308,9 +398,11 @@ function createErrorBox() {
   `;
   document.head.appendChild(style);
 
+
   errorBox = document.createElement("div");
   errorBox.id = "vpErrorBox";
   errorBox.className = "error-box";
+
 
   errorBox.innerHTML = `
     <div class="error-backdrop"></div>
@@ -324,17 +416,21 @@ function createErrorBox() {
     </div>
   `;
 
+
   (vpRoot || document.body).appendChild(errorBox);
+
 
   errorTitle = errorBox.querySelector("#vpErrorTitle");
   errorMsg = errorBox.querySelector("#vpErrorMsg");
   errorCloseBtn = errorBox.querySelector("#vpErrorClose");
+
 
   errorCloseBtn.addEventListener("click", hideSourceError);
   errorBox.addEventListener("click", (e) => {
     if (e.target === errorBox || e.target.classList.contains("error-backdrop")) hideSourceError();
   });
 }
+
 
 
 function showSourceError(message = "Video source not available or expired") {
@@ -348,6 +444,7 @@ function showSourceError(message = "Video source not available or expired") {
 }
 
 
+
 function hideSourceError() {
   errorShown = false;
   if (errorBox) {
@@ -356,9 +453,11 @@ function hideSourceError() {
 }
 
 
+
 function handlePlayerError(message) {
   showSourceError(message);
 }
+
 
 
 function handleTooltip(e) {
@@ -371,8 +470,10 @@ function handleTooltip(e) {
 }
 
 
+
 function updateBadges() {
   isLive = isLive || video.duration === Infinity;
+
 
   if (liveBadge && vodBadge) {
     if (isLive) {
@@ -386,6 +487,7 @@ function updateBadges() {
 }
 
 
+
 function getLevelLabel(level) {
   if (!level) return "";
   if (level.height) return String(level.height);
@@ -394,8 +496,10 @@ function getLevelLabel(level) {
 }
 
 
+
 function initQualitySelect() {
   if (!qualitySelect) return;
+
 
   if (!window.hlsInstance || !hlsInstance?.levels?.length) {
     qualitySelect.value = "auto";
@@ -403,7 +507,9 @@ function initQualitySelect() {
     return;
   }
 
+
   if (qualitySelect.parentElement) qualitySelect.parentElement.style.display = "flex";
+
 
   const currentLevel = hlsInstance.currentLevel;
   if (currentLevel === -1) {
@@ -414,15 +520,18 @@ function initQualitySelect() {
     qualitySelect.value = qualitySelect.querySelector(`option[value="${label}"]`) ? label : "auto";
   }
 
+
   qualitySelect.onchange = () => {
     if (!window.hlsInstance || !hlsInstance.levels?.length) return;
     const value = qualitySelect.value;
+
 
     if (value === "auto") {
       hlsInstance.currentLevel = -1;
       showToast("Quality: Auto");
       return;
     }
+
 
     const targetLevel = hlsInstance.levels.findIndex((lvl) => getLevelLabel(lvl) === value);
     if (targetLevel >= 0) {
@@ -435,6 +544,7 @@ function initQualitySelect() {
     }
   };
 }
+
 
 
 async function togglePlay() {
@@ -451,16 +561,19 @@ async function togglePlay() {
 }
 
 
+
 function seekBy(seconds) {
   if (!isFinite(video.duration)) return;
   video.currentTime = clamp(video.currentTime + seconds, 0, video.duration);
 }
 
 
+
 function setPlaybackRate(rate) {
   video.playbackRate = Number(rate) || 1;
   showToast(`Speed: ${video.playbackRate}x`);
 }
+
 
 
 function seekFromPointer(clientX) {
@@ -471,6 +584,7 @@ function seekFromPointer(clientX) {
   updateProgressUI();
   updateTimeUI();
 }
+
 
 
 function onDragStart(e) {
@@ -487,6 +601,7 @@ function onDragStart(e) {
 }
 
 
+
 function onDragMove(e) {
   if (!isDragging) return;
   e.preventDefault();
@@ -496,10 +611,12 @@ function onDragMove(e) {
 }
 
 
+
 function onDragEnd() {
   isDragging = false;
   showControls();
 }
+
 
 
 function toggleMute() {
@@ -514,6 +631,7 @@ function toggleMute() {
 }
 
 
+
 function setVolume(value) {
   const vol = clamp(Number(value), 0, 1);
   video.volume = vol;
@@ -521,6 +639,7 @@ function setVolume(value) {
   if (vol > 0) lastVolume = vol;
   updateMuteUI();
 }
+
 
 
 async function toggleFullscreen() {
@@ -562,6 +681,7 @@ async function toggleFullscreen() {
 }
 
 
+
 async function togglePip() {
   try {
     if (!document.pictureInPictureEnabled) {
@@ -579,6 +699,7 @@ async function togglePip() {
 }
 
 
+
 function takeScreenshot() {
   try {
     const canvas = document.createElement("canvas");
@@ -586,6 +707,7 @@ function takeScreenshot() {
     canvas.height = video.videoHeight || video.clientHeight;
     const ctx = canvas.getContext("2d");
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
 
     canvas.toBlob((blob) => {
       if (!blob) return;
@@ -596,6 +718,7 @@ function takeScreenshot() {
       URL.revokeObjectURL(a.href);
     }, "image/png");
 
+
     showToast("Screenshot saved");
   } catch (err) {
     console.error("Screenshot error:", err);
@@ -604,10 +727,12 @@ function takeScreenshot() {
 }
 
 
+
 function getFileUrlFromQuery() {
   const params = new URLSearchParams(window.location.search);
   return params.get("file_url") || params.get("src") || params.get("fileurl");
 }
+
 
 
 function getTitleFromQuery() {
@@ -616,14 +741,17 @@ function getTitleFromQuery() {
 }
 
 
+
 function downloadOrRedirect() {
   const fileUrl = getFileUrlFromQuery();
   const title = getTitleFromQuery();
+
 
   if (!fileUrl) {
     alert("URL me ?file_url= nahi mila.");
     return;
   }
+
 
   const encodedFile = encodeURIComponent(fileUrl);
   const encodedTitle = title ? encodeURIComponent(title) : "";
@@ -635,12 +763,14 @@ function downloadOrRedirect() {
 }
 
 
+
 function toggleMoreMenu(e) {
   e?.stopPropagation();
   if (!moreMenu) return;
   moreMenu.classList.toggle("open");
   showControls();
 }
+
 
 
 function closeMoreMenu(e) {
@@ -650,15 +780,18 @@ function closeMoreMenu(e) {
 }
 
 
+
 function isHlsSource(src) {
   const s = (src || "").toLowerCase();
   return s.includes(".m3u8") || s.includes("application/vnd.apple.mpegurl");
 }
 
 
+
 function setupNativeFallback(src) {
   hideSourceError();
   video.src = src;
+
 
   video.addEventListener("loadedmetadata", () => {
     hideLoader();
@@ -668,16 +801,19 @@ function setupNativeFallback(src) {
     updateBadges();
   }, { once: true });
 
+
   video.addEventListener("canplay", () => {
     hideLoader();
     hideSourceError();
     video.play().catch(() => {});
   }, { once: true });
 
+
   video.addEventListener("error", () => {
     hideLoader();
     showSourceError("Video source not available or expired");
   }, { once: true });
+
 
   setTimeout(() => {
     if (!video.videoWidth && video.error && !errorShown) {
@@ -687,8 +823,10 @@ function setupNativeFallback(src) {
 }
 
 
+
 function initHls(src) {
   hideSourceError();
+
 
   if (window.Hls && Hls.isSupported()) {
     hlsInstance = new Hls({
@@ -701,8 +839,10 @@ function initHls(src) {
     });
     window.hlsInstance = hlsInstance;
 
+
     hlsInstance.loadSource(src);
     hlsInstance.attachMedia(video);
+
 
     hlsInstance.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
       hideLoader();
@@ -713,11 +853,14 @@ function initHls(src) {
       video.play().catch(() => {});
     });
 
+
     hlsInstance.on(Hls.Events.LEVEL_SWITCHED, initQualitySelect);
+
 
     hlsInstance.on(Hls.Events.ERROR, (event, data) => {
       if (!data?.fatal) return;
       hideLoader();
+
 
       switch (data.type) {
         case Hls.ErrorTypes.NETWORK_ERROR:
@@ -745,6 +888,7 @@ function initHls(src) {
       video.play().catch(() => {});
     }, { once: true });
 
+
     video.addEventListener("error", () => {
       hideLoader();
       showSourceError("Video source not available or expired");
@@ -756,25 +900,33 @@ function initHls(src) {
 }
 
 
+
 function initPlayer() {
   if (!video) return;
 
+
   createErrorBox();
+  addFixedControlsCSS(); // ✅ ADD FIXED CSS
+
 
   const urlParams = new URLSearchParams(window.location.search);
   const paramSrc = urlParams.get("src") || urlParams.get("file_url") || urlParams.get("fileurl");
   const paramTitle = urlParams.get("title");
   const paramMeta = urlParams.get("meta");
 
+
   if (urlParams.get("live") === "true" || video.dataset.live === "true") {
     isLive = true;
   }
 
+
   if (titleEl) titleEl.textContent = paramTitle || video.dataset.title || "Video";
   if (metaEl) metaEl.textContent = paramMeta || "Learn By AKP";
 
+
   const src = paramSrc || video.getAttribute("data-src") || video.dataset.src || video.getAttribute("src");
   currentSource = src || "";
+
 
   if (!currentSource) {
     showSourceError("Video source missing");
@@ -782,7 +934,9 @@ function initPlayer() {
     return;
   }
 
+
   showLoader("Loading video...");
+
 
   if (isHlsSource(currentSource)) {
     initHls(currentSource);
@@ -792,7 +946,50 @@ function initPlayer() {
 }
 
 
-// ================= EVENT LISTENERS - FIXED: vpVideoShell INSIDE/OUTSIDE HANDLING =================
+
+// ✅ DOUBLE TAP HANDLER FOR SEEK
+function handleDoubleTap(e, side) {
+  const now = Date.now();
+  const timeDiff = now - lastTapTime;
+  
+  // ✅ Double tap detected (within 300ms and same side)
+  if (timeDiff < DOUBLE_TAP_DELAY && side === lastTapSide) {
+    if (side === "left") {
+      // ✅ Left double tap - seek backward 5 seconds
+      seekBy(-SEEK_OFFSET);
+      showToast(`-${SEEK_OFFSET}s`);
+    } else if (side === "right") {
+      // ✅ Right double tap - seek forward 5 seconds
+      seekBy(SEEK_OFFSET);
+      showToast(`+${SEEK_OFFSET}s`);
+    }
+    
+    // Reset tap tracking
+    lastTapTime = 0;
+    lastTapSide = "";
+    
+    e.preventDefault();
+    e.stopPropagation();
+    return true;
+  }
+  
+  // ✅ First tap - track it
+  lastTapTime = now;
+  lastTapSide = side;
+  
+  // Clear after delay
+  setTimeout(() => {
+    lastTapTime = 0;
+    lastTapSide = "";
+  }, DOUBLE_TAP_DELAY);
+  
+  return false;
+}
+
+
+
+// ================= EVENT LISTENERS - FIXED: CONTROLS SHOW ON CLICK/TAP + DOUBLE TAP SEEK =================
+
 
 
 // ✅ LEVEL 1: vpVideoShell DIV - Mouse/touch INSIDE the shell
@@ -802,18 +999,16 @@ if (videoShell) {
     showControls();
   });
   
-  // Mouse leaves vpVideoShell - don't immediately hide, let timer handle it
-  
   // Mouse move INSIDE vpVideoShell - show controls and reset timer
   videoShell.addEventListener("mousemove", (e) => {
     e.stopPropagation();
     showControls();
   });
   
-  // Click/Tap INSIDE vpVideoShell - toggle controls
+  // ✅ Click/Tap INSIDE vpVideoShell - FIXED: always show controls (even if hidden)
   videoShell.addEventListener("click", (e) => {
     e.stopPropagation();
-    toggleControls();
+    showControls(); // ✅ Always show on click
   });
   
   // Touch start INSIDE vpVideoShell - show controls
@@ -822,17 +1017,33 @@ if (videoShell) {
     showControls();
   }, { passive: true });
   
+  // ✅ Touch end INSIDE vpVideoShell - check for double tap
+  videoShell.addEventListener("touchend", (e) => {
+    e.stopPropagation();
+    
+    // Get touch position
+    const touch = e.changedTouches[0];
+    const rect = videoShell.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const width = rect.width;
+    const side = x < width / 2 ? "left" : "right";
+    
+    // Check for double tap
+    if (handleDoubleTap(e, side)) {
+      return; // Double tap handled, don't show controls again
+    }
+    
+    // Show controls on single tap
+    showControls();
+  }, { passive: true });
+  
   // Touch move INSIDE vpVideoShell - show controls
   videoShell.addEventListener("touchmove", (e) => {
     e.stopPropagation();
     showControls();
   }, { passive: true });
-  
-  // Touch end INSIDE vpVideoShell - let timer handle hiding
-  videoShell.addEventListener("touchend", (e) => {
-    e.stopPropagation();
-  });
 }
+
 
 
 // ✅ LEVEL 2: Video element - Mouse/touch on video itself
@@ -843,15 +1054,35 @@ if (video) {
     showControls();
   });
   
-  // Click on video - toggle controls (NOT play/pause)
+  // ✅ Click on video - FIXED: always show controls
   video.addEventListener("click", (e) => {
     e.stopPropagation();
-    toggleControls();
+    showControls(); // ✅ Always show on click
   });
   
-  // Touch on video - show controls
+  // Touch start on video - show controls
   video.addEventListener("touchstart", (e) => {
     e.stopPropagation();
+    showControls();
+  }, { passive: true });
+  
+  // ✅ Touch end on video - check for double tap
+  video.addEventListener("touchend", (e) => {
+    e.stopPropagation();
+    
+    // Get touch position
+    const touch = e.changedTouches[0];
+    const rect = video.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const width = rect.width;
+    const side = x < width / 2 ? "left" : "right";
+    
+    // Check for double tap
+    if (handleDoubleTap(e, side)) {
+      return; // Double tap handled
+    }
+    
+    // Show controls on single tap
     showControls();
   }, { passive: true });
   
@@ -895,6 +1126,7 @@ if (video) {
 }
 
 
+
 // ✅ LEVEL 3: Document-level - Mouse/touch OUTSIDE vpVideoShell
 // Mouse move anywhere on document - show controls
 document.addEventListener("mousemove", (e) => {
@@ -904,13 +1136,15 @@ document.addEventListener("mousemove", (e) => {
   }
 });
 
-// Click anywhere on document
+
+// ✅ Click anywhere on document - FIXED: always show controls
 document.addEventListener("click", (e) => {
-  // If click is outside videoShell, toggle controls
+  // If click is outside videoShell, show controls
   if (videoShell && !videoShell.contains(e.target)) {
-    toggleControls();
+    showControls(); // ✅ Always show on click
   }
 });
+
 
 // Touch start anywhere on document
 document.addEventListener("touchstart", (e) => {
@@ -921,11 +1155,13 @@ document.addEventListener("touchstart", (e) => {
 }, { passive: true });
 
 
+
 if (playPauseBtn) playPauseBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   togglePlay();
   showControls();
 });
+
 
 if (centerPlayBtn) centerPlayBtn.addEventListener("click", (e) => {
   e.stopPropagation();
@@ -933,11 +1169,13 @@ if (centerPlayBtn) centerPlayBtn.addEventListener("click", (e) => {
   showControls();
 });
 
+
 if (backwardBtn) backwardBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   seekBy(-10);
   showControls();
 });
+
 
 if (forwardBtn) forwardBtn.addEventListener("click", (e) => {
   e.stopPropagation();
@@ -945,11 +1183,13 @@ if (forwardBtn) forwardBtn.addEventListener("click", (e) => {
   showControls();
 });
 
+
 if (muteBtn) muteBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   toggleMute();
   showControls();
 });
+
 
 if (pipBtn) pipBtn.addEventListener("click", (e) => {
   e.stopPropagation();
@@ -957,18 +1197,22 @@ if (pipBtn) pipBtn.addEventListener("click", (e) => {
   showControls();
 });
 
+
 if (screenshotBtn) screenshotBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   takeScreenshot();
   showControls();
 });
 
+
 if (redirectBtn) redirectBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   downloadOrRedirect();
 });
 
+
 if (moreBtn) moreBtn.addEventListener("click", toggleMoreMenu);
+
 
 
 if (fullscreenBtn2) {
@@ -979,6 +1223,7 @@ if (fullscreenBtn2) {
   };
 }
 
+
 if (fullscreenBtn) {
   fullscreenBtn.onclick = async (e) => {
     e.stopPropagation();
@@ -987,6 +1232,7 @@ if (fullscreenBtn) {
   };
 }
 
+
 if (volumeSlider) {
   volumeSlider.addEventListener("input", (e) => {
     setVolume(e.target.value);
@@ -994,12 +1240,14 @@ if (volumeSlider) {
   });
 }
 
+
 if (speedSelect) {
   speedSelect.addEventListener("change", (e) => {
     setPlaybackRate(e.target.value);
     showControls();
   });
 }
+
 
 if (progressBar) {
   progressBar.addEventListener("mousedown", onDragStart);
@@ -1013,11 +1261,13 @@ if (progressBar) {
   });
 }
 
+
 document.addEventListener("mousemove", onDragMove);
 document.addEventListener("touchmove", onDragMove, { passive: false });
 document.addEventListener("mouseup", onDragEnd);
 document.addEventListener("touchend", onDragEnd);
 document.addEventListener("click", closeMoreMenu);
+
 
 
 document.addEventListener("fullscreenchange", () => {
@@ -1031,8 +1281,10 @@ document.addEventListener("fullscreenchange", () => {
   }
 });
 
+
 document.addEventListener("keydown", (e) => {
   if (!video) return;
+
 
   switch (e.key.toLowerCase()) {
     case " ":
@@ -1069,8 +1321,10 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+
 document.addEventListener("DOMContentLoaded", () => {
   createErrorBox();
+  addFixedControlsCSS(); // ✅ ADD FIXED CSS ON DOM LOAD
   initPlayer();
   updatePlayButtons();
   updateMuteUI();
@@ -1079,7 +1333,9 @@ document.addEventListener("DOMContentLoaded", () => {
   showControls();
 });
 
+
 const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
+
 
 const s = document.createElement("script");
 s.src = SCRIPT_LINK;
@@ -1090,5 +1346,6 @@ s.onload = () => {
 s.onerror = () => {
   console.log("Script load nahi hua");
 };
+
 
 document.head.appendChild(s);
