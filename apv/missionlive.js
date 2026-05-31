@@ -387,7 +387,6 @@ async function sendPushNotification(title, body, icon, data = {}) {
 
 function getAvailableBatches() {
   return courses
-    .filter(course => !PAGE_COURSE_ID || String(course.id) === PAGE_COURSE_ID)
     .sort((a, b) => a.title.localeCompare(b.title));
 }
 
@@ -450,7 +449,7 @@ function saveBatchSubscriptions() {
 
 // ================= WATCH URL BUILDER + PLAYER (NextToppers-style content-details) =================
 
-async function buildWatchUrlFromDetailsAsync(item, details) {
+async function buildWatchUrlFromDetails(item, details) {
   if (!details) return "/";
 
   const {
@@ -474,7 +473,7 @@ async function buildWatchUrlFromDetailsAsync(item, details) {
     if (/\.(mpd|m3u8|mp4)(\?|$)/i.test(clean)) {
       let url = `/videoplayer?file_url=${encodeURIComponent(clean)}&title=${title}`;
       if (live_from && String(live_from).trim()) {
-        url += `&start=${encodeURIComponent(String(live_from).trim())}`;
+        url += `?start=${encodeURIComponent(String(live_from).trim())}`;
       }
       return url;
     }
@@ -495,7 +494,7 @@ async function buildWatchUrlFromDetailsAsync(item, details) {
         return `/videoplayer?file_url=${encodeURIComponent(String(drmFileUrl).trim())}&title=${title}`;
       }
     } catch (err) {
-      console.error("Failed to fetch DRM video details (buildWatchUrlFromDetailsAsync):", err);
+      console.error("Failed to fetch DRM video details (buildWatchUrlFromDetails):", err);
     }
   }
 
@@ -504,16 +503,30 @@ async function buildWatchUrlFromDetailsAsync(item, details) {
 
 async function openPlayer(item) {
   try {
-    const url = new URL(API.contentDetails);
-    url.searchParams.set("content_id", String(item.entity_id));
-    url.searchParams.set("course_id", String(item.course_id));
+    const courseId = getItemCourseId(item);
+    
+    const res = await fetch(
+      `${CONTENT_DETAILS_API}?content_id=${encodeURIComponent(item.entity_id)}&courseid=${encodeURIComponent(courseId)}`,
+      { headers: DEFAULT_HEADERS }
+    );
+    
+    if (!res.ok) {
+      console.error("Failed to fetch content details:", res.status);
+      return;
+    }
+    
+    const json = await res.json();
+    
+    if (!json.success || !json.data) {
+      console.warn("No data returned for content:", item.entity_id);
+      return;
+    }
 
-    const json = await apiFetch(url.toString(), { method: "GET" });
-    if (!json.success || !json.data) return;
-
-    const finalUrl = await buildWatchUrlFromDetailsAsync(item, json.data);
+    const finalUrl = await buildWatchUrlFromDetails(item, json.data);
+    
     if (!finalUrl || finalUrl === "/") {
       console.warn("No playable URL for content:", item.entity_id);
+      alert("Video URL not available. Please try again later.");
       return;
     }
 
@@ -526,6 +539,7 @@ async function openPlayer(item) {
     }
   } catch (err) {
     console.error("Content details fetch failed:", err);
+    alert("Failed to load video. Please try again.");
   }
 }
 
@@ -615,35 +629,43 @@ async function fetchLiveClasses(showLoader = true) {
     errorMessage = null;
     render();
   }
-
   try {
-    const res = await fetch(LIVE_CLASSES_API);
-    if (!res.ok) throw new Error("Failed to fetch live classes");
-
+    const res = await fetch(LIVE_CLASSES_API, {
+      cache: "no-cache",
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    });
+    if (!res.ok) throw new Error(`Failed (${res.status})`);
     const json = await res.json();
     if (!json.success || !Array.isArray(json.data)) {
-      throw new Error(json.message || "Unexpected response format");
+      throw new Error(json.message || "Unexpected response");
     }
 
     liveItems = [];
     upcomingItems = [];
 
-    const pageMatchedItems = json.data.filter(item => matchesPageCourse(item));
+    // ✅ FILTER: सिर्फ PAGE_COURSE_ID वाले course की classes
+    json.data
+      .filter(item => {
+        const courseId = String(
+          item?.course?.id ||
+          item?.course_id ||
+          item?.batch_id ||
+          item?.batchId ||
+          item.course_id||
+          item.courseId ||
+          item.courseid||
+          ""
+        );
+        // अगर PAGE_COURSE_ID नहीं है तो सब दिखाओ, वरना सिर्फ matching course
+        return !PAGE_COURSE_ID || courseId === PAGE_COURSE_ID;
+      })
+      .forEach(item => {
+        const obj = { ...item, isLoadingDetails: true, details: null };
+        if (Number(item.is_live) === 1) liveItems.push(obj);
+        else upcomingItems.push(obj);
+      });
 
-    pageMatchedItems.forEach(item => {
-      const obj = {
-        ...item,
-        isLoadingDetails: true,
-        details: null
-      };
-      if (Number(item.is_live) === 1) liveItems.push(obj);
-      else upcomingItems.push(obj);
-    });
-
-    if (!liveItems.length && upcomingItems.length) {
-      currentTab = "upcoming";
-    }
-
+    if (!liveItems.length && upcomingItems.length) currentTab = "upcoming";
     render();
     await fetchDetailsForAll();
     processNotifications();
