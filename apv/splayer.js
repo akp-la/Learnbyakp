@@ -127,12 +127,10 @@
                     }
                 } else {
                     // Recorded video handling
-                    if (videoData.video_player_url && videoData.video_player_token) {
-                        let url = videoData.video_player_url
-                            .replace(/\\?isMobile=true&/, "")
-                            .replace(/&isMobile=true/, "");
-                        window.location.href = url + videoData.video_player_token;
-                        return;
+                    if (videoData.download_url_lower_version && videoData.video_player_token) {
+                            let e = videoData.download_url_lower_version.replace(/\?isMobile=true&/, "?").replace(/&isMobile=true/, "");
+                            window.location.href = e + videoData.video_player_token;
+                            return
                     }
                     
                     if (videoData.encrypted_links && videoData.encrypted_links.length > 0) {
