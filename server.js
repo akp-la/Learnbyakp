@@ -788,7 +788,6 @@ app.get("/api/subscriptions", (req, res) => {
     // 🔥 support both
     const course_id = req.query.course_id;
     const parent_id = req.query.parent_id || req.query.id;
-    const start = "o"
 
     if (!course_id) {
       return res.status(400).json({
@@ -798,10 +797,9 @@ app.get("/api/subscriptions", (req, res) => {
     }
 
     // 🔗 original API
-    const url = new URL(`https://vibrant.nextmate.site/api/folders`);
+    const url = new URL(`${BASE}/api/vibrant/course-hehe`);
 
     url.searchParams.set("course_id", course_id);
-    url.searchParams.set("start", start);
 
     // 👇 IMPORTANT: only send if exists
     if (parent_id) {
