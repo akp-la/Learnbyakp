@@ -1,6 +1,25 @@
-const BASE_URL = "https://learnbyakp.onrender.com";
+const BASE_URL = "https://vibrantacademykotaapi.akamai.net.in";
 const AES_KEY_TEXT = "638udh3829162018";
 const AES_IV_TEXT = "fedcba9876543210";
+const L = {
+  "accept": "*/*",
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "accept-language": "en-US,en;q=0.9",
+  "auth-key": "appxapi",
+  "client-service": "Appx",
+  "device-type": "",
+  "origin": "https://www.vibrantacademy.com",
+  "priority": "u=1, i",
+  "referer": "https://www.vibrantacademy.com/",
+  "sec-ch-ua": '"Chromium";v="148", "Google Chrome";v="148", "Not/A)Brand";v="99"',
+  "sec-ch-ua-mobile": "?1",
+  "sec-ch-ua-platform": '"Android"',
+  "sec-fetch-dest": "empty",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-site": "cross-site",
+  "source": "website",
+  "user-agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36"
+};
 
 const params = new URLSearchParams(window.location.search);
 const courseId = params.get("course_id");
@@ -60,7 +79,7 @@ const el = {
 
 function setTitle(title) {
   state.title = title || "Course Content";
-  el.courseTitle.textContent = state.title;
+  if (el.courseTitle) el.courseTitle.textContent = state.title;
   document.title = `${state.title} - LearnByAKP`;
 }
 
@@ -128,8 +147,24 @@ function skeletonList(count = 8) {
   `).join("");
 }
 
+// Fix: fetchJson accepts options and forwards them to fetch
+async function fetchJson(url, options = {}) {
+  const effectiveOptions = {
+    method: options.method || "GET",
+    headers: { ...(options.headers || L) }, // default headers L, overridden by options.headers
+    cache: options.cache || "no-store",
+    // keep other fetch options if provided (body, mode, credentials etc.)
+    ...options,
+  };
+
+  const response = await fetch(url, effectiveOptions);
+  if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+  return response.json();
+}
+
 async function decryptVibrantLink(encryptedText) {
   try {
+    // original code used the first colon-separated part
     const firstPart = String(encryptedText).split(":")[0];
     const encryptedBinary = window.atob(firstPart);
     const encryptedBytes = new Uint8Array(encryptedBinary.length);
@@ -155,13 +190,23 @@ async function decryptVibrantLink(encryptedText) {
       encryptedBytes.buffer
     );
 
+    // decode as bytes first
     let text = new TextDecoder().decode(decrypted);
-    const padding = text.charCodeAt(text.length - 1);
 
-    if (padding > 0 && padding <= 16) {
-      const paddingText = text.slice(-padding);
-      const validPadding = Array.from(paddingText).every((ch) => ch.charCodeAt(0) === padding);
-      if (validPadding) text = text.substring(0, text.length - padding);
+    // PKCS#7 padding removal — only if appears valid.
+    // Many implementations leave the padding bytes at the end; this checks and strips safely.
+    try {
+      if (text.length > 0) {
+        const padding = text.charCodeAt(text.length - 1);
+        if (padding > 0 && padding <= 16 && padding <= text.length) {
+          const paddingText = text.slice(-padding);
+          const validPadding = Array.from(paddingText).every((ch) => ch.charCodeAt(0) === padding);
+          if (validPadding) text = text.substring(0, text.length - padding);
+        }
+      }
+    } catch (e) {
+      // If padding-handling somehow fails, fall back to raw text (don't throw).
+      console.warn("Padding strip failed, using raw decrypted text", e);
     }
 
     return text;
@@ -169,12 +214,6 @@ async function decryptVibrantLink(encryptedText) {
     console.error("Client-side Vibrant decryption failed:", error);
     throw new Error("Decryption failed on client");
   }
-}
-
-async function fetchJson(url) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Request failed: ${response.status}`);
-  return response.json();
 }
 
 async function loadFolder(folderId) {
@@ -190,14 +229,19 @@ async function loadFolder(folderId) {
   renderContent();
 
   try {
-    const data = await fetchJson(`${BASE_URL}/api/vibrant/content?course_id=${encodeURIComponent(courseId)}&id=${encodeURIComponent(folderId)}`);
+    const url = `${BASE_URL}/get/folder_contentsv3?course_id=${encodeURIComponent(courseId)}&parent_id=${encodeURIComponent(folderId)}&start=0`;
+    const data = await fetchJson(url, {
+      headers: L,
+      cache: "no-store"
+    });
+
     if (data.status === 200) {
       state.content = data.data || [];
     } else {
       throw new Error(data.message || "Could not fetch content");
     }
   } catch (error) {
-    state.contentError = error.message;
+    state.contentError = error.message || String(error);
   } finally {
     state.loadingContent = false;
     renderContent();
@@ -217,7 +261,12 @@ async function loadInitialContent() {
   renderContent();
 
   try {
-    const data = await fetchJson(`${BASE_URL}/api/vibrant/content?course_id=${encodeURIComponent(courseId)}`);
+    // Important: parent_id=-1 for initial list (same as the original React code)
+    const url = `${BASE_URL}/get/folder_contentsv3?course_id=${encodeURIComponent(courseId)}&parent_id=-1&start=0`;
+    const data = await fetchJson(url, {
+      headers: L,
+      cache: "no-store"
+    });
 
     if (data.status === 200 && Array.isArray(data.data) && data.data.length > 0) {
       const firstFolder = data.data[0];
@@ -230,7 +279,7 @@ async function loadInitialContent() {
     if (!givenTitle) await loadBatchTitleFallback();
     state.content = [];
   } catch (error) {
-    state.contentError = error.message;
+    state.contentError = error.message || String(error);
   } finally {
     state.loadingContent = false;
     renderContent();
@@ -239,7 +288,7 @@ async function loadInitialContent() {
 
 async function loadBatchTitleFallback() {
   try {
-    const data = await fetchJson(`${BASE_URL}/api/vibrant/batches`);
+    const data = await fetchJson(`${BASE_URL}/api/vibrant/batches`, { headers: L, cache: "no-store" });
     if (data.status === 200 && Array.isArray(data.data)) {
       const batch = data.data.find((item) => String(item.id) === String(courseId));
       if (batch) setTitle(batch.title || batch.Title || "Course Content");
@@ -257,7 +306,8 @@ async function loadLiveData() {
   renderLive();
 
   try {
-    const data = await fetchJson(`${BASE_URL}/api/vibrant/live?course_id=${encodeURIComponent(courseId)}`);
+    const url = `${BASE_URL}/get/course_contents_by_live_status?course_id=${encodeURIComponent(courseId)}&start=0`;
+    const data = await fetchJson(url, { headers: L, cache: "no-store" });
     if (data.status === 200) {
       state.upcoming = data.data?.upcoming || [];
       state.live = data.data?.live || [];
@@ -280,7 +330,8 @@ async function loadPreviousLives() {
   renderLive();
 
   try {
-    const data = await fetchJson(`${BASE_URL}/api/vibrant/previous-live?course_id=${encodeURIComponent(courseId)}`);
+    const url = `${BASE_URL}/get/get_previous_live_videos?course_id=${encodeURIComponent(courseId)}&start=0&folder_wise_course=1`;
+    const data = await fetchJson(url, { headers: L, cache: "no-store" });
     if (data.status === 200) {
       state.previousLives = data.data || [];
       state.loadedPreviousOnce = true;
@@ -288,7 +339,7 @@ async function loadPreviousLives() {
       throw new Error(data.message || "Could not fetch previous live sessions");
     }
   } catch (error) {
-    state.previousError = error.message;
+    state.previousError = error.message || String(error);
   } finally {
     state.loadingPrevious = false;
     renderLive();
@@ -296,6 +347,7 @@ async function loadPreviousLives() {
 }
 
 function renderBreadcrumb() {
+  if (!el.breadcrumb) return;
   el.breadcrumb.innerHTML = "";
 
   const home = document.createElement("button");
@@ -370,28 +422,30 @@ function contentItemCard(item) {
 
 function renderContent() {
   renderBreadcrumb();
-  el.contentLoader.innerHTML = "";
-  el.contentGrid.innerHTML = "";
-  el.contentError.classList.add("hidden");
-  el.emptyContent.classList.add("hidden");
+  if (el.contentLoader) el.contentLoader.innerHTML = "";
+  if (el.contentGrid) el.contentGrid.innerHTML = "";
+  if (el.contentError) el.contentError.classList.add("hidden");
+  if (el.emptyContent) el.emptyContent.classList.add("hidden");
 
   if (state.loadingContent) {
-    el.contentLoader.innerHTML = skeletonList(8);
+    if (el.contentLoader) el.contentLoader.innerHTML = skeletonList(8);
     return;
   }
 
   if (state.contentError) {
-    el.contentError.innerHTML = `<div class="big-icon">⚠️</div><h2>Error Loading Content</h2><p>${escapeHtml(state.contentError)}</p>`;
-    el.contentError.classList.remove("hidden");
+    if (el.contentError) {
+      el.contentError.innerHTML = `<div class="big-icon">⚠️</div><h2>Error Loading Content</h2><p>${escapeHtml(state.contentError)}</p>`;
+      el.contentError.classList.remove("hidden");
+    }
     return;
   }
 
   if (!state.content.length) {
-    el.emptyContent.classList.remove("hidden");
+    if (el.emptyContent) el.emptyContent.classList.remove("hidden");
     return;
   }
 
-  el.contentGrid.innerHTML = state.content.map(contentItemCard).join("");
+  if (el.contentGrid) el.contentGrid.innerHTML = state.content.map(contentItemCard).join("");
 }
 
 function liveCard(item, isPrevious = false) {
@@ -417,53 +471,55 @@ function liveCard(item, isPrevious = false) {
 }
 
 function renderLive() {
-  el.liveLoader.innerHTML = "";
-  el.previousLoader.innerHTML = "";
-  el.liveGrid.innerHTML = "";
-  el.previousGrid.innerHTML = "";
-  el.noLive.classList.add("hidden");
-  el.noPrevious.classList.add("hidden");
-  el.previousError.classList.add("hidden");
+  if (el.liveLoader) el.liveLoader.innerHTML = "";
+  if (el.previousLoader) el.previousLoader.innerHTML = "";
+  if (el.liveGrid) el.liveGrid.innerHTML = "";
+  if (el.previousGrid) el.previousGrid.innerHTML = "";
+  if (el.noLive) el.noLive.classList.add("hidden");
+  if (el.noPrevious) el.noPrevious.classList.add("hidden");
+  if (el.previousError) el.previousError.classList.add("hidden");
 
   const isLiveTab = state.activeLiveTab === "live";
-  el.liveUpcomingPanel.classList.toggle("hidden", !isLiveTab);
-  el.previousLivePanel.classList.toggle("hidden", isLiveTab);
-  el.liveUpcomingBtn.classList.toggle("active", isLiveTab);
-  el.previousLiveBtn.classList.toggle("active", !isLiveTab);
+  if (el.liveUpcomingPanel) el.liveUpcomingPanel.classList.toggle("hidden", !isLiveTab);
+  if (el.previousLivePanel) el.previousLivePanel.classList.toggle("hidden", isLiveTab);
+  if (el.liveUpcomingBtn) el.liveUpcomingBtn.classList.toggle("active", isLiveTab);
+  if (el.previousLiveBtn) el.previousLiveBtn.classList.toggle("active", !isLiveTab);
 
   if (isLiveTab) {
     if (state.loadingLive) {
-      el.liveLoader.innerHTML = skeletonGrid(3);
+      if (el.liveLoader) el.liveLoader.innerHTML = skeletonGrid(3);
       return;
     }
 
     const allLiveItems = [...state.live, ...state.upcoming];
     if (!allLiveItems.length) {
-      el.noLive.classList.remove("hidden");
+      if (el.noLive) el.noLive.classList.remove("hidden");
       return;
     }
 
-    el.liveGrid.innerHTML = allLiveItems.map((item) => liveCard(item, false)).join("");
+    if (el.liveGrid) el.liveGrid.innerHTML = allLiveItems.map((item) => liveCard(item, false)).join("");
     return;
   }
 
   if (state.loadingPrevious) {
-    el.previousLoader.innerHTML = skeletonGrid(3);
+    if (el.previousLoader) el.previousLoader.innerHTML = skeletonGrid(3);
     return;
   }
 
   if (state.previousError) {
-    el.previousError.innerHTML = `<div class="big-icon">⚠️</div><h2>Error</h2><p>${escapeHtml(state.previousError)}</p>`;
-    el.previousError.classList.remove("hidden");
+    if (el.previousError) {
+      el.previousError.innerHTML = `<div class="big-icon">⚠️</div><h2>Error</h2><p>${escapeHtml(state.previousError)}</p>`;
+      el.previousError.classList.remove("hidden");
+    }
     return;
   }
 
   if (!state.previousLives.length) {
-    el.noPrevious.classList.remove("hidden");
+    if (el.noPrevious) el.noPrevious.classList.remove("hidden");
     return;
   }
 
-  el.previousGrid.innerHTML = state.previousLives.map((item) => liveCard(item, true)).join("");
+  if (el.previousGrid) el.previousGrid.innerHTML = state.previousLives.map((item) => liveCard(item, true)).join("");
 }
 
 async function handleContentClick(event) {
@@ -535,25 +591,25 @@ async function openPdfFromItem(item, usePdfLink) {
 }
 
 function openPdf(url, name) {
-  el.pdfTitle.textContent = name || "PDF";
-  el.pdfFrame.src = `https://pdfweb.classx.co.in/pdfjs/web/viewer-new.html?file=${encodeURIComponent(url)}&save_flag=1`;
-  el.pdfModal.classList.remove("hidden");
+  if (el.pdfTitle) el.pdfTitle.textContent = name || "PDF";
+  if (el.pdfFrame) el.pdfFrame.src = `https://pdfweb.classx.co.in/pdfjs/web/viewer-new.html?file=${encodeURIComponent(url)}&save_flag=1`;
+  if (el.pdfModal) el.pdfModal.classList.remove("hidden");
 }
 
 function closePdf() {
-  el.pdfFrame.src = "";
-  el.pdfModal.classList.add("hidden");
+  if (el.pdfFrame) el.pdfFrame.src = "";
+  if (el.pdfModal) el.pdfModal.classList.add("hidden");
 }
 
 function openImage(url, name) {
-  el.previewImage.src = url;
-  el.previewImage.alt = name || "Preview";
-  el.imageModal.classList.remove("hidden");
+  if (el.previewImage) el.previewImage.src = url;
+  if (el.previewImage) el.previewImage.alt = name || "Preview";
+  if (el.imageModal) el.imageModal.classList.remove("hidden");
 }
 
 function closeImage() {
-  el.previewImage.src = "";
-  el.imageModal.classList.add("hidden");
+  if (el.previewImage) el.previewImage.src = "";
+  if (el.imageModal) el.imageModal.classList.add("hidden");
 }
 
 function handleLiveClick(event) {
@@ -579,10 +635,10 @@ function switchMainTab(tab) {
   state.activeMainTab = tab;
   const isContent = tab === "content";
 
-  el.contentTab.classList.toggle("active", isContent);
-  el.liveTab.classList.toggle("active", !isContent);
-  el.contentSection.classList.toggle("hidden", !isContent);
-  el.liveSection.classList.toggle("hidden", isContent);
+  if (el.contentTab) el.contentTab.classList.toggle("active", isContent);
+  if (el.liveTab) el.liveTab.classList.toggle("active", !isContent);
+  if (el.contentSection) el.contentSection.classList.toggle("hidden", !isContent);
+  if (el.liveSection) el.liveSection.classList.toggle("hidden", isContent);
 
   if (!isContent) {
     loadLiveData();
@@ -598,23 +654,27 @@ function switchLiveTab(tab) {
 }
 
 function bindEvents() {
-  el.contentTab.addEventListener("click", () => switchMainTab("content"));
-  el.liveTab.addEventListener("click", () => switchMainTab("live"));
-  el.liveUpcomingBtn.addEventListener("click", () => switchLiveTab("live"));
-  el.previousLiveBtn.addEventListener("click", () => switchLiveTab("previous"));
-  el.contentGrid.addEventListener("click", handleContentClick);
-  el.liveGrid.addEventListener("click", handleLiveClick);
-  el.previousGrid.addEventListener("click", handleLiveClick);
-  el.closePdf.addEventListener("click", closePdf);
-  el.closeImage.addEventListener("click", closeImage);
+  if (el.contentTab) el.contentTab.addEventListener("click", () => switchMainTab("content"));
+  if (el.liveTab) el.liveTab.addEventListener("click", () => switchMainTab("live"));
+  if (el.liveUpcomingBtn) el.liveUpcomingBtn.addEventListener("click", () => switchLiveTab("live"));
+  if (el.previousLiveBtn) el.previousLiveBtn.addEventListener("click", () => switchLiveTab("previous"));
+  if (el.contentGrid) el.contentGrid.addEventListener("click", handleContentClick);
+  if (el.liveGrid) el.liveGrid.addEventListener("click", handleLiveClick);
+  if (el.previousGrid) el.previousGrid.addEventListener("click", handleLiveClick);
+  if (el.closePdf) el.closePdf.addEventListener("click", closePdf);
+  if (el.closeImage) el.closeImage.addEventListener("click", closeImage);
 
-  el.pdfModal.addEventListener("click", (event) => {
-    if (event.target === el.pdfModal) closePdf();
-  });
+  if (el.pdfModal) {
+    el.pdfModal.addEventListener("click", (event) => {
+      if (event.target === el.pdfModal) closePdf();
+    });
+  }
 
-  el.imageModal.addEventListener("click", (event) => {
-    if (event.target === el.imageModal) closeImage();
-  });
+  if (el.imageModal) {
+    el.imageModal.addEventListener("click", (event) => {
+      if (event.target === el.imageModal) closeImage();
+    });
+  }
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
@@ -627,8 +687,7 @@ function bindEvents() {
 bindEvents();
 loadInitialContent();
 
-
-    const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
+const SCRIPT_LINK = "https://learnbyakp.online/html-j/aut.js";
 
 const s = document.createElement("script");
 s.src = SCRIPT_LINK;
