@@ -37,7 +37,7 @@ const allowedOrigins = [
   "https://learnbyakp.onrender.com",
   "https://learnbyakp.online",
   "https://studyakp-d8cfa.web.app",
-  "https://www.notjitu.in",
+  "https://pw.notjitu.in",
   "https://notjitu.in"
 ];
 
@@ -624,7 +624,7 @@ app.get('/api/science/url', async (req, res) => {
       return res.status(400).json({ error: 'url and key are required' });
     }
 
-    const endpoint = `${BASE}/api/science/url?url=${encodeURIComponent(url)}&key=${encodeURIComponent(key)}`;
+    const endpoint = `${BASE}/api/scienceandfun/url?url=${encodeURIComponent(url)}&key=${encodeURIComponent(key)}`;
 
     const response = await axios.get(endpoint, {
       timeout: 10000,
@@ -653,7 +653,7 @@ app.get('/api/science/play', async (req, res) => {
       return res.status(400).json({ error: 'url and key are required' });
     }
 
-    const endpoint = `${BASE}/api/science/play?url=${encodeURIComponent(url)}&key=${encodeURIComponent(key)}`;
+    const endpoint = `${BASE}/api/scienceandfun/play?url=${encodeURIComponent(url)}&key=${encodeURIComponent(key)}`;
 
     const response = await axios.get(endpoint, {
       timeout: 10000,
