@@ -682,24 +682,44 @@ app.get('/api/rwa/batches/:batchId/topics/:subjectId/:topicId', async (req, res)
   }
 });
 //===========rwa
-  app.get('/api/rwa/batches/:batchId/topics/:subjectId/:topicId', async (req, res) => {
+ Backend se is API ko call karne ke liye code:
+
+javascript
+// server.js
+const express = require('express');
+const axios = require('axios');
+const cors = require('cors');
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+const API_BASE = 'https://spidyuniverserwa.vercel.app';
+
+// ✅ Get contents by batchId, subjectId, topicId
+app.get('/api/rwa/contents/:batchId/:subjectId/:topicId', async (req, res) => {
   try {
     const { batchId, subjectId, topicId } = req.params;
 
-    const endpoint = `${BASE}/api/rwa/contents/${encodeURIComponent(batchId)}/${encodeURIComponent(subjectId)}/${encodeURIComponent(topicId)}`;
+    const endpoint = `${API_BASE}/api/rwa/contents/${encodeURIComponent(batchId)}/${encodeURIComponent(subjectId)}/${encodeURIComponent(topicId)}`;
+
+    console.log('Calling:', endpoint); // Debug log
 
     const response = await axios.get(endpoint, {
       timeout: 10000,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json'
       }
     });
 
     res.json(response.data);
   } catch (error) {
-    console.error('Failed to fetch topic:', error.message);
+    console.error('Failed to fetch contents:', error.message);
     res.status(error.response?.status || 500).json({ 
-      error: 'Failed to fetch topic' 
+      error: 'Failed to fetch contents',
+      details: error.message
     });
   }
 });
