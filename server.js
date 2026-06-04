@@ -614,7 +614,73 @@ res.json(data);
 });
 
   //==============dsadasda=============
- 
+ app.get('/api/rwa/batches/:batchId/topics/:subjectId', async (req, res) => {
+  try {
+    const { batchId, subjectId } = req.params;
+
+    const endpoint = `${BASE}/api/rwa/batches/${encodeURIComponent(batchId)}/topics/${encodeURIComponent(subjectId)}`;
+
+    const response = await axios.get(endpoint, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Failed to fetch topics:', error.message);
+    res.status(error.response?.status || 500).json({ 
+      error: 'Failed to fetch topics' 
+    });
+  }
+});
+
+// ✅ 2. Get subjects by courseId
+app.get('/api/rwa/subjects/:courseId', async (req, res) => {
+  try {
+    const { courseId } = req.params;
+
+    const endpoint = `${BASE}/api/rwa/subjects/${encodeURIComponent(courseId)}`;
+
+    const response = await axios.get(endpoint, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Failed to fetch subjects:', error.message);
+    res.status(error.response?.status || 500).json({ 
+      error: 'Failed to fetch subjects' 
+    });
+  }
+});
+
+// ✅ 3. Get topic by batchId, subjectId, and topicId
+app.get('/api/rwa/batches/:batchId/topics/:subjectId/:topicId', async (req, res) => {
+  try {
+    const { batchId, subjectId, topicId } = req.params;
+
+    const endpoint = `${BASE}/api/rwa/batches/${encodeURIComponent(batchId)}/topics/${encodeURIComponent(subjectId)}/${encodeURIComponent(topicId)}`;
+
+    const response = await axios.get(endpoint, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Failed to fetch topic:', error.message);
+    res.status(error.response?.status || 500).json({ 
+      error: 'Failed to fetch topic' 
+    });
+  }
+});
 
 // PW VERIFY
 app.post("/api/pw/verify", async (req, res) => {
