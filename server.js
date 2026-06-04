@@ -612,6 +612,66 @@ res.json(data);
     });
   }
 });
+  //==========rty
+
+
+// ✅ 1. Science URL API (get encrypted URL)
+app.get('/api/science/url', async (req, res) => {
+  try {
+    const { url, key } = req.query;
+
+    if (!url || !key) {
+      return res.status(400).json({ error: 'url and key are required' });
+    }
+
+    const endpoint = `${BASE}/api/science/url?url=${encodeURIComponent(url)}&key=${encodeURIComponent(key)}`;
+
+    const response = await axios.get(endpoint, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json'
+      }
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Failed to fetch science URL:', error.message);
+    res.status(error.response?.status || 500).json({ 
+      error: 'Failed to fetch science URL',
+      details: error.message
+    });
+  }
+});
+
+// ✅ 2. Science Play API (play video)
+app.get('/api/science/play', async (req, res) => {
+  try {
+    const { url, key } = req.query;
+
+    if (!url || !key) {
+      return res.status(400).json({ error: 'url and key are required' });
+    }
+
+    const endpoint = `${BASE}/api/science/play?url=${encodeURIComponent(url)}&key=${encodeURIComponent(key)}`;
+
+    const response = await axios.get(endpoint, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json'
+      }
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Failed to fetch science play:', error.message);
+    res.status(error.response?.status || 500).json({ 
+      error: 'Failed to fetch science play',
+      details: error.message
+    });
+  }
+});
 
   //==============dsadasda=============
  app.get('/api/rwa/batches/:batchId/topics/:subjectId', async (req, res) => {
