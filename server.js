@@ -686,7 +686,7 @@ app.get('/api/rwa/batches/:batchId/topics/:subjectId/:topicId', async (req, res)
   try {
     const { batchId, subjectId, topicId } = req.params;
 
-    const endpoint = `${BASE}/api/rwa/batches/${encodeURIComponent(batchId)}/topics/${encodeURIComponent(subjectId)}/${encodeURIComponent(topicId)}`;
+    const endpoint = `${BASE}/api/rwa/contents/${encodeURIComponent(batchId)}/${encodeURIComponent(subjectId)}/${encodeURIComponent(topicId)}`;
 
     const response = await axios.get(endpoint, {
       timeout: 10000,
