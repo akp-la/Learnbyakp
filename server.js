@@ -681,6 +681,55 @@ app.get('/api/rwa/batches/:batchId/topics/:subjectId/:topicId', async (req, res)
     });
   }
 });
+//===========rwa
+  app.get('/api/rwa/batches/:batchId/topics/:subjectId/:topicId', async (req, res) => {
+  try {
+    const { batchId, subjectId, topicId } = req.params;
+
+    const endpoint = `${BASE}/api/rwa/batches/${encodeURIComponent(batchId)}/topics/${encodeURIComponent(subjectId)}/${encodeURIComponent(topicId)}`;
+
+    const response = await axios.get(endpoint, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Failed to fetch topic:', error.message);
+    res.status(error.response?.status || 500).json({ 
+      error: 'Failed to fetch topic' 
+    });
+  }
+});
+
+// ✅ 2. Get video URL by courseid and videoid
+app.get('/api/rwa/videourl', async (req, res) => {
+  try {
+    const { courseid, videoid } = req.query;
+
+    if (!courseid || !videoid) {
+      return res.status(400).json({ error: 'courseid and videoid are required' });
+    }
+
+    const endpoint = `${BASE}/api/rwa/videourl?courseid=${encodeURIComponent(courseid)}&videoid=${encodeURIComponent(videoid)}`;
+
+    const response = await axios.get(endpoint, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Failed to fetch video URL:', error.message);
+    res.status(error.response?.status || 500).json({ 
+      error: 'Failed to fetch video URL' 
+    });
+  }
+});
 
 // PW VERIFY
 app.post("/api/pw/verify", async (req, res) => {
