@@ -653,33 +653,57 @@ app.get('/api/science/play', async (req, res) => {
       return res.status(400).json({ error: 'url and key are required' });
     }
 
-    // Original API call
     const endpoint = `https://apiserver.deltastudy.site/api/scienceandfun/play?url=${encodeURIComponent(url)}&key=${encodeURIComponent(key)}`;
 
     console.log('Proxying to:', endpoint);
 
+    // 1. Frontend se aane wale Range header ko capture karein
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': 'application/json, video/*',
+      'Accept-Language': 'en-US,en;q=0.9'
+    };
+
+    if (req.headers.range) {
+      headers['Range'] = req.headers.range; // Frontend ka range request yahan pass karein
+    }
+
     const response = await axios.get(endpoint, {
       timeout: 15000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json, video/*',
-        'Accept-Language': 'en-US,en;q=0.9'
-      },
-      responseType: 'stream' // ✅ Video streaming support
+      headers: headers,
+      responseType: 'stream' 
     });
 
-    // ✅ CORS headers set karein frontend ke liye
+    // 2. CORS headers set karein
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Content-Type', response.headers['content-type'] || 'video/mp4');
-    
-    if (response.headers['content-length']) {
-      res.setHeader('Content-Length', response.headers['content-length']);
+
+    // 3. Original server ka status forward karein (Ye 200 ya 206 Partial Content ho sakta hai)
+    res.status(response.status);
+
+    // 4. Sabhi critical streaming headers ko frontend ko pass karein
+    const headersToForward = [
+      'content-type',
+      'content-length',
+      'content-range',
+      'accept-ranges'
+    ];
+
+    headersToForward.forEach(header => {
+      if (response.headers[header]) {
+        res.setHeader(header, response.headers[header]);
+      }
+    });
+
+    // Agar original server accept-ranges nahi bhej raha, toh manual set karein taaki browser skip allow kare
+    if (!res.getHeader('Accept-Ranges')) {
+      res.setHeader('Accept-Ranges', 'bytes');
     }
 
-    // ✅ Video stream frontend ko forward karein
+    // 5. Video stream frontend ko forward karein
     response.data.pipe(res);
+
   } catch (error) {
     console.error('Failed to fetch science play:', error.message);
     
