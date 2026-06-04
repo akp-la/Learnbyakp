@@ -613,6 +613,82 @@ res.json(data);
   }
 });
 
+  //==============dsadasda=============
+  app.get('/api/fetchVideoDetailsById', async (req, res) => {
+  try {
+    const { course_id, video_id, ytflag = '0', folder_wise_course = '0' } = req.query;
+    
+    // Backend se direct API call
+    const endpoint = `https://spidyuniverserwa.vercel.app/api/proxy?endpoint=${encodeURIComponent(
+      `get/fetchVideoDetailsById?course_id=${course_id}&video_id=${video_id}&ytflag=${ytflag}&folder_wise_course=${folder_wise_course}`
+    )}`;
+    
+    const response = await axios.get(endpoint, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    
+    const data = response.data;
+    
+    if (!data?.data) {
+      return res.status(404).json({ error: 'Video unavailable' });
+    }
+    
+    res.json(data);
+  } catch (error) {
+    console.error('API call failed:', error.message);
+    res.status(500).json({ error: 'Failed to fetch video details' });
+  }
+});
+
+// Live class API route
+app.get('/api/livecourseclassbycoursesubtopconceptapiv3', async (req, res) => {
+  try {
+    const { 
+      courseid, 
+      subjectid, 
+      topicid, 
+      conceptid = '', 
+      start = '-1' 
+    } = req.query;
+    
+    const endpoint = `https://spidyuniverserwa.vercel.app/api/proxy?endpoint=${encodeURIComponent(
+      `get/livecourseclassbycoursesubtopconceptapiv3?courseid=${courseid}&subjectid=${subjectid}&topicid=${topicid}&conceptid=${conceptid}&start=${start}`
+    )}`;
+    
+    const response = await axios.get(endpoint, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    
+    const vault = response.data;
+    
+    if (vault && Array.isArray(vault.data) && vault.data.length > 0) {
+      return res.json({
+        success: true,
+        data: vault.data,
+        count: vault.data.length
+      });
+    } else {
+      return res.status(404).json({
+        success: false,
+        error: 'No content found',
+        data: []
+      });
+    }
+  } catch (error) {
+    console.error('Failed to fetch contents:', error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch live class content' 
+    });
+  }
+});
+
 // PW VERIFY
 app.post("/api/pw/verify", async (req, res) => {
   try {
