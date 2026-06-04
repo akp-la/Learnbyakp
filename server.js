@@ -682,27 +682,14 @@ app.get('/api/rwa/batches/:batchId/topics/:subjectId/:topicId', async (req, res)
   }
 });
 //===========rwa
- Backend se is API ko call karne ke liye code:
 
-javascript
-// server.js
-const express = require('express');
-const axios = require('axios');
-const cors = require('cors');
-
-const app = express();
-
-app.use(cors());
-app.use(express.json());
-
-const API_BASE = 'https://spidyuniverserwa.vercel.app';
 
 // ✅ Get contents by batchId, subjectId, topicId
 app.get('/api/rwa/contents/:batchId/:subjectId/:topicId', async (req, res) => {
   try {
     const { batchId, subjectId, topicId } = req.params;
 
-    const endpoint = `${API_BASE}/api/rwa/contents/${encodeURIComponent(batchId)}/${encodeURIComponent(subjectId)}/${encodeURIComponent(topicId)}`;
+    const endpoint = `${BASE}/api/rwa/contents/${encodeURIComponent(batchId)}/${encodeURIComponent(subjectId)}/${encodeURIComponent(topicId)}`;
 
     console.log('Calling:', endpoint); // Debug log
 
