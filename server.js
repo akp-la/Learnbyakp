@@ -653,20 +653,21 @@ app.get('/api/livecourseclassbycoursesubtopconceptapiv3', async (req, res) => {
       conceptid = '', 
       start = '-1' 
     } = req.query;
+
+    // ✅ Sirf full endpoint string ko encode karein
+    const internalEndpoint = `get/livecourseclassbycoursesubtopconceptapiv3?courseid=${courseid}&subjectid=${subjectid}&topicid=${topicid}&conceptid=${conceptid}&start=${start}`;
     
-    const endpoint = `https://spidyuniverserwa.vercel.app/api/proxy?endpoint=${encodeURIComponent(
-      `get/livecourseclassbycoursesubtopconceptapiv3?courseid=${courseid}&subjectid=${subjectid}&topicid=${topicid}&conceptid=${conceptid}&start=${start}`
-    )}`;
-    
-    const response = await axios.get(endpoint, {
+    const proxyUrl = `https://spidyuniverserwa.vercel.app/api/proxy?endpoint=${encodeURIComponent(internalEndpoint)}`;
+
+    const response = await axios.get(proxyUrl, {
       timeout: 10000,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
       }
     });
-    
+
     const vault = response.data;
-    
+
     if (vault && Array.isArray(vault.data) && vault.data.length > 0) {
       return res.json({
         success: true,
@@ -681,13 +682,14 @@ app.get('/api/livecourseclassbycoursesubtopconceptapiv3', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Failed to fetch contents:', error.message);
+    console.error('Failed to fetch:', error.message);
     res.status(500).json({ 
       success: false, 
-      error: 'Failed to fetch live class content' 
+      error: 'Failed to fetch content' 
     });
   }
 });
+
 
 // PW VERIFY
 app.post("/api/pw/verify", async (req, res) => {
