@@ -653,19 +653,40 @@ app.get('/api/science/play', async (req, res) => {
       return res.status(400).json({ error: 'url and key are required' });
     }
 
-    const endpoint = `${BASE}/api/scienceandfun/play?url=${encodeURIComponent(url)}&key=${encodeURIComponent(key)}`;
+    // Original API call
+    const endpoint = `https://apiserver.deltastudy.site/api/scienceandfun/play?url=${encodeURIComponent(url)}&key=${encodeURIComponent(key)}`;
+
+    console.log('Proxying to:', endpoint);
 
     const response = await axios.get(endpoint, {
-      timeout: 10000,
+      timeout: 15000,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json'
-      }
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, video/*',
+        'Accept-Language': 'en-US,en;q=0.9'
+      },
+      responseType: 'stream' // ✅ Video streaming support
     });
 
-    res.json(response.data);
+    // ✅ CORS headers set karein frontend ke liye
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Content-Type', response.headers['content-type'] || 'video/mp4');
+    
+    if (response.headers['content-length']) {
+      res.setHeader('Content-Length', response.headers['content-length']);
+    }
+
+    // ✅ Video stream frontend ko forward karein
+    response.data.pipe(res);
   } catch (error) {
     console.error('Failed to fetch science play:', error.message);
+    
+    if (error.code === 'ECONNABORTED') {
+      return res.status(504).json({ error: 'Request timeout' });
+    }
+    
     res.status(error.response?.status || 500).json({ 
       error: 'Failed to fetch science play',
       details: error.message
