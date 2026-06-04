@@ -471,10 +471,10 @@ async function buildWatchUrlFromDetails(item, details) {
     }
 
     if (/\.(mpd|m3u8|mp4)(\?|$)/i.test(clean)) {
-      let url = `/videoplayer?file_url=${encodeURIComponent(clean)}&title=${title}`;
-      if (live_from && String(live_from).trim()) {
-        url += `?start=${encodeURIComponent(String(live_from).trim())}`;
-      }
+       let url = `/videoplayer?title=${title}`;
+if (live_from && String(live_from).trim()) {
+  url += `&file_url=${encodeURIComponent(clean)}?start=${encodeURIComponent(String(live_from).trim())}`;
+}
       return url;
     }
 
