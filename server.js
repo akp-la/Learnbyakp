@@ -1164,7 +1164,7 @@ app.get('/api/schedule', async (req, res) => {
 
     const targetUrl = `${baseUrl}?${params.toString()}`;
 
-    const proxyUrl = 'http://your-proxy-user:your-proxy-pass@proxy-host:port'; // residential proxy
+    const proxyUrl = 'http://msbfumrt:rt82uphajv9o@38.154.203.95:5863/'; // residential proxy
 
     const html = await cloudscraper.get({
       uri: targetUrl,
