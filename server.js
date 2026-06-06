@@ -1164,25 +1164,30 @@ app.get('/api/schedule', async (req, res) => {
 
     const targetUrl = `${baseUrl}?${params.toString()}`;
 
+    const proxyUrl = 'http://your-proxy-user:your-proxy-pass@proxy-host:port'; // residential proxy
+
     const html = await cloudscraper.get({
       uri: targetUrl,
+      proxy: proxyUrl,
       method: 'GET',
       headers: {
         'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
         'Accept':
           'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9'
       },
-      timeout: 30000
+      timeout: 30000,
+      browser: {
+        browser: 'chrome',
+        platform: 'android',
+        mobile: true
+      }
     });
 
     res.json({
       success: true,
-      data: {
-        html,
-        url: targetUrl
-      }
+      data: { html, url: targetUrl }
     });
   } catch (err) {
     console.error('Cloudscraper error:', err.message);
