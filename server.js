@@ -1142,27 +1142,63 @@ app.get("/api/vibrant/video-details", async (req, res) => {
   //==========jsdjkfs===
 app.get('/api/schedule', async (req, res) => {
   try {
-    const { batchId, subjectId, scheduleId, tap } = req.query;
+    const { batchId, subjectId, scheduleId, tap } from req.query;
+    
+    // Validation
+    if (!batchId || !subjectId || !scheduleId) {
+      return res.status(400).json({
+        error: 'batchId, subjectId, and scheduleId are required'
+      });
+    }
     
     const url = 'https://rarestudy.in/schedule-details';
     const params = {
-      batchId: batchId,
-      subjectId: subjectId,
-      scheduleId: scheduleId,
+      batchId,
+      subjectId,
+      scheduleId,
       tap: tap || 'video'
+    };
+    
+    // Headers for 403 bypass
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept-Encoding': 'gzip, deflate',
+      'DNT': '1',
+      'Connection': 'keep-alive',
+      'Upgrade-Insecure-Requests': '1',
+      'Cache-Control': 'no-cache'
     };
     
     const response = await axios.get(url, {
       params,
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0'
-      }
+      headers,
+      timeout: 10000,
+      maxRedirects: 5
     });
     
-    res.json(response.data);
+    // Success response
+    res.json({
+      success: true,
+      data: response.data
+    });
+    
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('API Error:', error.message);
+    
+    if (error.response) {
+      res.status(error.response.status).json({
+        success: false,
+        error: `Request failed with status code ${error.response.status}`,
+        details: error.response.data
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
   }
 });
   //===================science========
