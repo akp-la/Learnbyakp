@@ -4,9 +4,9 @@ const admin = require("firebase-admin");
 const cors = require("cors");
 const express = require("express");
 const jwt = require("jsonwebtoken");
-const puppeteer = require('puppeteer-extra');
+
 const cloudscraper = require('cloudscraper');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+
 const webpush = require("web-push");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
@@ -1144,105 +1144,51 @@ app.get("/api/vibrant/video-details", async (req, res) => {
 
   //==========jsdjkfs===
 app.get('/api/schedule', async (req, res) => {
-  let browser;
-  
   try {
     const { batchId, subjectId, scheduleId, tap } = req.query;
-    
-    // Validation
+
     if (!batchId || !subjectId || !scheduleId) {
       return res.status(400).json({
         success: false,
         error: 'batchId, subjectId, and scheduleId are required'
       });
     }
-    
-    // Browser launch karein
-    browser = await puppeteer.launch({
-      headless: 'new',
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process',
-        '--disable-gpu'
-      ]
-    });
-    
-    const page = await browser.newPage();
-    
-    // Human-like settings
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-    
-    await page.setExtraHTTPHeaders({
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Accept-Encoding': 'gzip, deflate, br',
-      'DNT': '1',
-      'Connection': 'keep-alive',
-      'Upgrade-Insecure-Requests': '1',
-      'sec-ch-ua': '"Not_A Brand";v="8", "Chromium";v="120"',
-      'sec-ch-ua-mobile': '?0',
-      'sec-ch-ua-platform': '"Windows"'
-    });
-    
-    const url = 'https://rarestudy.in/schedule-details';
+
+    const baseUrl = 'https://rarestudy.in/schedule-details';
     const params = new URLSearchParams({
       batchId,
       subjectId,
       scheduleId,
       tap: tap || 'video'
     });
-    
-    // Page load karein aur Cloudflare wait karein
-    await page.goto(`${url}?${params}`, {
-      waitUntil: 'networkidle2',
-      timeout: 60000
+
+    const targetUrl = `${baseUrl}?${params.toString()}`;
+
+    const html = await cloudscraper.get({
+      uri: targetUrl,
+      method: 'GET',
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept':
+          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9'
+      },
+      timeout: 30000
     });
-    
-    // Cloudflare check hone ke liye wait karein
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    
-    // Check if Cloudflare blocked us
-    const cloudflareCheck = await page.evaluate(() => {
-      return document.title.includes('Cloudflare') || 
-             document.body.innerText.includes('Sorry, you have been blocked');
-    });
-    
-    if (cloudflareCheck) {
-      throw new Error('Cloudflare blocked the request');
-    }
-    
-    // Page content extract karein
-    const content = await page.content();
-    
-    // Close browser
-    await browser.close();
-    
-    // Success response
+
     res.json({
       success: true,
       data: {
-        html: content,
-        message: 'Successfully fetched schedule details'
+        html,
+        url: targetUrl
       }
     });
-    
-  } catch (error) {
-    console.error('API Error:', error.message);
-    
-    if (browser) {
-      try {
-        await browser.close();
-      } catch (e) {}
-    }
-    
+  } catch (err) {
+    console.error('Cloudscraper error:', err.message);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: err.message
     });
   }
 });
