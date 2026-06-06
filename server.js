@@ -5,6 +5,7 @@ const cors = require("cors");
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const puppeteer = require('puppeteer-extra');
+const cloudscraper = require('cloudscraper');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const webpush = require("web-push");
 const bcrypt = require("bcryptjs");
