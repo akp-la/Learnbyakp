@@ -1142,61 +1142,7 @@ app.get("/api/vibrant/video-details", async (req, res) => {
   }
 });
 
-  //==========jsdjkfs===
-app.get('/api/schedule', async (req, res) => {
-  try {
-    const { batchId, subjectId, scheduleId, tap } = req.query;
 
-    if (!batchId || !subjectId || !scheduleId) {
-      return res.status(400).json({
-        success: false,
-        error: 'batchId, subjectId, and scheduleId are required'
-      });
-    }
-
-    const baseUrl = 'https://rarestudy.in/schedule-details';
-    const params = new URLSearchParams({
-      batchId,
-      subjectId,
-      scheduleId,
-      tap: tap || 'video'
-    });
-
-    const targetUrl = `${baseUrl}?${params.toString()}`;
-
-    const proxyUrl = 'http://msbfumrt:rt82uphajv9o@38.154.203.95:5863/'; // residential proxy
-
-    const html = await cloudscraper.get({
-      uri: targetUrl,
-      proxy: proxyUrl,
-      method: 'GET',
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-        'Accept':
-          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9'
-      },
-      timeout: 30000,
-      browser: {
-        browser: 'chrome',
-        platform: 'android',
-        mobile: true
-      }
-    });
-
-    res.json({
-      success: true,
-      data: { html, url: targetUrl }
-    });
-  } catch (err) {
-    console.error('Cloudscraper error:', err.message);
-    res.status(500).json({
-      success: false,
-      error: err.message
-    });
-  }
-});
   //===================science========
   app.get("/api/science/video-details", async (req, res) => {
   try {
