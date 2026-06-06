@@ -1138,6 +1138,59 @@ app.get("/api/vibrant/video-details", async (req, res) => {
     res.status(500).json({ error: err.toString() });
   }
 });
+
+  //==========jsdjkfs===
+ app.get("/api/video-details", async (req, res) => {
+  try {
+    // URL se query params levana
+    const url = req.query.url;
+    
+    if (!url) {
+      return res.status(400).json({ error: "Missing url parameter" });
+    }
+
+    // URL se parameters extract karna
+    const urlObj = new URL(url);
+    const batchId = urlObj.searchParams.get('batchId');
+    const subjectId = urlObj.searchParams.get('subjectId');
+    const scheduleId = urlObj.searchParams.get('scheduleId');
+    const tap = urlObj.searchParams.get('tap');
+
+    if (!batchId || !subjectId || !scheduleId) {
+      return res.status(400).json({ error: "Missing batchId, subjectId, or scheduleId in URL" });
+    }
+
+    console.log('Extracted IDs:', { batchId, subjectId, scheduleId, tap });
+
+    // Backend se API call - data fetch karna
+    const apiUrl = url;
+    const response = await axios.get(apiUrl, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = response.data;
+
+    console.log('API Response:', data);
+
+    // Data mein se redirect URL levana (API response mein se)
+    // Ye field name aapke API response ke hisab se hoga
+    const redirectUrl = data.redirectUrl || data.url || data.redirect || data.data?.url;
+
+    if (!redirectUrl) {
+      return res.status(404).json({ error: "No redirect URL found in API response", data: data });
+    }
+
+    console.log('Redirect URL:', redirectUrl);
+
+    // User ko redirect URL par redirect karna
+    res.redirect(redirectUrl);
+  } catch (err) {
+    console.error("/api/vibrant/video-details error:", err);
+    res.status(500).json({ error: err.toString() });
+  }
+});
   //===================science========
   app.get("/api/science/video-details", async (req, res) => {
   try {
