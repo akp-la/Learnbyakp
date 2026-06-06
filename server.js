@@ -1142,7 +1142,7 @@ app.get("/api/vibrant/video-details", async (req, res) => {
   //==========jsdjkfs===
 app.get('/api/schedule', async (req, res) => {
   try {
-    const { batchId, subjectId, scheduleId, tap } from req.query;
+   const { batchId, subjectId, scheduleId, tap } = req.query;  
     
     // Validation
     if (!batchId || !subjectId || !scheduleId) {
