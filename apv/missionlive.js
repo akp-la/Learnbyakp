@@ -581,7 +581,7 @@ function createWarningModal() {
       <div style="font-size: 48px; color: #dc2626; margin-bottom: 16px;">⚠️</div>
       <h2 style="font-size: 24px; margin: 0 0 12px 0; color: #111827;">Warning</h2>
       <p style="font-size: 16px; margin: 0 0 24px 0; color: #4b5563;">
-        kya aapne nexttopper ke official website par login kiya hai n ?
+        kya aapne MissionJeet ke official website par login kiya hai n ?
       </p>
       <div style="display: flex; gap: 12px; justify-content: center;">
         <button id="warningNoBtn" style="padding: 12px 24px; background: #dc2626; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">No</button>
