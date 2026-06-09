@@ -2,22 +2,28 @@
 // LIVE CLASSES + PUSH NOTIFICATIONS + HARDCODED BATCHES
 // ============================================
 
+
 const BASE_URL = "https://learnbyakp.onrender.com";
 const FALLBACK_IMAGE = "https://decicqog4ulhy.cloudfront.net/0/admin_v2/uploads/courses/thumbnail/2671188_1_logo.jpg";
 const PAGE_NOTIFY_NAMESPACE = location.pathname.replace(/[^a-z0-9]/gi, "_").toLowerCase() || "default_page";
 const NOTIFY_STORAGE_KEY = `nt_live_notify_settings_v1_${PAGE_NOTIFY_NAMESPACE}`;
 
+
 const URL_PARAMS = new URLSearchParams(window.location.search);
 const PAGE_COURSE_ID = String(URL_PARAMS.get("id") || "").trim();
+
 
 const CONTENT_DETAILS_API = "https://course.nexttoppers.com/course/content-details";
 const LIVE_CLASSES_API = `${BASE_URL}/api/nexttoppers/live`;
 
+
 // Backend notification server
 const NOTIFICATION_SERVER_URL = "https://learnbyakp.onrender.com";
 
+
 // VAPID public key
 const VAPID_PUBLIC_KEY = "BBw7Jxh7FSFdTT2GrcXb9YFgcbCEKVoJWj4vSKu_pzkghrq3VgWznY7oNLxufJUrZWhkzJKIyTzTrXeSPlQgoLI";
+
 
 const DEFAULT_HEADERS = window.APP_CREDENTIALS?.getHeaders("nexttoppersBatch", {
   accept: "application/json, text/plain, */*",
@@ -32,6 +38,7 @@ const DEFAULT_HEADERS = window.APP_CREDENTIALS?.getHeaders("nexttoppersBatch", {
   "content-type": "application/json"
 };
 
+
 let liveItems = [];
 let upcomingItems = [];
 let currentTab = "live";
@@ -41,6 +48,7 @@ let countdownInterval = null;
 let pollingInterval = null;
 let searchText = "";
 let pushSubscription = null;
+
 
 // ⭐ Hardcoded batches list
 const courses = [
@@ -67,9 +75,12 @@ const courses = [
     
 ];
 
+
 const notifyState = loadNotifyState();
 
+
 const elements = {};
+
 
 function cacheElements() {
   elements.liveTab = document.getElementById("liveTab");
@@ -86,7 +97,9 @@ function cacheElements() {
   elements.batchList = document.getElementById("batchList");
 }
 
+
 // ================= NOTIFY STATE =================
+
 
 function loadNotifyState() {
   try {
@@ -103,16 +116,20 @@ function loadNotifyState() {
   }
 }
 
+
 function saveNotifyState() {
   localStorage.setItem(NOTIFY_STORAGE_KEY, JSON.stringify(notifyState));
 }
 
+
 // ================= HELPERS =================
+
 
 function safeThumb(url) {
   if (!url || !url.trim() || url.includes("admin.nexttoppers.com")) return FALLBACK_IMAGE;
   return url;
 }
+
 
 function formatTime(ts) {
   return new Date(Number(ts) * 1000).toLocaleTimeString("en-IN", {
@@ -122,6 +139,7 @@ function formatTime(ts) {
   });
 }
 
+
 function formatDate(ts) {
   return new Date(Number(ts) * 1000).toLocaleDateString("en-IN", {
     day: "numeric",
@@ -129,6 +147,7 @@ function formatDate(ts) {
     year: "numeric"
   });
 }
+
 
 function getCountdown(ts) {
   const diff = new Date(Number(ts) * 1000) - new Date();
@@ -139,6 +158,7 @@ function getCountdown(ts) {
   return `Start In- ${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+
 function normalizeText(str) {
   return String(str || "")
     .toLowerCase()
@@ -146,6 +166,7 @@ function normalizeText(str) {
     .replace(/\s+/g, " ")
     .trim();
 }
+
 
 function matchesSearch(item, query, type) {
   if (!query) return true;
@@ -161,10 +182,12 @@ function matchesSearch(item, query, type) {
   return queryWords.every(word => searchableText.includes(word));
 }
 
+
 function getFilteredItems() {
   const sourceItems = currentTab === "live" ? liveItems : upcomingItems;
   return sourceItems.filter(item => matchesSearch(item, searchText, currentTab));
 }
+
 
 function escapeHtml(str) {
   return String(str || "")
@@ -175,7 +198,9 @@ function escapeHtml(str) {
     .replaceAll("'", "&#039;");
 }
 
+
 // ================= ITEM HELPERS =================
+
 
 function setActiveTab(tab) {
   currentTab = tab;
@@ -183,6 +208,7 @@ function setActiveTab(tab) {
   elements.upcomingTab?.classList.toggle("active", tab === "upcoming");
   render();
 }
+
 
 function getItemCourseId(item) {
   return String(
@@ -194,10 +220,12 @@ function getItemCourseId(item) {
   );
 }
 
+
 function matchesPageCourse(item) {
   if (!PAGE_COURSE_ID) return true;
   return getItemCourseId(item) === PAGE_COURSE_ID;
 }
+
 
 // ✅ Unique per-lecture key: course + entity + live_from
 function getItemNotifyKey(item) {
@@ -207,23 +235,29 @@ function getItemNotifyKey(item) {
   return `${courseId}__${entityId}__${liveFrom}`;
 }
 
+
 function getEventNotifyKey(item, type) {
   return `${type}__${getItemNotifyKey(item)}`;
 }
+
 
 function isLectureSubscribed(item) {
   return !!notifyState.lectureSubscriptions[getItemNotifyKey(item)];
 }
 
+
 function isCourseSelected(courseId) {
   return notifyState.selectedCourses.includes(String(courseId));
 }
 
+
 // ================= NOTIFICATION PERMISSIONS =================
+
 
 function getNotificationPermission() {
   return ("Notification" in window) ? Notification.permission : "unsupported";
 }
+
 
 function updatePermissionStatusText() {
   if (!elements.permissionStatusText) return;
@@ -234,16 +268,20 @@ function updatePermissionStatusText() {
   else elements.permissionStatusText.textContent = "Click to enable notifications";
 }
 
+
 function openPermissionModal() {
   elements.permissionModal?.classList.remove("hidden");
   updatePermissionStatusText();
 }
 
+
 function closePermissionModal() {
   elements.permissionModal?.classList.add("hidden");
 }
 
+
 // ================= SERVICE WORKER + PUSH =================
+
 
 async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) {
@@ -260,6 +298,7 @@ async function registerServiceWorker() {
   }
 }
 
+
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -268,6 +307,7 @@ function urlBase64ToUint8Array(base64String) {
   for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
   return outputArray;
 }
+
 
 async function subscribeToPushNotifications() {
   try {
@@ -296,6 +336,7 @@ async function subscribeToPushNotifications() {
   }
 }
 
+
 async function enableNotifications() {
   if (!("Notification" in window)) {
     alert("Browser does not support notifications.");
@@ -319,6 +360,7 @@ async function enableNotifications() {
   }
 }
 
+
 async function ensureNotificationPermission() {
   const permission = getNotificationPermission();
   if (permission === "granted") {
@@ -328,6 +370,7 @@ async function ensureNotificationPermission() {
   openPermissionModal();
   return false;
 }
+
 
 // Frontend se branded payload bhejna
 async function sendPushNotification(title, body, icon, data = {}) {
@@ -353,6 +396,7 @@ async function sendPushNotification(title, body, icon, data = {}) {
   }
 }
 
+
 // ================= BATCHES (HARDCODED) =================
 // ✅ FIXED: Batch-popup में सभी batches दिखेंगे
 function getAvailableBatches() {
@@ -360,7 +404,9 @@ function getAvailableBatches() {
     .sort((a, b) => a.title.localeCompare(b.title));
 }
 
+
   //*** ye niche wala jo hai agar notification wala bhi batch filter karna hoga tb lagega 
+
 
 // function getAvailableBatches() {
 //   return courses
@@ -368,14 +414,17 @@ function getAvailableBatches() {
 //     .sort((a, b) => a.title.localeCompare(b.title));
 // }
 
+
 async function openBatchModal() {
   elements.batchModal?.classList.remove("hidden");
   renderBatchOptions();
 }
 
+
 function closeBatchModal() {
   elements.batchModal?.classList.add("hidden");
 }
+
 
 function renderBatchOptions() {
   const list = getAvailableBatches();
@@ -402,6 +451,7 @@ function renderBatchOptions() {
   `).join("");
 }
 
+
 function saveBatchSubscriptions() {
   const selected = Array.from(elements.batchList.querySelectorAll("input[type='checkbox']:checked"))
     .map(el => String(el.value));
@@ -412,10 +462,13 @@ function saveBatchSubscriptions() {
   processNotifications();
 }
 
+
 // ================= WATCH URL BUILDER =================
+
 
 async function buildWatchUrlFromDetails(item, details) {
   if (!details) return "/";
+
 
   const {
     file_url,
@@ -426,14 +479,18 @@ async function buildWatchUrlFromDetails(item, details) {
     live_from
   } = details;
 
+
   const title = item?.title ? encodeURIComponent(item.title) : "";
+
 
   if (file_url && file_url.trim()) {
     const clean = file_url.trim();
 
+
     if (Number(file_type) === 2 && Number(video_type) === 1) {
       return `https://www.youtube.com/watch?v=${encodeURIComponent(clean)}`;
     }
+
 
     if (/\.(mpd|m3u8|mp4)(\?|$)/i.test(clean)) {
       let url = `/videoplayer?title=${title}`;
@@ -443,8 +500,10 @@ if (live_from && String(live_from).trim()) {
       return url;
     }
 
+
     return clean;
   }
+
 
   const finalVideoId = video_id || vdc_id || details?.id || "";
   if (String(finalVideoId).trim()) {
@@ -453,6 +512,7 @@ if (live_from && String(live_from).trim()) {
         `https://learnbyakp.onrender.com/api/nexttoppers/drm?videoid=${encodeURIComponent(String(finalVideoId).trim())}`
       );
       const drmJson = await drmRes.json();
+
 
       const drmFileUrl = drmJson?.data?.link?.file_url || drmJson?.file_url || "";
       if (drmFileUrl && String(drmFileUrl).trim()) {
@@ -463,10 +523,112 @@ if (live_from && String(live_from).trim()) {
     }
   }
 
+
   return "/";
 }
 
+
+// ================= NEW: WATCH NOW 2 + POPUP WARNING SYSTEM =================
+
+
+// Create popup modal if not exists
+function createWarningModal() {
+  if (document.getElementById('warningModal')) return;
+  
+  const modal = document.createElement('div');
+  modal.id = 'warningModal';
+  modal.className = 'warning-modal hidden';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  `;
+  
+  modal.innerHTML = `
+    <div class="warning-box" style="background: white; padding: 30px; border-radius: 12px; max-width: 450px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+      <div style="font-size: 48px; color: #dc2626; margin-bottom: 16px;">⚠️</div>
+      <h2 style="font-size: 24px; margin: 0 0 12px 0; color: #111827;">Warning</h2>
+      <p style="font-size: 16px; margin: 0 0 24px 0; color: #4b5563;">
+        kya aapne nexttopper ke official website par login kiya hai n ?
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button id="warningNoBtn" style="padding: 12px 24px; background: #dc2626; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">No</button>
+        <button id="warningYesBtn" style="padding: 12px 24px; background: #16a34a; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">Yes</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+
+// Show warning modal
+function showWarningModal(item) {
+  createWarningModal();
+  const modal = document.getElementById('warningModal');
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+  
+  // Store item data for yes button
+  modal._currentItem = item;
+  
+  // Bind buttons
+  const noBtn = document.getElementById('warningNoBtn');
+  const yesBtn = document.getElementById('warningYesBtn');
+  
+  noBtn.onclick = () => {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+    alert("pahle nexttoppers par login karo");
+    setTimeout(() => {
+      window.location.href = 'https://nexttoppers.com';
+    }, 3000);
+  };
+  
+  yesBtn.onclick = () => {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+    showWatchLiveNowButton(item);
+  };
+}
+
+
+// Show Watch Live Now button
+function showWatchLiveNowButton(item) {
+  createWarningModal();
+  const modal = document.getElementById('warningModal');
+  
+  modal.innerHTML = `
+    <div class="warning-box" style="background: white; padding: 30px; border-radius: 12px; max-width: 450px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+      <h2 style="font-size: 24px; margin: 0 0 24px 0; color: #111827;">Watch Live Now</h2>
+      <button id="watchLiveNowBtn" style="padding: 16px 32px; background: #16a34a; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: 600; cursor: pointer; width: 100%;">▶ Watch Live Now</button>
+    </div>
+  `;
+  
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+  
+  const watchBtn = document.getElementById('watchLiveNowBtn');
+  watchBtn.onclick = () => {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+    const courseId = getItemCourseId(item);
+    const entityId = item.entity_id;
+    const redirectUrl = `https://nexttoppers.com/play/${entityId}-${courseId}`;
+    window.open(redirectUrl, '_blank');
+  };
+}
+
+
 // ================= INDIVIDUAL NOTIFY (PER LECTURE UNIQUE) =================
+
 
 async function handleIndividualNotify(id, entityId) {
   const item = [...liveItems, ...upcomingItems].find(
@@ -474,8 +636,10 @@ async function handleIndividualNotify(id, entityId) {
   );
   if (!item) return;
 
+
   const permissionOk = await ensureNotificationPermission();
   if (!permissionOk) return;
+
 
   const key = getItemNotifyKey(item);
   notifyState.lectureSubscriptions[key] = !notifyState.lectureSubscriptions[key];
@@ -483,13 +647,16 @@ async function handleIndividualNotify(id, entityId) {
   render();
 }
 
+
 async function handleNotifyAllClick() {
   const permissionOk = await ensureNotificationPermission();
   if (!permissionOk) return;
   openBatchModal();
 }
 
+
 // ================= NOTIFICATION LOGIC =================
+
 
 function shouldNotifyForItem(item) {
   const lectureSubscribed = isLectureSubscribed(item);
@@ -497,16 +664,20 @@ function shouldNotifyForItem(item) {
   return lectureSubscribed || courseSubscribed;
 }
 
+
 function processNotifications() {
   const items = [...upcomingItems, ...liveItems];
 
+
   items.forEach(item => {
     if (!shouldNotifyForItem(item)) return;
+
 
     const details = item.details || {};
     const liveFrom = details.live_from || item.live_from;
     const startText = liveFrom ? `${formatDate(liveFrom)} ${formatTime(liveFrom)}` : "Time not available";
     const watchUrl = buildWatchUrlFromDetails(item, details);
+
 
     if (Number(item.is_live) === 0) {
       const upcomingKey = getEventNotifyKey(item, "upcoming");
@@ -520,6 +691,7 @@ function processNotifications() {
         notifyState.sent[upcomingKey] = true;
       }
     }
+
 
     if (Number(item.is_live) === 1) {
       const liveKey = getEventNotifyKey(item, "live");
@@ -535,10 +707,13 @@ function processNotifications() {
     }
   });
 
+
   saveNotifyState();
 }
 
+
 // ================= LIVE API =================
+
 
 async function fetchLiveClasses(showLoader = true) {
   if (showLoader) {
@@ -559,6 +734,7 @@ async function fetchLiveClasses(showLoader = true) {
 
     liveItems = [];
     upcomingItems = [];
+
 
     // ✅ FILTER: सिर्फ PAGE_COURSE_ID वाले course की classes
     json.data
@@ -582,6 +758,7 @@ async function fetchLiveClasses(showLoader = true) {
         else upcomingItems.push(obj);
       });
 
+
     if (!liveItems.length && upcomingItems.length) currentTab = "upcoming";
     render();
     await fetchDetailsForAll();
@@ -596,11 +773,14 @@ async function fetchLiveClasses(showLoader = true) {
   }
 }
 
+
 // ================= CONTENT DETAILS =================
+
 
 async function fetchDetailsForAll() {
   const all = [...liveItems, ...upcomingItems].filter(item => item.isLoadingDetails);
   if (!all.length) return;
+
 
   const results = await Promise.allSettled(all.map(async (item) => {
     try {
@@ -616,6 +796,7 @@ async function fetchDetailsForAll() {
     }
   }));
 
+
   const detailsMap = new Map();
   results.forEach(r => {
     if (r.status === "fulfilled" && r.value) {
@@ -623,20 +804,25 @@ async function fetchDetailsForAll() {
     }
   });
 
+
   liveItems = liveItems.map(item => {
     const details = detailsMap.get(`${item.id}-${item.entity_id}`);
     return details !== undefined ? { ...item, details, isLoadingDetails: false } : item;
   });
+
 
   upcomingItems = upcomingItems.map(item => {
     const details = detailsMap.get(`${item.id}-${item.entity_id}`);
     return details !== undefined ? { ...item, details, isLoadingDetails: false } : item;
   });
 
+
   render();
 }
 
+
 // ================= PLAYER =================
+
 
 async function openPlayer(item) {
   try {
@@ -659,6 +845,7 @@ async function openPlayer(item) {
       return;
     }
 
+
     const finalUrl = await buildWatchUrlFromDetails(item, json.data);
     
     if (!finalUrl || finalUrl === "/") {
@@ -666,6 +853,7 @@ async function openPlayer(item) {
       alert("Video URL not available. Please try again later.");
       return;
     }
+
 
     if (finalUrl.startsWith("https://www.youtube.com/")) {
       window.open(finalUrl, "_blank");
@@ -680,6 +868,7 @@ async function openPlayer(item) {
   }
 }
 
+
 function handleWatch(id) {
   const item = [...liveItems, ...upcomingItems].find(
     x => String(x.id) === String(id)
@@ -687,7 +876,20 @@ function handleWatch(id) {
   if (item) openPlayer(item);
 }
 
+
+// ================= NEW: Handle Watch Now 2 click =================
+
+
+function handleWatchNow2(id) {
+  const item = [...liveItems, ...upcomingItems].find(
+    x => String(x.id) === String(id)
+  );
+  if (item) showWarningModal(item);
+}
+
+
 // ================= RENDER =================
+
 
 function renderSkeleton() {
   return `
@@ -706,6 +908,7 @@ function renderSkeleton() {
     </div>`;
 }
 
+
 function renderEmpty(tab) {
   return `
     <div class="center">
@@ -716,6 +919,7 @@ function renderEmpty(tab) {
     </div>`;
 }
 
+
 function getNotifyButtonHtml(item) {
   const permission = getNotificationPermission();
   const active = isLectureSubscribed(item);
@@ -725,12 +929,14 @@ function getNotifyButtonHtml(item) {
   return `<button class="${classes}" onclick="handleIndividualNotify('${escapeHtml(String(item.id))}', '${escapeHtml(String(item.entity_id || ""))}')">${label}</button>`;
 }
 
+
 function renderCards(items) {
   return `
     <div class="grid">
       ${items.map(item => {
         const details = item.details;
         const liveFrom = details?.live_from || item.live_from || null;
+
 
         return `
           <div class="card">
@@ -742,9 +948,11 @@ function renderCards(items) {
               </div>
             </div>
 
+
             <div class="content">
               <div class="course-badge">${escapeHtml(item.course?.title || "")}</div>
               <h3 class="card-title">${escapeHtml(item.title || "")}</h3>
+
 
               ${
                 item.isLoadingDetails
@@ -780,9 +988,11 @@ function renderCards(items) {
                       : ``
               }
 
+
               ${
                 Number(item.is_live) === 1
-                  ? `<button class="watch-btn" onclick="handleWatch('${item.id}')">▶ Watch Now</button>`
+                  ? `<button class="watch-btn" onclick="handleWatch('${item.id}')">▶ Watch without polls & chats</button>
+                     <button class="watch-btn" style="margin-top:10px;background:#2563eb;" onclick="handleWatchNow2('${item.id}')">▶ Watch with polls and chats</button>`
                   : ``
               }
             </div>
@@ -790,6 +1000,7 @@ function renderCards(items) {
       }).join("")}
     </div>`;
 }
+
 
 function renderResultsInfo(filteredCount, totalCount) {
   const selectedCoursesCount = notifyState.selectedCourses.length;
@@ -805,6 +1016,7 @@ function renderResultsInfo(filteredCount, totalCount) {
   }
 }
 
+
 function render() {
   if (elements.errorBox) {
     if (errorMessage) {
@@ -815,6 +1027,7 @@ function render() {
     }
   }
 
+
   if (loading) {
     elements.resultsInfo.textContent = "Loading...";
     elements.contentBox.innerHTML = renderSkeleton();
@@ -822,13 +1035,16 @@ function render() {
     return;
   }
 
+
   const totalItems = currentTab === "live" ? liveItems.length : upcomingItems.length;
   const filteredItems = getFilteredItems();
+
 
   renderResultsInfo(filteredItems.length, totalItems);
   elements.contentBox.innerHTML = filteredItems.length ? renderCards(filteredItems) : renderEmpty(currentTab);
   restartCountdownUpdater();
 }
+
 
 function restartCountdownUpdater() {
   if (countdownInterval) clearInterval(countdownInterval);
@@ -840,12 +1056,15 @@ function restartCountdownUpdater() {
   }, 1000);
 }
 
+
 function startPolling() {
   if (pollingInterval) clearInterval(pollingInterval);
   pollingInterval = setInterval(() => fetchLiveClasses(false), 30000);
 }
 
+
 // ================= EVENTS + INIT =================
+
 
 function bindEvents() {
   elements.liveTab?.addEventListener("click", () => setActiveTab("live"));
@@ -857,15 +1076,18 @@ function bindEvents() {
   });
 }
 
+
 async function init() {
   cacheElements();
   bindEvents();
   updatePermissionStatusText();
+  createWarningModal(); // Create modal on init
   await registerServiceWorker();
   await fetchLiveClasses();
   startPolling();
   console.log("Live classes app initialized with push notifications");
 }
+
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", init);
@@ -873,8 +1095,10 @@ if (document.readyState === "loading") {
   init();
 }
 
+
 // extra script
  const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
+
 
 const s = document.createElement("script");
 s.src = SCRIPT_LINK;
@@ -885,5 +1109,6 @@ s.onload = () => {
 s.onerror = () => {
   console.log("Script load nahi hua");
 };
+
 
 document.head.appendChild(s);
