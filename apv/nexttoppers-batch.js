@@ -151,9 +151,6 @@ function isTestFolder(item) {
 }
 
 function isTestItem(item) {
-  // Important:
-  // "Tests" ek folder hota hai.
-  // Usko test item nahi banana hai.
   if (item?.type === "folder") return false;
 
   const text = [
@@ -471,13 +468,34 @@ function openTestById(id) {
     `&title=${title}`;
 }
 
+// NEW: helper to detect live lecture items
+function isLiveLectureItem(item) {
+  const d = item?.data || {};
+  return (
+    Number(d.file_type) === 2 &&
+    Number(d.video_type) === 3 &&
+    Number(d.is_live) === 1
+  );
+}
+
 async function openContent(item) {
   try {
+    // 1) Test item → test flow
     if (isTestItem(item)) {
       openTestById(item.entity_id);
       return;
     }
 
+    // 2) Live lecture → redirect to /nexttoppers/live?course_id=...
+    if (isLiveLectureItem(item)) {
+      const courseId = String(item.course_id || state.courseId || "");
+      if (courseId) {
+        location.href = `/nexttoppers/live?id=${encodeURIComponent(courseId)}`;
+        return;
+      }
+    }
+
+    // 3) Normal content flow
     const url = new URL(API.contentDetails);
     url.searchParams.set("content_id", String(item.entity_id));
     url.searchParams.set("course_id", String(item.course_id));
@@ -788,8 +806,6 @@ function renderTabContent() {
 function renderContentItem(item) {
   const isFolder = item.type === "folder";
 
-  // Sirf actual test item ko test card banao.
-  // Tests folder ko normal folder hi rehne do.
   if (!isFolder && isTestItem(item)) {
     return renderTestItem(item);
   }
