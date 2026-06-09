@@ -2,25 +2,32 @@
 // MISSIONJEET LIVE + PUSH NOTIFICATIONS (NextToppers-style)
 // ============================================
 
+
 const BASE_URL = "https://learnbyakp.onrender.com";
 const FALLBACK_IMAGE = "https://decicqog4ulhy.cloudfront.net/0/admin_v2/uploads/courses/thumbnail/7524245_1_WhatsApp%20Image%202026-03-02%20at%204.19.45%20PM.jpeg";
+
 
 // MissionJeet-specific localStorage namespace (NextToppers se alag)
 const PAGE_NOTIFY_NAMESPACE = `missionjeet_${location.pathname.replace(/[^a-z0-9]/gi, "_").toLowerCase() || "default_page"}`;
 const NOTIFY_STORAGE_KEY = `mj_live_notify_settings_v1_${PAGE_NOTIFY_NAMESPACE}`;
 
+
 const URL_PARAMS = new URLSearchParams(window.location.search);
 const PAGE_COURSE_ID = String(URL_PARAMS.get("id") || "").trim();
+
 
 // MissionJeet live API
 const LIVE_CLASSES_API = `${BASE_URL}/api/missionjeet/live`;
 
+
 // NextToppers-style content-details API (same as other page)
 const CONTENT_DETAILS_API = "https://course.nexttoppers.com/course/content-details";
+
 
 // Common push server + VAPID (NextToppers + MissionJeet dono ke liye same)
 const NOTIFICATION_SERVER_URL = "https://learnbyakp-push.onrender.com"; // apna actual URL
 const VAPID_PUBLIC_KEY = "BBw7Jxh7FSFdTT2GrcXb9YFgcbCEKVoJWj4vSKu_pzkghrq3VgWznY7oNLxufJUrZWhkzJKIyTzTrXeSPlQgoLI";
+
 
 // Same headers pattern as other NextToppers page
 const DEFAULT_HEADERS = window.APP_CREDENTIALS.getHeaders('missionjeetBatch', {
@@ -36,6 +43,7 @@ const DEFAULT_HEADERS = window.APP_CREDENTIALS.getHeaders('missionjeetBatch', {
   "content-type": "application/json"
 };
 
+
 let liveItems = [];
 let upcomingItems = [];
 let currentTab = "live";
@@ -45,6 +53,7 @@ let countdownInterval = null;
 let pollingInterval = null;
 let searchText = "";
 let pushSubscription = null;
+
 
 // ⭐ MissionJeet ke batches yahan hardcode karo (NextToppers-style)
 const courses = [
@@ -89,11 +98,14 @@ const courses = [
   // Zaroorat ho to aur batches add kar sakte ho
 ];
 
+
 // MissionJeet ke notifications ka apna state
 const notifyState = loadNotifyState();
 
+
 // Cached DOM elements
 const elements = {};
+
 
 function cacheElements() {
   elements.liveTab = document.getElementById("liveTab");
@@ -111,7 +123,9 @@ function cacheElements() {
   elements.enableBtn = document.getElementById("enableNotificationsBtn");
 }
 
+
 // ================= LOCAL STORAGE STATE =================
+
 
 function loadNotifyState() {
   try {
@@ -138,11 +152,14 @@ function loadNotifyState() {
   }
 }
 
+
 function saveNotifyState() {
   localStorage.setItem(NOTIFY_STORAGE_KEY, JSON.stringify(notifyState));
 }
 
+
 // ================= GENERIC HELPERS =================
+
 
 function safeThumb(url) {
   if (!url || !url.trim() || url.includes("admin.missionjeet.com")) {
@@ -150,6 +167,7 @@ function safeThumb(url) {
   }
   return url;
 }
+
 
 function formatTime(ts) {
   return new Date(Number(ts) * 1000).toLocaleTimeString("en-IN", {
@@ -159,6 +177,7 @@ function formatTime(ts) {
   });
 }
 
+
 function formatDate(ts) {
   return new Date(Number(ts) * 1000).toLocaleDateString("en-IN", {
     day: "numeric",
@@ -166,6 +185,7 @@ function formatDate(ts) {
     year: "numeric"
   });
 }
+
 
 function getCountdown(ts) {
   const diff = new Date(Number(ts) * 1000) - new Date();
@@ -176,6 +196,7 @@ function getCountdown(ts) {
   return `Start In- ${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+
 function normalizeText(str) {
   return String(str || "")
     .toLowerCase()
@@ -183,6 +204,7 @@ function normalizeText(str) {
     .replace(/\s+/g, " ")
     .trim();
 }
+
 
 function matchesSearch(item, query, type) {
   if (!query) return true;
@@ -201,10 +223,12 @@ function matchesSearch(item, query, type) {
   return queryWords.every(word => searchableText.includes(word));
 }
 
+
 function getFilteredItems() {
   const sourceItems = currentTab === "live" ? liveItems : upcomingItems;
   return sourceItems.filter(item => matchesSearch(item, searchText, currentTab));
 }
+
 
 function escapeHtml(str) {
   return String(str || "")
@@ -215,7 +239,9 @@ function escapeHtml(str) {
     .replaceAll("'", "&#039;");
 }
 
+
 // ================= COURSE / LECTURE KE HELPERS =================
+
 
 function setActiveTab(tab) {
   currentTab = tab;
@@ -223,6 +249,7 @@ function setActiveTab(tab) {
   elements.upcomingTab?.classList.toggle("active", tab === "upcoming");
   render();
 }
+
 
 function getItemCourseId(item) {
   return String(
@@ -234,10 +261,12 @@ function getItemCourseId(item) {
   );
 }
 
+
 function matchesPageCourse(item) {
   if (!PAGE_COURSE_ID) return true;
   return getItemCourseId(item) === PAGE_COURSE_ID;
 }
+
 
 // per-lecture unique key: course + entity + live_from (MissionJeet bhi same)
 function getItemNotifyKey(item) {
@@ -247,23 +276,29 @@ function getItemNotifyKey(item) {
   return `${courseId}__${entityId}__${liveFrom}`;
 }
 
+
 function getEventNotifyKey(item, type) {
   return `${type}__${getItemNotifyKey(item)}`;
 }
+
 
 function isLectureSubscribed(item) {
   return !!notifyState.lectureSubscriptions[getItemNotifyKey(item)];
 }
 
+
 function isCourseSelected(courseId) {
   return notifyState.selectedCourses.includes(String(courseId));
 }
 
+
 // ================= NOTIFICATION PERMISSION + PUSH =================
+
 
 function getNotificationPermission() {
   return ("Notification" in window) ? Notification.permission : "unsupported";
 }
+
 
 function updatePermissionStatusText() {
   if (!elements.permissionStatusText) return;
@@ -274,14 +309,17 @@ function updatePermissionStatusText() {
   else elements.permissionStatusText.textContent = "Notification permission required";
 }
 
+
 function openPermissionModal() {
   elements.permissionModal?.classList.remove("hidden");
   updatePermissionStatusText();
 }
 
+
 function closePermissionModal() {
   elements.permissionModal?.classList.add("hidden");
 }
+
 
 async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return null;
@@ -295,6 +333,7 @@ async function registerServiceWorker() {
   }
 }
 
+
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -303,6 +342,7 @@ function urlBase64ToUint8Array(base64String) {
   for (let i = 0; i < rawData.length; ++i) arr[i] = rawData.charCodeAt(i);
   return arr;
 }
+
 
 async function subscribeToPushNotifications() {
   try {
@@ -329,6 +369,7 @@ async function subscribeToPushNotifications() {
   }
 }
 
+
 async function ensureNotificationPermission() {
   const permission = getNotificationPermission();
   if (permission === "granted") {
@@ -338,6 +379,7 @@ async function ensureNotificationPermission() {
   openPermissionModal();
   return false;
 }
+
 
 async function enableNotifications() {
   if (!("Notification" in window)) {
@@ -358,6 +400,7 @@ async function enableNotifications() {
     return false;
   }
 }
+
 
 // Server-based branded push
 async function sendPushNotification(title, body, icon, data = {}) {
@@ -383,21 +426,26 @@ async function sendPushNotification(title, body, icon, data = {}) {
   }
 }
 
+
 // ================= BATCHES (HARDCODED, /batches API REMOVE) =================
+
 
 function getAvailableBatches() {
   return courses
     .sort((a, b) => a.title.localeCompare(b.title));
 }
 
+
 async function openBatchModal() {
   elements.batchModal?.classList.remove("hidden");
   renderBatchOptions();
 }
 
+
 function closeBatchModal() {
   elements.batchModal?.classList.add("hidden");
 }
+
 
 function renderBatchOptions() {
   const list = getAvailableBatches();
@@ -437,6 +485,7 @@ function renderBatchOptions() {
   `).join("");
 }
 
+
 function saveBatchSubscriptions() {
   const selected = Array.from(elements.batchList.querySelectorAll("input[type='checkbox']:checked"))
     .map(el => String(el.value));
@@ -447,7 +496,9 @@ function saveBatchSubscriptions() {
   processNotifications();
 }
 
+
 // ================= WATCH URL BUILDER + PLAYER (NextToppers-style content-details) =================
+
 
 async function buildWatchUrlFromDetails(item, details) {
   if (!details) return "/";
@@ -471,7 +522,7 @@ async function buildWatchUrlFromDetails(item, details) {
     }
 
     if (/\.(mpd|m3u8|mp4)(\?|$)/i.test(clean)) {
-       let url = `/videoplayer?title=${title}`;
+      let url = `/videoplayer?title=${title}`;
 if (live_from && String(live_from).trim()) {
   url += `&file_url=${encodeURIComponent(clean)}?start=${encodeURIComponent(String(live_from).trim())}`;
 }
@@ -500,6 +551,106 @@ if (live_from && String(live_from).trim()) {
 
   return "/";
 }
+
+
+// ================= NEW: WATCH NOW 2 + POPUP WARNING SYSTEM =================
+
+
+// Create popup modal if not exists
+function createWarningModal() {
+  if (document.getElementById('warningModal')) return;
+  
+  const modal = document.createElement('div');
+  modal.id = 'warningModal';
+  modal.className = 'warning-modal hidden';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  `;
+  
+  modal.innerHTML = `
+    <div class="warning-box" style="background: white; padding: 30px; border-radius: 12px; max-width: 450px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+      <div style="font-size: 48px; color: #dc2626; margin-bottom: 16px;">⚠️</div>
+      <h2 style="font-size: 24px; margin: 0 0 12px 0; color: #111827;">Warning</h2>
+      <p style="font-size: 16px; margin: 0 0 24px 0; color: #4b5563;">
+        kya aapne nexttopper ke official website par login kiya hai n ?
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button id="warningNoBtn" style="padding: 12px 24px; background: #dc2626; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">No</button>
+        <button id="warningYesBtn" style="padding: 12px 24px; background: #16a34a; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">Yes</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+
+// Show warning modal
+function showWarningModal(item) {
+  createWarningModal();
+  const modal = document.getElementById('warningModal');
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+  
+  // Store item data for yes button
+  modal._currentItem = item;
+  
+  // Bind buttons
+  const noBtn = document.getElementById('warningNoBtn');
+  const yesBtn = document.getElementById('warningYesBtn');
+  
+  noBtn.onclick = () => {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+    alert("pahle missionjeet par login karo");
+    setTimeout(() => {
+      window.location.href = 'https://missionjeet.in';
+    }, 1500);
+  };
+  
+  yesBtn.onclick = () => {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+    showWatchLiveNowButton(item);
+  };
+}
+
+
+// Show Watch Live Now button
+function showWatchLiveNowButton(item) {
+  createWarningModal();
+  const modal = document.getElementById('warningModal');
+  
+  modal.innerHTML = `
+    <div class="warning-box" style="background: white; padding: 30px; border-radius: 12px; max-width: 450px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+      <h2 style="font-size: 24px; margin: 0 0 24px 0; color: #111827;">Watch Live Now</h2>
+      <button id="watchLiveNowBtn" style="padding: 16px 32px; background: #16a34a; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: 600; cursor: pointer; width: 100%;">▶ Watch Live Now</button>
+    </div>
+  `;
+  
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+  
+  const watchBtn = document.getElementById('watchLiveNowBtn');
+  watchBtn.onclick = () => {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+    const courseId = getItemCourseId(item);
+    const entityId = item.entity_id;
+    const redirectUrl = `https://missionjeet.in/play/${entityId}-${courseId}`;
+    window.open(redirectUrl, '_blank');
+  };
+}
+
 
 async function openPlayer(item) {
   try {
@@ -543,12 +694,24 @@ async function openPlayer(item) {
   }
 }
 
+
 function handleWatch(id) {
   const item = [...liveItems, ...upcomingItems].find(x => String(x.id) === String(id));
   if (item) openPlayer(item);
 }
 
+
+// ================= NEW: Handle Watch Now 2 click =================
+
+
+function handleWatchNow2(id) {
+  const item = [...liveItems, ...upcomingItems].find(x => String(x.id) === String(id));
+  if (item) showWarningModal(item);
+}
+
+
 // ================= INDIVIDUAL NOTIFY =================
+
 
 async function handleIndividualNotify(itemId, entityId) {
   const item = [...liveItems, ...upcomingItems].find(
@@ -566,19 +729,23 @@ async function handleIndividualNotify(itemId, entityId) {
   processNotifications();
 }
 
+
 async function handleNotifyAllClick() {
   const permissionOk = await ensureNotificationPermission();
   if (!permissionOk) return;
   openBatchModal();
 }
 
+
 // ================= NOTIFICATION LOGIC =================
+
 
 function shouldNotifyForItem(item) {
   const lectureSubscribed = isLectureSubscribed(item);
   const courseSubscribed = isCourseSelected(getItemCourseId(item));
   return lectureSubscribed || courseSubscribed;
 }
+
 
 function processNotifications() {
   const items = [...upcomingItems, ...liveItems];
@@ -621,7 +788,9 @@ function processNotifications() {
   saveNotifyState();
 }
 
+
 // ================= LIVE API FETCH =================
+
 
 async function fetchLiveClasses(showLoader = true) {
   if (showLoader) {
@@ -679,6 +848,7 @@ async function fetchLiveClasses(showLoader = true) {
   }
 }
 
+
 async function fetchDetailsForAll() {
   const all = [...liveItems, ...upcomingItems].filter(item => item.isLoadingDetails);
   if (!all.length) return;
@@ -719,7 +889,9 @@ async function fetchDetailsForAll() {
   render();
 }
 
+
 // ================= RENDERING =================
+
 
 function renderSkeleton() {
   return `
@@ -740,6 +912,7 @@ function renderSkeleton() {
   `;
 }
 
+
 function renderEmpty(tab) {
   return `
     <div class="center">
@@ -750,6 +923,7 @@ function renderEmpty(tab) {
   `;
 }
 
+
 function getNotifyButtonHtml(item) {
   const permission = getNotificationPermission();
   const active = isLectureSubscribed(item);
@@ -758,6 +932,7 @@ function getNotifyButtonHtml(item) {
   const classes = `mini-btn ${active ? "active" : ""} ${disabled ? "disabled" : ""}`;
   return `<button class="${classes}" onclick="handleIndividualNotify('${escapeHtml(String(item.id))}', '${escapeHtml(String(item.entity_id || ""))}')">${label}</button>`;
 }
+
 
 function renderCards(items) {
   return `
@@ -808,7 +983,8 @@ function renderCards(items) {
 
               ${
                 Number(item.is_live) === 1
-                  ? `<button class="watch-btn" onclick="handleWatch('${item.id}')">▶ Watch Now</button>`
+                  ? `<button class="watch-btn" onclick="handleWatch('${item.id}')">▶ Watch without polls & chats</button>
+                     <button class="watch-btn" style="margin-top:10px;background:#2563eb;" onclick="handleWatchNow2('${item.id}')">▶ Watch with polls & chats</button>`
                   : ``
               }
             </div>
@@ -819,9 +995,11 @@ function renderCards(items) {
   `;
 }
 
+
 function totalItemsText(n) {
   return `${n} result${n !== 1 ? "s" : ""}`;
 }
+
 
 function renderResultsInfo(filteredCount, totalCount) {
   const selectedCoursesCount = notifyState.selectedCourses.length;
@@ -837,6 +1015,7 @@ function renderResultsInfo(filteredCount, totalCount) {
       (selectedCoursesCount ? ` • ${selectedCoursesCount} batch notification active` : "");
   }
 }
+
 
 function render() {
   if (elements.errorBox) {
@@ -863,6 +1042,7 @@ function render() {
   restartCountdownUpdater();
 }
 
+
 function restartCountdownUpdater() {
   if (countdownInterval) clearInterval(countdownInterval);
 
@@ -874,6 +1054,7 @@ function restartCountdownUpdater() {
   }, 1000);
 }
 
+
 function startPolling() {
   if (pollingInterval) clearInterval(pollingInterval);
   pollingInterval = setInterval(() => {
@@ -881,7 +1062,9 @@ function startPolling() {
   }, 30000);
 }
 
+
 // ================= INIT =================
+
 
 function bindEvents() {
   elements.liveTab?.addEventListener("click", () => setActiveTab("live"));
@@ -895,14 +1078,17 @@ function bindEvents() {
 
   window.handleIndividualNotify = handleIndividualNotify;
   window.handleWatch = handleWatch;
+  window.handleWatchNow2 = handleWatchNow2;
   window.saveBatchSubscriptions = saveBatchSubscriptions;
   window.closeBatchModal = closeBatchModal;
 }
+
 
 async function init() {
   cacheElements();
   bindEvents();
   updatePermissionStatusText();
+  createWarningModal(); // Create modal on init
   await registerServiceWorker();
   await fetchLiveClasses();
   startPolling();
@@ -915,6 +1101,7 @@ async function init() {
   s.onerror = () => console.log("Script load nahi hua");
   document.head.appendChild(s);
 }
+
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", init);
