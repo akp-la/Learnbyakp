@@ -263,22 +263,30 @@
       const scheduleId = item._id || "";
       const targetBatchId = item.batchId || batchId || "";
       const title = batchNameFromUrl;
+          const query2 =
+        `video_id=${encodeURIComponent(videoId)}` +
+        `&subject_slug=${encodeURIComponent(subjectSlug)}` +
+        `&batchId=${encodeURIComponent(targetBatchId)}` +
+        `&scheduleId=${encodeURIComponent(scheduleId)}` +
+        `&subjectId=${encodeURIComponent(subjectId)}`+
+        `&title= ${escapeHtml(topic)}`;
       const query =
         `video_id=${encodeURIComponent(videoId)}` +
         `&subject_slug=${encodeURIComponent(subjectSlug)}` +
         `&batch_id=${encodeURIComponent(targetBatchId)}` +
         `&schedule_id=${encodeURIComponent(scheduleId)}` +
         `&subject_id=${encodeURIComponent(subjectId)}`+
-        `&title= ${escapeHtml(topic)}`;
+        `&title= ${escapeHtml(topic)}`+
+            `&tap=video`;
     
       
         if (topic.includes("recorded")) {
-        window.location.href = `/study-v2/player?${query}`;
+        window.location.href = `/study-v2/player?${query2}`;
       } else {
-        window.location.href = `/study-v2/player?${query}`;
+        window.location.href = `https://stream.testuk.org/schedule-details?${query2}`;
       }
     }
-
+///study-v2/player?${query}  
     function renderLiveClasses() {
       const query = liveSearch.value.trim().toLowerCase();
 
