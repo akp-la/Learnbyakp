@@ -546,6 +546,64 @@ res.json(data);
   }
 });
 //========science===
+  const PW_HEADERS = {
+    "Accept-Encoding": "gzip",
+    "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 11; SM-A707F Build/RP1A.200720.012)",
+    "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODE2OTMwMzYuMDkxLCJkYXRhIjp7Il9pZCI6IjY4MzEyNTQ1MDNkMzc1MmFhMzkzZWUzNyIsInVzZXJuYW1lIjoiNzM0MDMyMzM1MSIsImZpcnN0TmFtZSI6IlNhbmRlZXAiLCJsYXN0TmFtZSI6Ikt1bWFyIiwib3JnYW5pemF0aW9uIjp7Il9pZCI6IjVlYjM5M2VlOTVsYWI3NDY4YTc5ZDE4OSIsIndlYnNpdGUiOiJwaHlzaWNzd2FsbGFoLmNvbSIsIm5hbWUiOiJQaHlzaWNzd2FsbGFoIn0sInJvbGVzIjpbIjViMjdiZDk2NTg0MmY5NTBhNzc4YzZlZiJdLCJjb3VudHJ5R3JvdXAiOiJJTiIsInR5cGUiOiJVU0VSIn0sImp0aSI6Il9kRG5PVzloVFB1NWlheEJDak9kT0FfNjgzMTI1NDUwM2QzNzUyYWEzOTNlZTM3IiwiaWF0IjoxNzgxMDg4MjM2fQ.7RCp517wpJ4Umws863UY8q-sypCAHMJVtPQJBmrWyxY",
+    "client-id": "ADMIN",
+    "client-type": "MOBILE",
+    "client-version": "538",
+    "content-type": "application/json",
+    "device-meta": "{\"APP_VERSION\":\"538\",\"APP_VERSION_NAME\":\"15.32.0\",\"DEVICE_MAKE\":\"Samsung\",\"DEVICE_MODEL\":\"SM-A707F\",\"OS_VERSION\":\"11\",\"PACKAGE_NAME\":\"xyz.penpencil.physicswala\",\"network\":\"wifi_data\",\"carrier\":\"UNDEFINED\"}",
+    "randomid": "3d3b49f068728fa3",
+    "referer": "https://android.pw.live"
+};
+
+// ✅ Dynamic slides endpoint with query parameters
+app.get('/slides', async (req, res) => {
+    // Query parameters से data ले
+    const batchId = req.query.batch_id;
+    const subjectId = req.query.subject_id;
+    const scheduleId = req.query.schedule_id;
+
+    // Validation - सभी parameters ज़रूरी हैं
+    if (!batchId || !subjectId || !scheduleId) {
+        return res.status(400).json({
+            error: 'Missing required parameters',
+            required: ['batch_id', 'subject_id', 'schedule_id'],
+            example: '/get-slides?batch_id=6920510a70e5cf316c9e3000&subject_id=6926c4dadef5ac36c3b2c108&schedule_id=6a19aefc5a7d6b0adfbd1c2b'
+        });
+    }
+
+    // Dynamic API URL build करें
+    const apiUrl = `https://api.penpencil.co/v1/batches/${batchId}/subject/${subjectId}/schedule/${scheduleId}/slides`;
+
+    console.log('📡 Calling API:', apiUrl);
+
+    try {
+        const response = await axios.get(apiUrl, {
+            headers: PW_HEADERS,
+            timeout: 10000,
+        });
+
+        res.status(200).json(response.data);
+    } catch (error) {
+        console.error('API Error:', error.message);
+        
+        const errorStatus = error.response?.status || 500;
+        const errorData = error.response?.data || { message: error.message };
+        
+        res.status(errorStatus).json({
+            error: errorData.message || error.message,
+            status: errorStatus,
+            details: errorData,
+            api_url: apiUrl
+        });
+    }
+});
+
+
+  //=====xdcfdsfsd
 
   app.get("/api/science/previous-live", async (req, res) => {
   try {
