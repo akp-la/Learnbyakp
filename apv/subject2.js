@@ -165,7 +165,7 @@ if(!subs.length){list.innerHTML='<li style="text-align:center;padding:40px;color
 subs.forEach(sub=>{
 const img=sub.imageId?sub.imageId.baseUrl+sub.imageId.key:'https://cdn-icons-png.flaticon.com/512/5780/5780875.png';
 const li=document.createElement('li');li.className='subj-item';
-li.innerHTML=`<a class="subj-link" href="/content?batchId=${ep(BATCH_ID)}&subjectId=${ep(sub._id)}&batchName=${ep(BATCH_NAME)}&subjectName=${ep(sub.subject)}"><img class="subj-img" src="${esc(img)}" alt="${esc(sub.subject)}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/5780/5780875.png'"><div class="subj-cnt"><div class="subj-info"><div class="subj-name">${esc(sub.subject)}</div><div class="subj-count">${sub.tagCount||0} Chapters</div></div><span class="subj-arr"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span></div></a>`;
+li.innerHTML=`<a class="subj-link" href="/content2?batchId=${ep(BATCH_ID)}&subjectId=${ep(sub._id)}&batchName=${ep(BATCH_NAME)}&subjectName=${ep(sub.subject)}"><img class="subj-img" src="${esc(img)}" alt="${esc(sub.subject)}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/5780/5780875.png'"><div class="subj-cnt"><div class="subj-info"><div class="subj-name">${esc(sub.subject)}</div><div class="subj-count">${sub.tagCount||0} Chapters</div></div><span class="subj-arr"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span></div></a>`;
 list.appendChild(li);
 });
 }catch{document.getElementById('subj-list').innerHTML='<li style="text-align:center;padding:40px;color:#64748b">Failed to load</li>';}
