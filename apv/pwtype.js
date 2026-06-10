@@ -400,8 +400,9 @@
 
     function playVideo(mode) {
       if (!currentVideo) return;
+        
       const target = "/study-v2/player";
-      window.location.href = `${target}?video_id=${encodeURIComponent(currentVideo.findKey)}&subject_slug=${encodeURIComponent(subjectSlug)}&batch_id=${encodeURIComponent(batchId)}&schedule_id=${encodeURIComponent(currentVideo._id)}&subject_id=${encodeURIComponent(subjectId || subjectSlug)}&topicSlug=${encodeURIComponent(topicSlug)}`;
+      window.location.href = `${target}?video_id=${encodeURIComponent(currentVideo.findKey)}&subject_slug=${encodeURIComponent(subjectSlug)}&batchId=${encodeURIComponent(batchId)}&scheduleId=${encodeURIComponent(currentVideo._id)}&subjectId=${encodeURIComponent(subjectId || subjectSlug)}&topicSlug=${encodeURIComponent(topicSlug)}`;
     }
 
     
