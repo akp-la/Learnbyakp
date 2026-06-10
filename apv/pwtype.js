@@ -401,11 +401,11 @@
     function playVideo(mode) {
       if (!currentVideo) return;
         
-      const target = "/study-v2/player";
+      const target = "https://stream.testuk.org/schedule-details";
       window.location.href = `${target}?video_id=${encodeURIComponent(currentVideo.findKey)}&subject_slug=${encodeURIComponent(subjectSlug)}&batchId=${encodeURIComponent(batchId)}&scheduleId=${encodeURIComponent(currentVideo._id)}&subjectId=${encodeURIComponent(subjectId || subjectSlug)}&topicSlug=${encodeURIComponent(topicSlug)}`;
     }
 
-    
+    ///study-v2/player
 
     // Hook listeners
     pdfOpenBtn.addEventListener("click", () => handlePdfOpen("open"));
