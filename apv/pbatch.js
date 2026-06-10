@@ -457,7 +457,7 @@ function goToStudy(batch){
   if(location.protocol === "file:"){
     window.location.href = `batches/subject.html?${query}`;
   }else{
-    window.location.href = `/study-v2/batches/subject?${query}`;
+    window.location.href = `/study-v2/batches/subject2?${query}`;
   }
 }
 
