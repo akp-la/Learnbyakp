@@ -453,7 +453,7 @@ function handleBatchGridClick(event){
 }
 
 function goToStudy(batch){
-  const query = `batchid=${encodeURIComponent(batch.id)}&name=${encodeURIComponent(batch.name)}`;
+  const query = `batchId=${encodeURIComponent(batch.id)}&batchName=${encodeURIComponent(batch.name)}`;
   if(location.protocol === "file:"){
     window.location.href = `batches/subject.html?${query}`;
   }else{
