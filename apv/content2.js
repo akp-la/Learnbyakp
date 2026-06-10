@@ -106,7 +106,7 @@ async function loadPage(){
       const li=document.createElement('li');
       li.className='chapter-item';
       li.innerHTML=
-        `<a class="chapter-link" href="/type2?batchId=${ep(BATCH_ID)}&subjectId=${ep(SUBJECT_ID)}&chapterId=${ep(ch._id)}&batchName=${ep(BATCH_NAME)}&subjectName=${ep(SUBJECT_NAME)}&chapterName=${ep(ch.name)}&section=videos">
+        `<a class="chapter-link" href="type2?batchId=${ep(BATCH_ID)}&subjectId=${ep(SUBJECT_ID)}&chapterId=${ep(ch._id)}&batchName=${ep(BATCH_NAME)}&subjectName=${ep(SUBJECT_NAME)}&chapterName=${ep(ch.name)}&section=videos">
           <div class="chapter-content">
             <div class="chapter-name">${esc(ch.name)}</div>
             <div class="chapter-counts">
