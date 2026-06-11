@@ -283,7 +283,7 @@
         if (topic.includes("recorded")) {
         window.location.href = `/study-v2/player?${query2}`;
       } else {
-        window.location.href = `https://stream.testuk.org/schedule-details?${query2}`;
+        window.location.href = `https://rarestudy.in/schedule-details?${query2}`;
       }
     }
 ///study-v2/player?${query}  
