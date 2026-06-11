@@ -565,7 +565,7 @@ app.get('/slides', async (req, res) => {
     const batchId = req.query.batch_id;
     const subjectId = req.query.subject_id;
     const scheduleId = req.query.schedule_id;
-
+    const type = req.query.type
     // Validation - सभी parameters ज़रूरी हैं
     if (!batchId || !subjectId || !scheduleId) {
         return res.status(400).json({
@@ -576,7 +576,7 @@ app.get('/slides', async (req, res) => {
     }
 
     // Dynamic API URL build करें
-    const apiUrl = `https://api.penpencil.co/v1/batches/${batchId}/subject/${subjectId}/schedule/${scheduleId}/slides`;
+    const apiUrl = `https://api.penpencil.co/v1/batches/${batchId}/subject/${subjectId}/schedule/${scheduleId}/${type}`;
 
     console.log('📡 Calling API:', apiUrl);
 
@@ -601,7 +601,6 @@ app.get('/slides', async (req, res) => {
         });
     }
 });
-
 
   //=====xdcfdsfsd
 
