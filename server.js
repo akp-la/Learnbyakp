@@ -877,21 +877,35 @@ app.get('/api/rwa/contents/:batchId/:subjectId/:topicId', async (req, res) => {
 });
 
 
-app.get('/get-auth-backup', async (req, res) => {
+app.get('/proxy-get-auth-backup', async (req, res) => {
   try {
     const response = await axios.get('https://streamfiles.eu.org/api/get_auth_backup.php', {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Referer': 'https://streamfiles.eu.org/',
+        'Origin': 'https://streamfiles.eu.org',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-Mode': 'no-cors',
+        'Sec-Fetch-Dest': 'empty'
       },
-      timeout: 10000
+      timeout: 15000,
+      httpAgent: new (require('http').Agent)({ keepAlive: true }),
+      httpsAgent: new (require('https').Agent)({ keepAlive: true })
     });
 
-    res.status(response.status).json(response.data);
+    // Raw response return (JSON body)
+    res.setHeader('Content-Type', 'application/json');
+    res.status(response.status).send(response.data);
   } catch (error) {
     console.error('Proxy error:', error.message);
     res.status(error.response?.status || 500).json({
       error: 'Failed to fetch from streamfiles.eu.org',
-      message: error.message
+      message: error.message,
+      status: error.response?.status
     });
   }
 });
