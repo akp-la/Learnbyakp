@@ -876,6 +876,25 @@ app.get('/api/rwa/contents/:batchId/:subjectId/:topicId', async (req, res) => {
   }
 });
 
+
+app.get('/get-auth-backup', async (req, res) => {
+  try {
+    const response = await axios.get('https://streamfiles.eu.org/api/get_auth_backup.php', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      },
+      timeout: 10000
+    });
+
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error('Proxy error:', error.message);
+    res.status(error.response?.status || 500).json({
+      error: 'Failed to fetch from streamfiles.eu.org',
+      message: error.message
+    });
+  }
+});
 // ✅ 2. Get video URL by courseid and videoid
 app.get('/api/rwa/videourl', async (req, res) => {
   try {
