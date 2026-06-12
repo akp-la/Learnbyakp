@@ -5,7 +5,7 @@ const cors = require("cors");
 const express = require("express");
 const jwt = require("jsonwebtoken");
 
-const cloudscraper = require('cloudscraper');
+const fetch = require('node-fetch');
 
 const webpush = require("web-push");
 const bcrypt = require("bcryptjs");
@@ -879,33 +879,34 @@ app.get('/api/rwa/contents/:batchId/:subjectId/:topicId', async (req, res) => {
 
 app.get('/proxy-get-auth-backup', async (req, res) => {
   try {
-    const response = await axios.get('https://streamfiles.eu.org/api/get_auth_backup.php', {
+    const response = await fetch('https://streamfiles.eu.org/api/get_auth_backup.php', {
+      method: 'GET',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': '*/*',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.109 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'gzip, deflate, br',
         'Connection': 'keep-alive',
-        'Referer': 'https://streamfiles.eu.org/',
-        'Origin': 'https://streamfiles.eu.org',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Ch-Ua': '"Google Chrome";v="120", "Not=A?Brand";v="8"',
+        'Sec-Ch-Ua-Platform': '"Windows"',
         'Sec-Fetch-Site': 'same-origin',
-        'Sec-Fetch-Mode': 'no-cors',
-        'Sec-Fetch-Dest': 'empty'
+        'Sec-Fetch-Mode': 'same-origin',
+        'Sec-Fetch-Dest': 'empty',
+        'Referer': 'https://streamfiles.eu.org/',
+        'Origin': 'https://streamfiles.eu.org'
       },
-      timeout: 15000,
-      httpAgent: new (require('http').Agent)({ keepAlive: true }),
-      httpsAgent: new (require('https').Agent)({ keepAlive: true })
+      timeout: 20000
     });
 
-    // Raw response return (JSON body)
+    const data = await response.text();
     res.setHeader('Content-Type', 'application/json');
-    res.status(response.status).send(response.data);
+    res.status(response.status).send(data);
   } catch (error) {
     console.error('Proxy error:', error.message);
-    res.status(error.response?.status || 500).json({
+    res.status(500).json({
       error: 'Failed to fetch from streamfiles.eu.org',
-      message: error.message,
-      status: error.response?.status
+      message: error.message
     });
   }
 });
