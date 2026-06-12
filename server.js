@@ -4,7 +4,7 @@ const admin = require("firebase-admin");
 const cors = require("cors");
 const express = require("express");
 const jwt = require("jsonwebtoken");
-const { chromium } = require('playwright');
+
 
 const cloudscraper = require('cloudscraper');
 
@@ -878,71 +878,7 @@ app.get('/api/rwa/contents/:batchId/:subjectId/:topicId', async (req, res) => {
 });
 
 
-let browser = null;
 
-async function getBrowser() {
-  if (!browser) {
-    browser = await chromium.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-blink-features=ForceCanvasItemOwnBackingStore'
-      ]
-    });
-  }
-  return browser;
-}
-
-app.get('/proxy-get-auth-backup', async (req, res) => {
-  try {
-    const browser = await getBrowser();
-    const page = await browser.newPage();
-
-    // Set realistic user agent and headers
-    await page.setExtraHTTPHeaders({
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.109 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Accept-Encoding': 'gzip, deflate, br',
-      'Connection': 'keep-alive',
-      'Upgrade-Insecure-Requests': '1',
-      'Sec-Ch-Ua': '"Google Chrome";v="120", "Not=A?Brand";v="8"',
-      'Sec-Ch-Ua-Platform': '"Windows"',
-      'Sec-Fetch-Site': 'same-origin',
-      'Sec-Fetch-Mode': 'same-origin',
-      'Sec-Fetch-Dest': 'empty',
-      'Referer': 'https://streamfiles.eu.org/',
-      'Origin': 'https://streamfiles.eu.org'
-    });
-
-    // Navigate to API and wait for response
-    const response = await page.goto('https://streamfiles.eu.org/api/get_auth_backup.php', {
-      waitUntil: 'networkidle',
-      timeout: 30000
-    });
-
-    // Get response body
-    const data = await response.text();
-    
-    await page.close();
-
-    res.setHeader('Content-Type', 'application/json');
-    res.status(response.status()).send(data);
-  } catch (error) {
-    console.error('Playwright error:', error.message);
-    res.status(500).json({
-      error: 'Failed to fetch from streamfiles.eu.org',
-      message: error.message
-    });
-  }
-});
-
-// Cleanup on shutdown
-process.on('SIGTERM', async () => {
-  if (browser) await browser.close();
-  process.exit(0);
-});
 // ✅ 2. Get video URL by courseid and videoid
 app.get('/api/rwa/videourl', async (req, res) => {
   try {
