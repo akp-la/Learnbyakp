@@ -1,4 +1,4 @@
-f// ================== IMPORTS ==================
+// ================== IMPORTS ==================
 const functions = require("firebase-functions/v1"); // v1 import
 const admin = require("firebase-admin");
 const cors = require("cors");
