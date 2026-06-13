@@ -282,10 +282,10 @@
 
   // Fix: recorded और live के लिए अलग URL होना चाहिए (अगर वाक़ई अलग हैं)
   if (topic.includes("recorded")) {
-    window.location.href = `/study-v2/player?${query}`;
+    window.location.href = `/study-v2/player1?${query}`;
   } else {
     // Live class - same URL अगर तुमके कोड में एक ही है, तो condition हटा सकते हो
-    window.location.href = `/study-v2/player?${query}`;
+    window.location.href = `/study-v2/player1?${query}`;
   }
 }
 
