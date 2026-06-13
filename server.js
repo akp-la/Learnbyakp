@@ -1,4 +1,4 @@
-// ================== IMPORTS ==================
+f// ================== IMPORTS ==================
 const functions = require("firebase-functions/v1"); // v1 import
 const admin = require("firebase-admin");
 const cors = require("cors");
@@ -607,8 +607,8 @@ app.get('/slides', async (req, res) => {
 const PW_HEADERS1 = {
     "Accept-Encoding": "gzip",
     "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 11; SM-A707F Build/RP1A.200720.012)",
-    "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbmMiOiJWU3dmM3FDNzVpbVhkN3pRNzdlRTctNjhpdkllMjhUOFEyallFVkEzTUVVTVhnMjN0b1gzNmhTcmpXNW9lMFREWC1qUUE4RUZHb0lRTDF4c1lVNEd2aXBNUDg4WFZoMmVnVmxoMkFpRkFadVRRNlZHVXpCNGJtOGhiQUlrQnVBWmpYb2R1bzl6ZzFlNUg2MnNrejhDRFM2c0RybmxEeE15ZkdlZ0llQ0U0ZWdaQ0Z6LWJKVkpSZXFteXBWUlo1M0wtM2ZMUEFZbUl0Y0pXUHJKeUpOQWp2SWFJWVZGRktaT0ZGUUVlZEh3MzFXcGpJRnRlZnJIeGtjX0d1WFFTWHJZOUY3MWwyY3VNeFFvNWFTUGczLXF2U3ciLCJleHAiOjE3ODE0MTkwMTIsImlhdCI6MTc4MTMzMjYxMiwianRpIjoiZjlmYTE1MjVjYTkxYTcyYmY2Y2JmNzI1Iiwic3ViIjoiNzhkODFlNGU0NzdkOTgwe1d2d953fd5783831ZDUhODM4MzEiLC",
-    "client-id": "78d81e4e477d980e1d2d953fd5783831",
+    "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODE5Njg3OTcuNzg1LCJkYXRhIjp7Il9pZCI6IjZhMmQ3NTBjYmRmMWQxZTM5YzE2ZDU5YyIsInVzZXJuYW1lIjoiNjM5MTA1MTI4MiIsImZpcnN0TmFtZSI6IiIsImxhc3ROYW1lIjoiIiwib3JnYW5pemF0aW9uIjp7Il9pZCI6IjVlYjM5M2VlOTVmYWI3NDY4YTc5ZDE4OSIsIndlYnNpdGUiOiJwaHlzaWNzd2FsbGFoLmNvbSIsIm5hbWUiOiJQaHlzaWNzd2FsbGFoIn0sInJvbGVzIjpbIjViMjdiZDk2NTg0MmY5NTBhNzc4YzZlZiJdLCJjb3VudHJ5R3JvdXAiOiJJTiIsIm9uZVJvbGVzIjpbXSwidHlwZSI6IlVTRVIifSwianRpIjoiT2RnU3p2MUtURnlmWWlBU3l5N1NqUV82YTJkNzUwY2JkZjFkMWUzOWMxNmQ1OWMiLCJpYXQiOjE3ODEzNjM5OTd9.oJgZM7MzVB7nN-dlIW64uzo-G1XSC2xOUTPuY4-A-fI",
+    "client-id": "5eb393ee95fab7468a79d189",
     "client-type": "web",
     "client-version": "200",
     "content-type": "application/json",
