@@ -248,120 +248,126 @@
     }
 
     function openClass(item) {
-      const topic = (item.topic || "").toLowerCase();
+  const topic = (item.topic || "").toLowerCase();
 
-      if (topic.includes("cancelled") || topic.includes("canceled")) {
-        showToast("This class is cancelled.");
-        return;
+  // Cancelled class check
+  if (topic.includes("cancelled") || topic.includes("canceled")) {
+    showToast("This class is cancelled.");
+    return;
+  }
+
+  startLoading();
+
+  const videoId = item.videoDetails?.findKey || item._id;
+  const subjectSlug = item.subjectId?.slug || "";
+  const subjectId = item.subjectId?._id || "";
+  const scheduleId = item._id || "";
+  const targetBatchId = item.batchId || batchId || "";
+  
+  // Fix: batchNameFromUrl को सुरक्षित तरीके से हैंडल करें
+  const title = typeof batchNameFromUrl !== 'undefined' ? batchNameFromUrl : (item.batchName || "Class");
+    const time = item.startTime 
+  ? Math.floor(new Date(item.startTime).getTime() / 1000) 
+  : "";
+
+  // Fix: escapeHtml को साबिस्टेंड में इकॉनसिस्टेंसी ठीक करें
+  const query =
+    `video_id=${encodeURIComponent(videoId)}` +
+    `&subject_slug=${encodeURIComponent(subjectSlug)}` +
+    `&batch_id=${encodeURIComponent(targetBatchId)}` +
+    `&schedule_id=${encodeURIComponent(scheduleId)}` +
+    `&subject_id=${encodeURIComponent(subjectId)}` +
+    `&title=${encodeURIComponent(title)}` +
+    `&time=${encodeURIComponent(time)}`;
+
+  // Fix: recorded और live के लिए अलग URL होना चाहिए (अगर वाक़ई अलग हैं)
+  if (topic.includes("recorded")) {
+    window.location.href = `/study-v2/player?${query}`;
+  } else {
+    // Live class - same URL अगर तुमके कोड में एक ही है, तो condition हटा सकते हो
+    window.location.href = `/study-v2/player?${query}`;
+  }
+}
+
+function renderLiveClasses() {
+  const query = liveSearch.value.trim().toLowerCase();
+
+  const filtered = liveClasses.filter(item => {
+    const searchable = [
+      item.topic,
+      item.tag,
+      item.subjectId?.name,
+      item.teachers?.[0]?.name,
+      item.batchId,
+      item._id
+    ].join(" ").toLowerCase();
+
+    return searchable.includes(query);
+  });
+
+  if (!filtered.length) {
+    liveArea.innerHTML = `<div class="empty-card" style="width:100%;">No live classes scheduled for today.</div>`;
+    return;
+  }
+
+  liveArea.innerHTML = filtered.map((item, index) => {
+    const topic = safeText(item.topic, "Untitled Class");
+    const subject = safeText(item.subjectId?.name, "Subject");
+    const teacher = safeText(item.teachers?.[0]?.name, "N/A");
+    const image = item.videoDetails?.image || DEFAULT_THUMB;
+    const disabled = isDisabledClass(item);
+    const formattedTime = getTime(item.startTime);
+
+    return `
+      <article class="live-card">
+        <div class="thumb">
+          <img src="${escapeHtml(image)}" alt="${escapeHtml(topic)}" loading="lazy" onerror="this.src='${DEFAULT_THUMB}'" />
+          ${getClassBadge(item)}
+        </div>
+
+        <div class="live-body">
+          <p class="subject-name">${escapeHtml(subject)}</p>
+          <h3 class="live-title">${escapeHtml(topic)}</h3>
+
+          <div class="meta-row">
+            <span title="${escapeHtml(teacher)}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-8 0v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              ${escapeHtml(teacher)}
+            </span>
+            <span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 6v6l4 2"></path>
+              </svg>
+              ${escapeHtml(formattedTime)}
+            </span>
+          </div>
+
+          <button class="btn btn-primary play-btn" data-live-index="${index}" ${disabled ? "disabled" : ""}>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="m10 8 6 4-6 4V8z"></path>
+            </svg>
+            Play
+          </button>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  // Fix: Button event listeners सही से attach करें
+  [...liveArea.querySelectorAll("[data-live-index]")].forEach(button => {
+    button.addEventListener("click", () => {
+      const selectedItem = filtered[Number(button.dataset.liveIndex)];
+      if (selectedItem) {
+        openClass(selectedItem);
       }
-
-      startLoading();
-
-      const videoId = item.videoDetails?.findKey || item._id;
-      const subjectSlug = item.subjectId?.slug || "";
-      const subjectId = item.subjectId?._id || "";
-      const scheduleId = item._id || "";
-      const targetBatchId = item.batchId || batchId || "";
-      const title = batchNameFromUrl;
-          const query2 =
-        `video_id=${encodeURIComponent(videoId)}` +
-        `&subject_slug=${encodeURIComponent(subjectSlug)}` +
-        `&batchId=${encodeURIComponent(targetBatchId)}` +
-        `&scheduleId=${encodeURIComponent(scheduleId)}` +
-        `&subjectId=${encodeURIComponent(subjectId)}`+
-        `&title= ${escapeHtml(topic)}`;
-      const query =
-        `video_id=${encodeURIComponent(videoId)}` +
-        `&subject_slug=${encodeURIComponent(subjectSlug)}` +
-        `&batch_id=${encodeURIComponent(targetBatchId)}` +
-        `&schedule_id=${encodeURIComponent(scheduleId)}` +
-        `&subject_id=${encodeURIComponent(subjectId)}`+
-        `&title= ${escapeHtml(topic)}`+
-            `&tap=video`;
-    
-      
-        if (topic.includes("recorded")) {
-        window.location.href = `/study-v2/player?${query2}`;
-      } else {
-        window.location.href = `https://rarestudy.in/schedule-details?${query2}`;
-      }
-    }
-///study-v2/player?${query}  
-    function renderLiveClasses() {
-      const query = liveSearch.value.trim().toLowerCase();
-
-      const filtered = liveClasses.filter(item => {
-        const searchable = [
-          item.topic,
-          item.tag,
-          item.subjectId?.name,
-          item.teachers?.[0]?.name,
-          item.batchId,
-          item._id
-        ].join(" ").toLowerCase();
-
-        return searchable.includes(query);
-      });
-
-      if (!filtered.length) {
-        liveArea.innerHTML = `<div class="empty-card" style="width:100%;">No live classes scheduled for today.</div>`;
-        return;
-      }
-
-      liveArea.innerHTML = filtered.map((item, index) => {
-        const topic = safeText(item.topic, "Untitled Class");
-        const subject = safeText(item.subjectId?.name, "Subject");
-        const teacher = safeText(item.teachers?.[0]?.name, "N/A");
-        const image = item.videoDetails?.image || DEFAULT_THUMB;
-        const disabled = isDisabledClass(item);
-
-        return `
-          <article class="live-card">
-            <div class="thumb">
-              <img src="${escapeHtml(image)}" alt="${escapeHtml(topic)}" loading="lazy" onerror="this.src='${DEFAULT_THUMB}'" />
-              ${getClassBadge(item)}
-            </div>
-
-            <div class="live-body">
-              <p class="subject-name">${escapeHtml(subject)}</p>
-              <h3 class="live-title">${escapeHtml(topic)}</h3>
-
-              <div class="meta-row">
-                <span title="${escapeHtml(teacher)}">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M16 21v-2a4 4 0 0 0-8 0v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                  </svg>
-                  ${escapeHtml(teacher)}
-                </span>
-                <span>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M12 6v6l4 2"></path>
-                  </svg>
-                  ${escapeHtml(getTime(item.startTime))}
-                </span>
-              </div>
-
-              <button class="btn btn-primary play-btn" data-live-index="${index}" ${disabled ? "disabled" : ""}>
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <path d="m10 8 6 4-6 4V8z"></path>
-                </svg>
-                Play
-              </button>
-            </div>
-          </article>
-        `;
-      }).join("");
-
-      [...liveArea.querySelectorAll("[data-live-index]")].forEach(button => {
-        button.addEventListener("click", () => {
-          const selectedItem = filtered[Number(button.dataset.liveIndex)];
-          if (selectedItem) openClass(selectedItem);
-        });
-      });
-    }
+    });
+  });
+}
 
     function openSubject(subject) {
       if (!batchId) {
