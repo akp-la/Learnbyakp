@@ -603,20 +603,22 @@ app.get('/slides', async (req, res) => {
     }
 });
 
-    const PW_HEADERS1 = {
+ // PW Headers constant - आपके दिए headers use कर रहे हैं
+const PW_HEADERS1 = {
     "Accept-Encoding": "gzip",
     "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 11; SM-A707F Build/RP1A.200720.012)",
     "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbmMiOiJWU3dmM3FDNzVpbVhkN3pRNzdlRTctNjhpdkllMjhUOFEyallFVkEzTUVVTVhnMjN0b1gzNmhTcmpXNW9lMFREWC1qUUE4RUZHb0lRTDF4c1lVNEd2aXBNUDg4WFZoMmVnVmxoMkFpRkFadVRRNlZHVXpCNGJtOGhiQUlrQnVBWmpYb2R1bzl6ZzFlNUg2MnNrejhDRFM2c0RybmxEeE15ZkdlZ0llQ0U0ZWdaQ0Z6LWJKVkpSZXFteXBWUlo1M0wtM2ZMUEFZbUl0Y0pXUHJKeUpOQWp2SWFJWVZGRktaT0ZGUUVlZEh3MzFXcGpJRnRlZnJIeGtjX0d1WFFTWHJZOUY3MWwyY3VNeFFvNWFTUGczLXF2U3ciLCJleHAiOjE3ODE0MTkwMTIsImlhdCI6MTc4MTMzMjYxMiwianRpIjoiZjlmYTE1MjVjYTkxYTcyYmY2Y2JmNzI1Iiwic3ViIjoiNzhkODFlNGU0NzdkOTgwZTFkMmQ5NTNmZDU3ODM4MzEiLCJ1YSI6Ijk4ODQ4OTY1ODBiYmQ5Mjg1YjhhMDc4MmVhN2FlNjNkZTAxZWQ1ZjQ3MWQxYmFiNjIwMmRlMDYzMGMwMzk5YTMifQ.WxT0ZpJo769jcBNxFeF9WR4YOxHe-G4I4sI2FU4K-Kc",
-    "client-id": "ADMIN",
+    "client-id": "78d81e4e477d980e1d2d953fd5783831.aJuuqRiC7jXBN0tmO3jbYJCmatfi4IfVKFVl4EX9mA4",
     "client-type": "MOBILE",
     "client-version": "538",
     "content-type": "application/json",
-    "device-meta": "{\"APP_VERSION\":\"538\",\"APP_VERSION_NAME\":\"15.32.0\",\"DEVICE_MAKE\":\"Samsung\",\"DEVICE_MODEL\":\"SM-A707F\",\"OS_VERSION\":\"11\",\"PACKAGE_NAME\":\"xyz.penpencil.physicswala\",\"network\":\"wifi_data\",\"carrier\":\"UNDEFINED\"}",
+    "device-meta": "{\"APP_VERSION\":\"201\",\"APP_VERSION_NAME\":\"15.32.0\",\"DEVICE_MAKE\":\"Samsung\",\"DEVICE_MODEL\":\"SM-A707F\",\"OS_VERSION\":\"11\",\"PACKAGE_NAME\":\"xyz.penpencil.physicswala\",\"network\":\"wifi_data\",\"carrier\":\"UNDEFINED\"}",
     "randomid": "d054aefb-8a77-4ae1-bbf6-77c0e1931374",
     "referer": "https://android.pw.live"
 };
+
+// Video URL Details API Proxy
 app.get('/video-url-details', async (req, res) => {
-    // Query parameters से data ले
     const type = req.query.type;
     const videoContainerType = req.query.videoContainerType;
     const reqType = req.query.reqType;
@@ -660,6 +662,9 @@ app.get('/video-url-details', async (req, res) => {
         });
     }
 });
+
+// Slides API Proxy (पहले जैसा)
+
   //=====xdcfdsfsd
 
   app.get("/api/science/previous-live", async (req, res) => {
