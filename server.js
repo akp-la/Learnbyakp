@@ -546,6 +546,29 @@ res.json(data);
     res.status(500).json({ error: err.toString() });
   }
 });
+//frytdrtdtsdf
+  app.get('/proxy/schedule', async (req, res) => {
+  const { BatchId, SubjectId, ContentId } = req.query;
+
+  const url = `https://pwthor.live/api/Schedule?BatchId=${BatchId}&SubjectId=${SubjectId}&ContentId=${ContentId}`;
+
+  const cfResp = await fetch(url, {
+    method: 'GET',
+    // server side पे full redirect allow करो
+    redirect: 'follow'
+  });
+
+  const text = await cfResp.text();
+
+  // अगर JSON है तो parse करके client को दो
+  try {
+    const json = JSON.parse(text);
+    res.json(json);
+  } catch {
+    // यहाँ अगर challenge HTML आया है तो समझ जाओ अभी भी Cloudflare block कर रहा है
+    res.status(502).send('Cloudflare challenge/not JSON');
+  }
+});
 //========science===
   const PW_HEADERS = {
     "Accept-Encoding": "gzip",
