@@ -604,65 +604,63 @@ app.get('/slides', async (req, res) => {
 });
 
  // PW Headers constant - आपके दिए headers use कर रहे हैं
-const PW_HEADERS1 = {
-    "Accept-Encoding": "gzip",
-    "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 11; SM-A707F Build/RP1A.200720.012)",
-    "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODE5Njg3OTcuNzg1LCJkYXRhIjp7Il9pZCI6IjZhMmQ3NTBjYmRmMWQxZTM5YzE2ZDU5YyIsInVzZXJuYW1lIjoiNjM5MTA1MTI4MiIsImZpcnN0TmFtZSI6IiIsImxhc3ROYW1lIjoiIiwib3JnYW5pemF0aW9uIjp7Il9pZCI6IjVlYjM5M2VlOTVmYWI3NDY4YTc5ZDE4OSIsIndlYnNpdGUiOiJwaHlzaWNzd2FsbGFoLmNvbSIsIm5hbWUiOiJQaHlzaWNzd2FsbGFoIn0sInJvbGVzIjpbIjViMjdiZDk2NTg0MmY5NTBhNzc4YzZlZiJdLCJjb3VudHJ5R3JvdXAiOiJJTiIsIm9uZVJvbGVzIjpbXSwidHlwZSI6IlVTRVIifSwianRpIjoiT2RnU3p2MUtURnlmWWlBU3l5N1NqUV82YTJkNzUwY2JkZjFkMWUzOWMxNmQ1OWMiLCJpYXQiOjE3ODEzNjM5OTd9.oJgZM7MzVB7nN-dlIW64uzo-G1XSC2xOUTPuY4-A-fI",
-    "client-id": "5eb393ee95fab7468a79d189",
-    "client-type": "web",
-    "client-version": "200",
-    "content-type": "application/json",
-    "device-meta": "{\"APP_VERSION\":\"201\",\"APP_VERSION_NAME\":\"15.32.0\",\"DEVICE_MAKE\":\"Samsung\",\"DEVICE_MODEL\":\"SM-A707F\",\"OS_VERSION\":\"11\",\"PACKAGE_NAME\":\"xyz.penpencil.physicswala\",\"network\":\"wifi_data\",\"carrier\":\"UNDEFINED\"}",
-    "randomid": "c3139bcc-f02b-4447-b365-1a83d33fe209",
-    "referer": "https://www.pw.live/"
-};
+app.get('/api/folder-contents', async (req, res) => {
+  const { course_id, parent_id } = req.query;
+  
+  // Get auth headers from frontend request (आपको frontend से pass करना होगा)
+  //req.headers.authorization
+  const authorization = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjEyODc2MDAiLCJ0aW1lc3RhbXAiOjE3ODE0MDk4OTEsIml2X3ZlciI6Miwic2Vzc2lvbiI6ImV5SjBlWEFpT2lKS1YxUWlMQ0poYkdjaU9pSklVekkxTmlKOS5leUpwWkNJNklqRXlPRGMyTURBaUxDSmxiV0ZwYkNJNklqazFOVGs1TnpVek56QkFaMjFoYVd3dVkyOXRJaXdpYm1GdFpTSTZJaUlzSW5SbGJtRnVkRlI1Y0dVaU9pSjFjMlZ5SWl3aWRHVnVZVzUwVG1GdFpTSTZJbUZ5YldGMGFITmZaR0lpTENKMFpXNWhiblJKWkNJNklpSXNJbVJwYzNCdmMyRmliR1VpT21aaGJITmxmUS5EbmNwSzhSWWd6ZzJsSHUxVkZKaVluYjVGMjlwTk52eW1ZdUZqUkxIV004In0.ftduhO--p4Ku0CHqlfbstlPH9PezVtGmWYKaBmSv5UI";
+  const userid = "1287600";
+  const authtoken = "appxapi";
 
-// Video URL Details API Proxy
-app.get('/video-url-details', async (req, res) => {
-    const type = req.query.type;
-    const videoContainerType = req.query.videoContainerType;
-    const reqType = req.query.reqType;
-    const childId = req.query.childId;
-    const parentId = req.query.parentId;
-    const clientVersion = req.query.clientVersion;
-    
-    // Validation - ज़रूरी parameters check करें
-    if (!childId || !parentId) {
-        return res.status(400).json({
-            error: 'Missing required parameters',
-            required: ['childId', 'parentId'],
-            optional: ['type', 'videoContainerType', 'reqType', 'clientVersion'],
-            example: '/video-url-details?childId=6a254eaeb2693eb9c1bacbdb&parentId=6a2253ac05c2bcab64358b84&type=BATCHES&videoContainerType=DASH&reqType=query&clientVersion=201'
-        });
-    }
+  // Build the target URL
+  const targetUrl = new URL('https://armathsapi.akamai.net.in/get/folder_contentsv3');
+  targetUrl.searchParams.set('course_id', course_id);
+  targetUrl.searchParams.set('parent_id', parent_id || '');
+  targetUrl.searchParams.set('windowsapp', 'false');
+  targetUrl.searchParams.set('start', '0');
 
-    // Dynamic API URL build करें
-    const apiUrl = `https://api.penpencil.co/v1/videos/video-url-details?type=${type || 'BATCHES'}&videoContainerType=${videoContainerType || 'DASH'}&reqType=${reqType || 'query'}&childId=${childId}&parentId=${parentId}&clientVersion=${clientVersion || '201'}`;
-
-    console.log('📡 Calling API:', apiUrl);
-
-    try {
-        const response = await axios.get(apiUrl, {
-            headers: PW_HEADERS1,
-            timeout: 10000,
-        });
-
-        res.status(200).json(response.data);
-    } catch (error) {
-        console.error('API Error:', error.message);
+  try {
+    const response = await axios.get(targetUrl.toString(), {
+      headers: {
+        //狗仔 सभी जरूरी headers
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Origin': 'https://armaths.akamai.net.in',
+        'Referer': 'https://armaths.akamai.net.in/',
+        'source': 'website',
+        'client-service':'Appx',
+        'Device-Type': '',
+        // Authorization headers (frontend से pass करें)
+        ...(authorization && { 'Authorization': authorization }),
+        ...(userid && { 'User-Id': userid }),
+        ...(authtoken && { 'Auth-Key': authtoken }),
         
-        const errorStatus = error.response?.status || 500;
-        const errorData = error.response?.data || { message: error.message };
+        // Additional headers (अगर API में चाहिए)
+
+
         
-        res.status(errorStatus).json({
-            error: errorData.message || error.message,
-            status: errorStatus,
-            details: errorData,
-            api_url: apiUrl
-        });
-    }
+        // Akamai bot detection bypass
+        'X-Forwarded-For': '127.0.0.1',
+        'X-Real-IP': '127.0.0.1',
+      },
+      timeout: 10000,
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Proxy error:', error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.message,
+      status: error.response?.status,
+      headers_sent: {
+        authorization: authorization ? 'yes' : 'no',
+        userid: userid ? 'yes' : 'no'
+      }
+    });
+  }
 });
-
 // Slides API Proxy (पहले जैसा)
 
   //=====xdcfdsfsd
