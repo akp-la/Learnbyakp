@@ -604,16 +604,33 @@ app.get('/slides', async (req, res) => {
 });
 
  // PW Headers constant - आपके दिए headers use कर रहे हैं
+const AUTHORIZATION = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjEyODc2MDAiLCJ0aW1lc3RhbXAiOjE3ODE0MDk4OTEsIml2X3ZlciI6Miwic2Vzc2lvbiI6ImV5SjBlWEFpT2lKS1YxUWlMQ0poYkdjaU9pSklVekkxTmlKOS5leUpwWkNJNklqRXlPRGMyTURBaUxDSmxiV0ZwYkNJNklqazFOVGs1TnpVek56QkFaMjFoYVd3dVkyOXRJaXdpYm1GdFpTSTZJaUlzSW5SbGJtRnVkRlI1Y0dVaU9pSjFjMlZ5SWl3aWRHVnVZVzUwVG1GdFpTSTZJbUZ5YldGMGFITmZaR0lpTENKMFpXNWhiblJKWkNJNklpSXNJbVJwYzNCdmMyRmliR1VpT21aaGJITmxmUS5EbmNwSzhSWWd6ZzJsSHUxVkZKaVluYjVGMjlwTk52eW1ZdUZqUkxIV004In0.ftduhO--p4Ku0CHqlfbstlPH9PezVtGmWYKaBmSv5UI";
+const USERID = "1287600";
+const AUTHTOKEN = "appxapi";
+
+// Common headers function
+function getCommonHeaders() {
+  return {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'Accept': 'application/json',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Origin': 'https://armaths.akamai.net.in',
+    'Referer': 'https://armaths.akamai.net.in/',
+    'source': 'website',
+    'client-service': 'Appx',
+    'Device-Type': '',
+    'Authorization': AUTHORIZATION,
+    'User-Id': USERID,
+    'Auth-Key': AUTHTOKEN,
+    'X-Forwarded-For': '127.0.0.1',
+    'X-Real-IP': '127.0.0.1',
+  };
+}
+
+// 1. Proxy folder_contentsv3
 app.get('/api/folder-contents', async (req, res) => {
   const { course_id, parent_id } = req.query;
   
-  // Get auth headers from frontend request (आपको frontend से pass करना होगा)
-  //req.headers.authorization
-  const authorization = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjEyODc2MDAiLCJ0aW1lc3RhbXAiOjE3ODE0MDk4OTEsIml2X3ZlciI6Miwic2Vzc2lvbiI6ImV5SjBlWEFpT2lKS1YxUWlMQ0poYkdjaU9pSklVekkxTmlKOS5leUpwWkNJNklqRXlPRGMyTURBaUxDSmxiV0ZwYkNJNklqazFOVGs1TnpVek56QkFaMjFoYVd3dVkyOXRJaXdpYm1GdFpTSTZJaUlzSW5SbGJtRnVkRlI1Y0dVaU9pSjFjMlZ5SWl3aWRHVnVZVzUwVG1GdFpTSTZJbUZ5YldGMGFITmZaR0lpTENKMFpXNWhiblJKWkNJNklpSXNJbVJwYzNCdmMyRmliR1VpT21aaGJITmxmUS5EbmNwSzhSWWd6ZzJsSHUxVkZKaVluYjVGMjlwTk52eW1ZdUZqUkxIV004In0.ftduhO--p4Ku0CHqlfbstlPH9PezVtGmWYKaBmSv5UI";
-  const userid = "1287600";
-  const authtoken = "appxapi";
-
-  // Build the target URL
   const targetUrl = new URL('https://armathsapi.akamai.net.in/get/folder_contentsv3');
   targetUrl.searchParams.set('course_id', course_id);
   targetUrl.searchParams.set('parent_id', parent_id || '');
@@ -622,42 +639,67 @@ app.get('/api/folder-contents', async (req, res) => {
 
   try {
     const response = await axios.get(targetUrl.toString(), {
-      headers: {
-        //狗仔 सभी जरूरी headers
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Origin': 'https://armaths.akamai.net.in',
-        'Referer': 'https://armaths.akamai.net.in/',
-        'source': 'website',
-        'client-service':'Appx',
-        'Device-Type': '',
-        // Authorization headers (frontend से pass करें)
-        ...(authorization && { 'Authorization': authorization }),
-        ...(userid && { 'User-Id': userid }),
-        ...(authtoken && { 'Auth-Key': authtoken }),
-        
-        // Additional headers (अगर API में चाहिए)
-
-
-        
-        // Akamai bot detection bypass
-        'X-Forwarded-For': '127.0.0.1',
-        'X-Real-IP': '127.0.0.1',
-      },
+      headers: getCommonHeaders(),
       timeout: 10000,
     });
 
     res.json(response.data);
   } catch (error) {
-    console.error('Proxy error:', error.message);
+    console.error('Folder contents proxy error:', error.message);
     res.status(error.response?.status || 500).json({
       error: error.message,
-      status: error.response?.status,
-      headers_sent: {
-        authorization: authorization ? 'yes' : 'no',
-        userid: userid ? 'yes' : 'no'
-      }
+      status: error.response?.status
+    });
+  }
+});
+
+// 2. Proxy course_contents_by_live_status
+app.get('/api/live-courses', async (req, res) => {
+  const { course_id, start, live_status } = req.query;
+  
+  const targetUrl = new URL('https://armathsapi.akamai.net.in/get/course_contents_by_live_status');
+  targetUrl.searchParams.set('course_id', course_id || '74');
+  targetUrl.searchParams.set('start', start || '-1');
+  targetUrl.searchParams.set('live_status', live_status || '1');
+
+  try {
+    const response = await axios.get(targetUrl.toString(), {
+      headers: getCommonHeaders(),
+      timeout: 10000,
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Live courses proxy error:', error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.message,
+      status: error.response?.status
+    });
+  }
+});
+
+// 3. Proxy get_previous_live_videos
+app.get('/api/previous-live-videos', async (req, res) => {
+  const { course_id, start, folder_wise_course, userid } = req.query;
+  
+  const targetUrl = new URL('https://armathsapi.akamai.net.in/get/get_previous_live_videos');
+  targetUrl.searchParams.set('course_id', course_id || '74');
+  targetUrl.searchParams.set('start', start || '0');
+  targetUrl.searchParams.set('folder_wise_course', folder_wise_course || '1');
+  targetUrl.searchParams.set('userid', userid || USERID);
+
+  try {
+    const response = await axios.get(targetUrl.toString(), {
+      headers: getCommonHeaders(),
+      timeout: 10000,
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Previous live videos proxy error:', error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.message,
+      status: error.response?.status
     });
   }
 });
