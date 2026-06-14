@@ -703,6 +703,31 @@ app.get('/api/previous-live-videos', async (req, res) => {
     });
   }
 });
+  app.get('/api/video-details', async (req, res) => {
+  const { course_id, video_id, ytflag, folder_wise_course, lc_app_api_url } = req.query;
+  
+  const targetUrl = new URL('https://armathsapi.akamai.net.in/get/fetchVideoDetailsById');
+  targetUrl.searchParams.set('course_id', course_id || '74');
+  targetUrl.searchParams.set('video_id', video_id);
+  targetUrl.searchParams.set('ytflag', ytflag || '0');
+  targetUrl.searchParams.set('folder_wise_course', folder_wise_course || '1');
+  targetUrl.searchParams.set('lc_app_api_url', lc_app_api_url || '');
+
+  try {
+    const response = await axios.get(targetUrl.toString(), {
+      headers: getCommonHeaders(),
+      timeout: 10000,
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Video details proxy error:', error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.message,
+      status: error.response?.status
+    });
+  }
+});
 // Slides API Proxy (पहले जैसा)
 
   //=====xdcfdsfsd
