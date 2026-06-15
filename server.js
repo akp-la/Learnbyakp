@@ -547,58 +547,7 @@ res.json(data);
   }
 });
 //frytdrtdtsdf
-app.get('/proxy/schedule', async (req, res) => {
-  const { BatchId, SubjectId, ContentId } = req.query;
-
-  if (!BatchId || !SubjectId || !ContentId) {
-    return res.status(400).send("Missing parameters");
-  }
-
-  const url = `https://pwthor.live/api/Schedule?BatchId=${BatchId}&SubjectId=${SubjectId}&ContentId=${ContentId}`;
-
-  try {
-    const cfResp = await fetch(url, {
-      method: 'GET',
-      redirect: 'follow',
-      headers: {
-        // Browser jaisa dikhne ke liye basic headers
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.9,hi;q=0.8',
-        'Referer': 'https://pwthor.live/',
-        'Origin': 'https://pwthor.live',
-        'Connection': 'keep-alive',
-        'Sec-Fetch-Dest': 'empty',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'same-origin',
-        
-        // Aapke diye hue exact cookies aur caching header
-        'Cookie': 'auth_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtb2JpbGUiOiI5NTk0MjEwMDI0NDkiLCJuYW1lIjoiUFdUaG9yIFVzZXIgMDM5Y2E3MTkiLCJyYW5kb21JZCI6IjAzOWNhNzE5LWJmMzQtNDExNy04OTgyLWY1N2Q2ZjNhMjZlMiIsImF1dGhUeXBlIjoiZGlyZWN0X2xvZ2luIiwiZGlyZWN0TG9naW4iOnRydWUsImlhdCI6MTc4MTQ1MzE3MCwiZXhwIjoxNzg5MjI5MTcwfQ.Tlp5x9GM9BwHy0SD7X5dUpXXOyn19sMrD-gxwh4-GGI; api_handshake=1e210025945562a938e2ba6e89271216f611ae6887dc24c921f3a03c8dc50a2d',
-        'If-None-Match': '"exssnzf8m23wd"'
-      }
-    });
-
-    const status = cfResp.status;
-
-    // Agar original server 304 Not Modified bhejta hai, toh directly wahi return kardo
-    if (status === 304) {
-      return res.status(304).send();
-    }
-
-    const text = await cfResp.text();
-
-    try {
-      const json = JSON.parse(text);
-      res.status(status).json(json);
-    } catch (parseError) {
-      console.error("Cloudflare Block HTML snippet:", text.substring(0, 200));
-      res.status(502).send('Cloudflare challenge/not JSON. Cookies shayad expire ho gayi hain.');
-    }
-  } catch (error) {
-    console.error("Fetch Error:", error);
-    res.status(500).send('Proxy server error');
-  }
-});//========science===
+//========science===
   const PW_HEADERS = {
     "Accept-Encoding": "gzip",
     "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 11; SM-A707F Build/RP1A.200720.012)",
