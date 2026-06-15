@@ -547,26 +547,50 @@ res.json(data);
   }
 });
 //frytdrtdtsdf
-  app.get('/proxy/schedule', async (req, res) => {
+ app.get('/proxy/schedule', async (req, res) => {
   const { BatchId, SubjectId, ContentId } = req.query;
+
+  // Validate parameters if needed
+  if (!BatchId || !SubjectId || !ContentId) {
+    return res.status(400).send("Missing parameters");
+  }
 
   const url = `https://pwthor.live/api/Schedule?BatchId=${BatchId}&SubjectId=${SubjectId}&ContentId=${ContentId}`;
 
-  const cfResp = await fetch(url, {
-    method: 'GET',
-    // server side पे full redirect allow करो
-    redirect: 'follow'
-  });
-
-  const text = await cfResp.text();
-
-  // अगर JSON है तो parse करके client को दो
   try {
-    const json = JSON.parse(text);
-    res.json(json);
-  } catch {
-    // यहाँ अगर challenge HTML आया है तो समझ जाओ अभी भी Cloudflare block कर रहा है
-    res.status(502).send('Cloudflare challenge/not JSON');
+    const cfResp = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow',
+      headers: {
+        // Asli browser jaisa dikhne ke liye Headers:
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9,hi;q=0.8',
+        'Referer': 'https://pwthor.live/', // Target site ka origin
+        'Origin': 'https://pwthor.live',
+        'Connection': 'keep-alive',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin'
+        // AGAR auth ki zaroorat hai, toh Authorization header yahan daalein:
+        // 'Authorization': req.headers['authorization'] || ''
+      }
+    });
+
+    const text = await cfResp.text();
+
+    try {
+      // Agar JSON successfully parse ho gaya
+      const json = JSON.parse(text);
+      res.status(cfResp.status).json(json);
+    } catch (parseError) {
+      // Yahan agar HTML aaya hai toh block ho gaya
+      console.error("Cloudflare Block HTML snippet:", text.substring(0, 200));
+      res.status(502).send('Cloudflare challenge/not JSON. Try updating headers.');
+    }
+  } catch (error) {
+    console.error("Fetch Error:", error);
+    res.status(500).send('Proxy server error');
   }
 });
 //========science===
