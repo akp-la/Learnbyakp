@@ -573,7 +573,7 @@ app.get('/proxy/schedule', async (req, res) => {
         'Sec-Fetch-Site': 'same-origin',
         
         // Aapke diye hue exact cookies aur caching header
-        'Cookie': 'auth_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtb2JpbGUiOiI5NTk0MjEwMDI0NDkiLCJuYW1lIjoiUFdUaG9yIFVzZXIgMDM5Y2E3MTkiLCJyYW5kb21JZCI6IjAzOWNhNzE5LWJmMzQtNDExNy04OTgyLWY1N2Q2ZjNhMjZlMiIsImF1dGhUeXBlIjoiZGlyZWN0X2xvZ2luIiwiZGlyZWN0TG9naW4iOnRydWUsImlhdCI6MTc4MTQ1MzE3MCwiZXhwIjoxNzg5MjI5MTcwfQ.Tlp5x9GM9BwHy0SD7X5dUpXXOyn19sMrD-gxwh4-GGI; api_handshake=7dfcf4f0c4fa543ef27e8891c3ff1457a4ae286166628fff0a05e04cfad9e65c',
+        'Cookie': 'auth_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtb2JpbGUiOiI5NTk0MjEwMDI0NDkiLCJuYW1lIjoiUFdUaG9yIFVzZXIgMDM5Y2E3MTkiLCJyYW5kb21JZCI6IjAzOWNhNzE5LWJmMzQtNDExNy04OTgyLWY1N2Q2ZjNhMjZlMiIsImF1dGhUeXBlIjoiZGlyZWN0X2xvZ2luIiwiZGlyZWN0TG9naW4iOnRydWUsImlhdCI6MTc4MTQ1MzE3MCwiZXhwIjoxNzg5MjI5MTcwfQ.Tlp5x9GM9BwHy0SD7X5dUpXXOyn19sMrD-gxwh4-GGI; api_handshake=1e210025945562a938e2ba6e89271216f611ae6887dc24c921f3a03c8dc50a2d',
         'If-None-Match': '"exssnzf8m23wd"'
       }
     });
