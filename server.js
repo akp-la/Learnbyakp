@@ -2479,7 +2479,7 @@ async function proxyGet(req, res, upstreamPath, queryMap = null) {
 }
   
 //===========656567============
-app.get("/api/pw/datacontent", async (req, res) => {
+app.get("/api/pw/datacontentaa", async (req, res) => {
   return proxyGet(req, res, "/api/pw/datacontent", {
     batchId: "batchId",
     subjectSlug: "subjectSlug",
