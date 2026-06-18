@@ -2224,7 +2224,7 @@ app.get("/api/pw/viderdo", async (req, res) => {
  * frontend call:
  * /api/pw/videoplay?batchId=...&subjectId=...&childId=...
  */
-app.get("/api/pw/videoplay", async (req, res) => {
+app.get("/api/pw/videoplawey", async (req, res) => {
   const { batchId, subjectId, childId } = req.query;
 
   if (!batchId || !subjectId || !childId) {
@@ -2247,7 +2247,7 @@ app.get("/api/pw/videoplay", async (req, res) => {
  * frontend call:
  * /api/pw/get-url?batchId=...&subjectId=...&childId=...
  */
-app.get("/api/pw/get-url", async (req, res) => {
+app.get("/api/pw/get-urlwe", async (req, res) => {
   const { batchId, subjectId, childId } = req.query;
 
   if (!batchId || !subjectId || !childId) {
@@ -2497,7 +2497,7 @@ const safeFetch = async (url) => {
 
   
 // ================= DATACONTENT =================
-app.get("/api/pw/videonew", async (req, res) => {
+app.get("/api/pw/videoneasdw", async (req, res) => {
   return proxyGet(req, res, "/api/pw/videonew", {
     batchId: "batchId",
     subjectId: "subjectId",
@@ -2505,7 +2505,7 @@ app.get("/api/pw/videonew", async (req, res) => {
   });
 });
 // ================= VIDEO COMBINED =================
-app.get("/api/pw/videosuper", async (req, res) => {
+app.get("/api/pw/videosupadser", async (req, res) => {
   return proxyGet(req, res, "/api/pw/videosuper", {
     batchId: "batchId",
     childId: "childId",
