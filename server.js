@@ -2179,75 +2179,7 @@ app.get("/api/pw/topics", async (req, res) => {
 }
 
   //=========eter========
-  app.get("/api/pw/video-url-detai", async (req, res) => {
-  const { batchId, subjectId, childId } = req.query;
-
-  if (!batchId || !subjectId || !childId) {
-    return res.status(400).json({
-      success: false,
-      error: "Missing batchId, subjectId, or childId",
-    });
-  }
-
-  const url =
-    `${CHANGE}/api/pw/video-url-details?batchId=${encodeURIComponent(batchId)}` +
-    `&subjectId=${encodeURIComponent(subjectId)}` +
-    `&childId=${encodeURIComponent(childId)}`;
-
-  return proxyJson(req, res, url);
-});
-/**
- * 1) /api/pw/video
- * frontend call:
- * /api/pw/video?batchId=...&subjectId=...&childId=...
- */
-app.get("/api/pw/viderdo", async (req, res) => {
-  const { batchId, subjectId, childId } = req.query;
-
-  if (!batchId || !subjectId || !childId) {
-    return res.status(400).json({
-      success: false,
-      error: "Missing batchId, subjectId, or childId",
-    });
-  }
-
-  const url =
-    `${BASE}/api/pw/video?batchId=${encodeURIComponent(batchId)}` +
-    `&subjectId=${encodeURIComponent(subjectId)}` +
-    `&childId=${encodeURIComponent(childId)}`;
-
-  return proxyJson(req, res, url);
-});
-
-/**
- * 2) /api/pw/videoplay
- * frontend call:
- * /api/pw/videoplay?batchId=...&subjectId=...&childId=...
- */
-app.get("/api/pw/videoplawey", async (req, res) => {
-  const { batchId, subjectId, childId } = req.query;
-
-  if (!batchId || !subjectId || !childId) {
-    return res.status(400).json({
-      success: false,
-      error: "Missing batchId, subjectId, or childId",
-    });
-  }
-
-  const url =
-    `${BASE}/api/pw/videoplay?batchId=${encodeURIComponent(batchId)}` +
-    `&subjectId=${encodeURIComponent(subjectId)}` +
-    `&childId=${encodeURIComponent(childId)}`;
-
-  return proxyJson(req, res, url);
-});
-
-/**
- * 3) /api/pw/get-url
- * frontend call:
- * /api/pw/get-url?batchId=...&subjectId=...&childId=...
- */
-app.get("/api/pw/get-urlwe", async (req, res) => {
+ app.get("/api/pw/get-url", async (req, res) => {
   const { batchId, subjectId, childId } = req.query;
 
   if (!batchId || !subjectId || !childId) {
