@@ -400,12 +400,11 @@
 
     function playVideo(mode) {
       if (!currentVideo) return;
-        
-      const target = "/study-v2/player";
-      window.location.href = `${target}?video_id=${encodeURIComponent(currentVideo.findKey)}&subject_slug=${encodeURIComponent(subjectSlug)}&batch_id=${encodeURIComponent(batchId)}&schedule_id=${encodeURIComponent(currentVideo._id)}&subject_id=${encodeURIComponent(subjectId || subjectSlug)}&topicSlug=${encodeURIComponent(topicSlug)}`;
+      const target = "https://stream.testuk.org/schedule-details";
+      window.location.href = `${target}?video_id=${encodeURIComponent(currentVideo.findKey)}&subject_slug=${encodeURIComponent(subjectSlug)}&batchId=${encodeURIComponent(batchId)}&scheduleId=${encodeURIComponent(currentVideo._id)}&subjectId=${encodeURIComponent(subjectId || subjectSlug)}&topicSlug=${encodeURIComponent(topicSlug)}`;
     }
 
-    ///study-v2/player
+    
 
     // Hook listeners
     pdfOpenBtn.addEventListener("click", () => handlePdfOpen("open"));
@@ -432,18 +431,4 @@
 
     // Boot
     setTab("lectures");
-  
-    const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
-
-const s = document.createElement("script");
-s.src = SCRIPT_LINK;
-s.async = true;
-s.onload = () => {
-  console.log("Script loaded successfully");
-};
-s.onerror = () => {
-  console.log("Script load nahi hua");
-};
-
-document.head.appendChild(s);
   
