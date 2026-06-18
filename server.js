@@ -2179,7 +2179,7 @@ app.get("/api/pw/topics", async (req, res) => {
 }
 
   //=========eter========
-  app.get("/api/pw/video-url-details", async (req, res) => {
+  app.get("/api/pw/video-url-detai", async (req, res) => {
   const { batchId, subjectId, childId } = req.query;
 
   if (!batchId || !subjectId || !childId) {
