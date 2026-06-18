@@ -729,8 +729,55 @@ app.get('/api/previous-live-videos', async (req, res) => {
     });
   }
 });
-// Slides API Proxy (पहले जैसा)
 
+  const AUTHORIZATION2 = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjE0OTQxMzgiLCJ0aW1lc3RhbXAiOjE3ODE3OTQ2NTMsIml2X3ZlciI6Miwic2Vzc2lvbiI6ImV5SjBlWEFpT2lKS1YxUWlMQ0poYkdjaU9pSklVekkxTmlKOS5leUpwWkNJNklqRTBPVFF4TXpnaUxDSmxiV0ZwYkNJNkltTm9ZVzVrWVc1d2NtRnFZWEJoZEdrNU1UazRRR2R0WVdsc0xtTnZiU0lzSW01aGJXVWlPaUpqYUdGdVpHRnVJSEJ5WVdwaGNHRjBhU0lzSW5SbGJtRnVkRlI1Y0dVaU9pSjFjMlZ5SWl3aWRHVnVZVzUwVG1GdFpTSTZJbkpuZG1scmNtRnRhbVZsZEY5a1lpSXNJblJsYm1GdWRFbGtJam9pSWl3aVpHbHpjRzl6WVdKc1pTSTZabUZzYzJWOS5aaGpacUFiYXFuWlZUQkFBQTdYOHRtQ2ZpTWpMRjlLYloxYnNETHNIVWc4In0.ptnBRScrRGULahWG9q0ghrB1MsmTufDPMy3nGjqMBHg";
+const USERID2 = "1494138";
+const AUTHTOKEN2 = "appxapi";
+
+// Common headers function
+function getCommonHeaders2() {
+  return {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'Accept': 'application/json',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Origin': 'https://rankersgurukul.com',
+    'Referer': 'https://rankersgurukul.com/',
+    'source': 'website',
+    'client-service': 'Appx',
+    'Device-Type': '',
+    'Authorization': AUTHORIZATION2,
+    'User-Id': USERID2,
+    'Auth-Key': AUTHTOKEN2,
+    'X-Forwarded-For': '127.0.0.1',
+    'X-Real-IP': '127.0.0.1',
+  };
+}
+// Slides API Proxy (पहले जैसा)
+  app.get('/api/vikaram/video-details', async (req, res) => {
+  const { course_id, video_id, ytflag, folder_wise_course, lc_app_api_url } = req.query;
+  
+  const targetUrl = new URL('https://rgvikramjeetapi.classx.co.in/get/fetchVideoDetailsById');
+  targetUrl.searchParams.set('course_id', course_id || '74');
+  targetUrl.searchParams.set('video_id', video_id);
+  targetUrl.searchParams.set('ytflag', ytflag || '0');
+  targetUrl.searchParams.set('folder_wise_course', folder_wise_course || '1');
+  targetUrl.searchParams.set('lc_app_api_url', lc_app_api_url || '');
+
+  try {
+    const response = await axios.get(targetUrl.toString(), {
+      headers: getCommonHeaders2(),
+      timeout: 10000,
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Video details proxy error:', error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.message,
+      status: error.response?.status
+    });
+  }
+});
   //=====xdcfdsfsd
 
   app.get("/api/science/previous-live", async (req, res) => {
