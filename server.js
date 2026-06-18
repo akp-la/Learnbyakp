@@ -2201,7 +2201,7 @@ app.get("/api/pw/topics", async (req, res) => {
  * frontend call:
  * /api/pw/video?batchId=...&subjectId=...&childId=...
  */
-app.get("/api/pw/video", async (req, res) => {
+app.get("/api/pw/viderdo", async (req, res) => {
   const { batchId, subjectId, childId } = req.query;
 
   if (!batchId || !subjectId || !childId) {
