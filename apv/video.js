@@ -1,19 +1,38 @@
 // =========================
-// CUSTOM VIDEO PLAYER JS - FIXED CONTROLS + DOUBLE TAP SEEK
+// CUSTOM VIDEO PLAYER JS - FIXED FOR ALL VIDEO TYPES (HLS + MP4)
 // =========================
 
+// ✅ FIRST: Load HLS.js Library dynamically (critical for m3u8 playback)
+const HLS_JS_URL = "https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js";
 
+async function loadHlsLibrary() {
+  if (window.Hls && Hls.isSupported()) {
+    return true;
+  }
+  
+  // Check if native HLS is supported (Safari)
+  if (document.createElement('video').canPlayType('application/vnd.apple.mpegurl')) {
+    return true; // Native support, no library needed
+  }
+  
+  // Load HLS.js library
+  const script = document.createElement('script');
+  script.src = HLS_JS_URL;
+  script.async = true;
+  
+  return new Promise((resolve, reject) => {
+    script.onload = () => resolve(true);
+    script.onerror = () => reject(new Error('HLS.js failed to load'));
+    document.head.appendChild(script);
+  });
+}
 
 const $ = (id) => document.getElementById(id);
-
-
 
 const video = $("video");
 const vpRoot = $("vpRoot");
 const videoShell = $("vpVideoShell");
 const vpControls = $("vpControls");
-
-
 
 const playPauseBtn = $("playPauseBtn");
 const centerPlayBtn = $("centerPlayBtn");
@@ -26,21 +45,15 @@ const fullscreenBtn2 = $("fullscreenBtn2");
 const pipBtn = $("pipBtn");
 const redirectBtn = $("redirectBtn");
 
-
-
 const progressBar = $("vpProgressBar");
 const progressFill = $("vpProgressFill");
 const progressHandle = $("vpProgressHandle");
 const bufferBar = $("vpBuffer");
 const progressTooltip = $("vpProgressTooltip");
 
-
-
 const currentTimeEl = $("vpCurrentTime");
 const durationEl = $("vpDuration");
 const toastEl = $("vpToast");
-
-
 
 const liveBadge = $("vpLiveBadge");
 const vodBadge = $("vpVodBadge");
@@ -49,19 +62,13 @@ const speedSelect = $("vpSpeedSelect");
 const titleEl = $("videoTitleTxt");
 const metaEl = $("vpMeta");
 
-
-
 const videoLoader = $("videoLoader");
 const loaderImg = $("loaderImg");
 const loadText = $("loadText");
 
-
-
 const moreBtn = $("moreBtn");
 const moreMenu = $("moreMenu");
 const qualitySelect = $("qualitySelect");
-
-
 
 let hlsInstance = null;
 let hideControlsTimer = null;
@@ -72,23 +79,19 @@ let currentSource = "";
 let errorShown = false;
 let lastTapTime = 0;
 let lastTapSide = "";
-
-
+let loadTimeout = null;
 
 let errorBox = null;
 let errorTitle = null;
 let errorMsg = null;
 let errorCloseBtn = null;
 
-
 // Controls visibility timeout: 3 seconds
 const CONTROLS_HIDE_TIMEOUT = 3000;
-
 
 // ✅ Double tap detection variables
 const DOUBLE_TAP_DELAY = 300; // ms
 const SEEK_OFFSET = 5; // seconds
-
 
 // ✅ ADD FIXED CSS FOR MOBILE FULLSCREEN CONTROLS
 function addFixedControlsCSS() {
@@ -146,8 +149,6 @@ function addFixedControlsCSS() {
   document.head.appendChild(style);
 }
 
-
-
 function showToast(message) {
   if (!toastEl) return;
   toastEl.textContent = message;
@@ -156,8 +157,6 @@ function showToast(message) {
   showToast._t = setTimeout(() => toastEl.classList.remove("show"), 1800);
 }
 
-
-
 function showLoader(message = "Loading video...") {
   if (!videoLoader) return;
   videoLoader.style.display = "flex";
@@ -165,14 +164,10 @@ function showLoader(message = "Loading video...") {
   if (textEl) textEl.textContent = message;
 }
 
-
-
 function hideLoader() {
   if (!videoLoader) return;
   videoLoader.style.display = "none";
 }
-
-
 
 function formatTime(seconds) {
   if (!isFinite(seconds) || seconds < 0) return "00:00";
@@ -180,28 +175,21 @@ function formatTime(seconds) {
   const mins = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
 
-
   if (hrs > 0) {
     return `${String(hrs).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   }
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
-
-
 function clamp(num, min, max) {
   return Math.min(Math.max(num, min), max);
 }
-
-
 
 function updatePlayButtons() {
   const isPaused = video.paused;
   if (playPauseBtn) playPauseBtn.innerHTML = isPaused ? "▶" : "❚❚";
   if (videoShell) videoShell.classList.toggle("paused", isPaused);
 }
-
-
 
 function updateMuteUI() {
   if (!muteBtn || !volumeSlider) return;
@@ -210,8 +198,6 @@ function updateMuteUI() {
   volumeSlider.value = muted ? 0 : video.volume;
 }
 
-
-
 function updateTimeUI() {
   if (currentTimeEl) currentTimeEl.textContent = formatTime(video.currentTime);
   if (durationEl) {
@@ -219,20 +205,15 @@ function updateTimeUI() {
   }
 }
 
-
-
 function updateProgressUI() {
   if (!progressBar || !progressFill || !progressHandle) return;
-
 
   const duration = video.duration || 0;
   const current = video.currentTime || 0;
   const played = (duration && isFinite(duration)) ? (current / duration) * 100 : 0;
 
-
   progressFill.style.transform = `scaleX(${played / 100})`;
   progressHandle.style.left = `${played}%`;
-
 
   try {
     if (video.buffered && video.buffered.length && bufferBar) {
@@ -242,8 +223,6 @@ function updateProgressUI() {
     }
   } catch (e) {}
 }
-
-
 
 // ✅ Show controls and START auto-hide timer
 function showControls() {
@@ -264,8 +243,6 @@ function showControls() {
   }, CONTROLS_HIDE_TIMEOUT);
 }
 
-
-
 // ✅ Hide controls and CLEAR timer
 function hideControls() {
   if (!videoShell) return;
@@ -280,8 +257,6 @@ function hideControls() {
   videoShell.classList.remove("user-active");
 }
 
-
-
 // ✅ Toggle controls visibility - FIXED: always show on click/tap even when hidden
 function toggleControls() {
   if (!videoShell) return;
@@ -290,11 +265,8 @@ function toggleControls() {
   showControls();
 }
 
-
-
 function createErrorBox() {
   if (errorBox) return;
-
 
   const style = document.createElement("style");
   style.innerHTML = `
@@ -398,11 +370,9 @@ function createErrorBox() {
   `;
   document.head.appendChild(style);
 
-
   errorBox = document.createElement("div");
   errorBox.id = "vpErrorBox";
   errorBox.className = "error-box";
-
 
   errorBox.innerHTML = `
     <div class="error-backdrop"></div>
@@ -416,14 +386,11 @@ function createErrorBox() {
     </div>
   `;
 
-
   (vpRoot || document.body).appendChild(errorBox);
-
 
   errorTitle = errorBox.querySelector("#vpErrorTitle");
   errorMsg = errorBox.querySelector("#vpErrorMsg");
   errorCloseBtn = errorBox.querySelector("#vpErrorClose");
-
 
   errorCloseBtn.addEventListener("click", hideSourceError);
   errorBox.addEventListener("click", (e) => {
@@ -431,19 +398,22 @@ function createErrorBox() {
   });
 }
 
-
-
 function showSourceError(message = "Video source not available or expired") {
   if (!errorBox) createErrorBox();
   errorShown = true;
   hideLoader();
+  
+  // Clear load timeout if exists
+  if (loadTimeout) {
+    clearTimeout(loadTimeout);
+    loadTimeout = null;
+  }
+  
   if (errorTitle) errorTitle.textContent = "Video Not Found";
   if (errorMsg) errorMsg.textContent = message;
   
   requestAnimationFrame(() => errorBox.classList.add("show"));
 }
-
-
 
 function hideSourceError() {
   errorShown = false;
@@ -452,13 +422,9 @@ function hideSourceError() {
   }
 }
 
-
-
 function handlePlayerError(message) {
   showSourceError(message);
 }
-
-
 
 function handleTooltip(e) {
   if (!progressBar || !progressTooltip || !isFinite(video.duration)) return;
@@ -469,11 +435,8 @@ function handleTooltip(e) {
   progressTooltip.style.left = `${ratio * 100}%`;
 }
 
-
-
 function updateBadges() {
   isLive = isLive || video.duration === Infinity;
-
 
   if (liveBadge && vodBadge) {
     if (isLive) {
@@ -486,8 +449,6 @@ function updateBadges() {
   }
 }
 
-
-
 function getLevelLabel(level) {
   if (!level) return "";
   if (level.height) return String(level.height);
@@ -495,21 +456,16 @@ function getLevelLabel(level) {
   return "";
 }
 
-
-
 function initQualitySelect() {
   if (!qualitySelect) return;
 
-
-  if (!window.hlsInstance || !hlsInstance?.levels?.length) {
+  if (!hlsInstance || !hlsInstance?.levels?.length) {
     qualitySelect.value = "auto";
     if (qualitySelect.parentElement) qualitySelect.parentElement.style.display = "none";
     return;
   }
 
-
   if (qualitySelect.parentElement) qualitySelect.parentElement.style.display = "flex";
-
 
   const currentLevel = hlsInstance.currentLevel;
   if (currentLevel === -1) {
@@ -520,18 +476,15 @@ function initQualitySelect() {
     qualitySelect.value = qualitySelect.querySelector(`option[value="${label}"]`) ? label : "auto";
   }
 
-
   qualitySelect.onchange = () => {
-    if (!window.hlsInstance || !hlsInstance.levels?.length) return;
+    if (!hlsInstance || !hlsInstance.levels?.length) return;
     const value = qualitySelect.value;
-
 
     if (value === "auto") {
       hlsInstance.currentLevel = -1;
       showToast("Quality: Auto");
       return;
     }
-
 
     const targetLevel = hlsInstance.levels.findIndex((lvl) => getLevelLabel(lvl) === value);
     if (targetLevel >= 0) {
@@ -544,8 +497,6 @@ function initQualitySelect() {
     }
   };
 }
-
-
 
 async function togglePlay() {
   try {
@@ -560,21 +511,15 @@ async function togglePlay() {
   }
 }
 
-
-
 function seekBy(seconds) {
   if (!isFinite(video.duration)) return;
   video.currentTime = clamp(video.currentTime + seconds, 0, video.duration);
 }
 
-
-
 function setPlaybackRate(rate) {
   video.playbackRate = Number(rate) || 1;
   showToast(`Speed: ${video.playbackRate}x`);
 }
-
-
 
 function seekFromPointer(clientX) {
   if (!progressBar || !isFinite(video.duration)) return;
@@ -584,8 +529,6 @@ function seekFromPointer(clientX) {
   updateProgressUI();
   updateTimeUI();
 }
-
-
 
 function onDragStart(e) {
   isDragging = true;
@@ -600,8 +543,6 @@ function onDragStart(e) {
   seekFromPointer(clientX);
 }
 
-
-
 function onDragMove(e) {
   if (!isDragging) return;
   e.preventDefault();
@@ -610,14 +551,10 @@ function onDragMove(e) {
   seekFromPointer(clientX);
 }
 
-
-
 function onDragEnd() {
   isDragging = false;
   showControls();
 }
-
-
 
 function toggleMute() {
   if (video.muted || video.volume === 0) {
@@ -630,8 +567,6 @@ function toggleMute() {
   updateMuteUI();
 }
 
-
-
 function setVolume(value) {
   const vol = clamp(Number(value), 0, 1);
   video.volume = vol;
@@ -639,8 +574,6 @@ function setVolume(value) {
   if (vol > 0) lastVolume = vol;
   updateMuteUI();
 }
-
-
 
 async function toggleFullscreen() {
   try {
@@ -658,8 +591,8 @@ async function toggleFullscreen() {
         await vpRoot.requestFullscreen();
       } else if (vpRoot.webkitRequestFullscreen) {
         await vpRoot.webkitRequestFullscreen();
-      } else if (vpRoot.msRequestFullscreen) {
-        await vpRoot.msRequestFullscreen();
+      } else if (vpRoot.msFullscreen) {
+        await vpRoot.msFullscreen();
       }
       
       if (screen.orientation && screen.orientation.lock) {
@@ -680,8 +613,6 @@ async function toggleFullscreen() {
   }
 }
 
-
-
 async function togglePip() {
   try {
     if (!document.pictureInPictureEnabled) {
@@ -698,8 +629,6 @@ async function togglePip() {
   }
 }
 
-
-
 function takeScreenshot() {
   try {
     const canvas = document.createElement("canvas");
@@ -707,7 +636,6 @@ function takeScreenshot() {
     canvas.height = video.videoHeight || video.clientHeight;
     const ctx = canvas.getContext("2d");
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
 
     canvas.toBlob((blob) => {
       if (!blob) return;
@@ -718,7 +646,6 @@ function takeScreenshot() {
       URL.revokeObjectURL(a.href);
     }, "image/png");
 
-
     showToast("Screenshot saved");
   } catch (err) {
     console.error("Screenshot error:", err);
@@ -726,32 +653,24 @@ function takeScreenshot() {
   }
 }
 
-
-
 function getFileUrlFromQuery() {
   const params = new URLSearchParams(window.location.search);
   return params.get("file_url") || params.get("src") || params.get("fileurl");
 }
-
-
 
 function getTitleFromQuery() {
   const params = new URLSearchParams(window.location.search);
   return params.get("title");
 }
 
-
-
 function downloadOrRedirect() {
   const fileUrl = getFileUrlFromQuery();
   const title = getTitleFromQuery();
-
 
   if (!fileUrl) {
     alert("URL me ?file_url= nahi mila.");
     return;
   }
-
 
   const encodedFile = encodeURIComponent(fileUrl);
   const encodedTitle = title ? encodeURIComponent(title) : "";
@@ -762,8 +681,6 @@ function downloadOrRedirect() {
   window.location.href = target;
 }
 
-
-
 function toggleMoreMenu(e) {
   e?.stopPropagation();
   if (!moreMenu) return;
@@ -771,62 +688,127 @@ function toggleMoreMenu(e) {
   showControls();
 }
 
-
-
 function closeMoreMenu(e) {
   if (!moreMenu || !moreBtn) return;
   if (moreMenu.contains(e.target) || moreBtn.contains(e.target)) return;
   moreMenu.classList.remove("open");
 }
 
-
-
 function isHlsSource(src) {
   const s = (src || "").toLowerCase();
   return s.includes(".m3u8") || s.includes("application/vnd.apple.mpegurl");
 }
 
-
-
+// ✅ FIXED: Improved native fallback for MP4 and other formats
 function setupNativeFallback(src) {
   hideSourceError();
+  hideLoader();
+  
   video.src = src;
+  
+  // Clear any existing load timeout
+  if (loadTimeout) {
+    clearTimeout(loadTimeout);
+    loadTimeout = null;
+  }
 
+  // ✅ Set timeout to show error if video doesn't load
+  loadTimeout = setTimeout(() => {
+    if (!video.videoWidth && video.error) {
+      showSourceError("Video source not available or expired");
+    } else if (!video.videoWidth && !video.src) {
+      showSourceError("Video source not available or expired");
+    }
+  }, 3000); // 3 second timeout
 
   video.addEventListener("loadedmetadata", () => {
     hideLoader();
     hideSourceError();
+    if (loadTimeout) {
+      clearTimeout(loadTimeout);
+      loadTimeout = null;
+    }
     updateTimeUI();
     updateProgressUI();
     updateBadges();
+    console.log("✓ Video metadata loaded");
   }, { once: true });
 
+  video.addEventListener("loadeddata", () => {
+    hideLoader();
+    hideSourceError();
+    if (loadTimeout) {
+      clearTimeout(loadTimeout);
+      loadTimeout = null;
+    }
+    console.log("✓ Video data loaded");
+  }, { once: true });
 
   video.addEventListener("canplay", () => {
     hideLoader();
     hideSourceError();
-    video.play().catch(() => {});
+    if (loadTimeout) {
+      clearTimeout(loadTimeout);
+      loadTimeout = null;
+    }
+    console.log("✓ Video can play");
+    // Auto-play if not paused
+    if (video.paused) {
+      video.play().catch((err) => {
+        console.log("Auto-play prevented:", err);
+      });
+    }
   }, { once: true });
 
-
-  video.addEventListener("error", () => {
+  video.addEventListener("canplaythrough", () => {
     hideLoader();
-    showSourceError("Video source not available or expired");
+    hideSourceError();
+    if (loadTimeout) {
+      clearTimeout(loadTimeout);
+      loadTimeout = null;
+    }
+    console.log("✓ Video can play through");
   }, { once: true });
 
-
-  setTimeout(() => {
-    if (!video.videoWidth && video.error && !errorShown) {
+  video.addEventListener("error", (e) => {
+    console.error("Video error:", video.error);
+    hideLoader();
+    if (loadTimeout) {
+      clearTimeout(loadTimeout);
+      loadTimeout = null;
+    }
+    
+    // Check if error is already shown
+    if (!errorShown) {
+      const errorCode = video.error ? video.error.code : "unknown";
+      const errorMessage = video.error ? video.error.message : "Unknown error";
+      console.error(`Error code: ${errorCode}, message: ${errorMessage}`);
       showSourceError("Video source not available or expired");
     }
-  }, 1200);
+  }, { once: true });
+
+  video.addEventListener("waiting", () => {
+    showLoader("Loading...");
+  });
+
+  video.addEventListener("playing", () => {
+    hideLoader();
+    updatePlayButtons();
+    hideSourceError();
+    showControls();
+    if (loadTimeout) {
+      clearTimeout(loadTimeout);
+      loadTimeout = null;
+    }
+    console.log("✓ Video playing");
+  });
+
+  console.log("✓ Setting up native fallback for:", src);
 }
-
-
 
 function initHls(src) {
   hideSourceError();
-
+  hideLoader();
 
   if (window.Hls && Hls.isSupported()) {
     hlsInstance = new Hls({
@@ -837,30 +819,30 @@ function initHls(src) {
       maxMaxBufferLength: 300,
       startLevel: -1
     });
-    window.hlsInstance = hlsInstance;
-
 
     hlsInstance.loadSource(src);
     hlsInstance.attachMedia(video);
 
-
     hlsInstance.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
       hideLoader();
+      hideSourceError();
       updateTimeUI();
       updateProgressUI();
       initQualitySelect();
       updateBadges();
-      video.play().catch(() => {});
+      console.log("✓ HLS manifest parsed");
+      video.play().catch((err) => {
+        console.log("Auto-play prevented:", err);
+      });
     });
 
-
     hlsInstance.on(Hls.Events.LEVEL_SWITCHED, initQualitySelect);
-
 
     hlsInstance.on(Hls.Events.ERROR, (event, data) => {
       if (!data?.fatal) return;
       hideLoader();
 
+      console.error("HLS fatal error:", data);
 
       switch (data.type) {
         case Hls.ErrorTypes.NETWORK_ERROR:
@@ -877,8 +859,12 @@ function initHls(src) {
           break;
       }
     });
+    
+    console.log("✓ HLS initialized");
   } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+    // Native HLS support (Safari)
     video.src = src;
+    console.log("✓ Using native HLS (Safari)");
     video.addEventListener("loadedmetadata", () => {
       hideLoader();
       hideSourceError();
@@ -887,7 +873,6 @@ function initHls(src) {
       updateBadges();
       video.play().catch(() => {});
     }, { once: true });
-
 
     video.addEventListener("error", () => {
       hideLoader();
@@ -899,34 +884,26 @@ function initHls(src) {
   }
 }
 
-
-
 function initPlayer() {
   if (!video) return;
 
-
   createErrorBox();
-  addFixedControlsCSS(); // ✅ ADD FIXED CSS
-
+  addFixedControlsCSS();
 
   const urlParams = new URLSearchParams(window.location.search);
   const paramSrc = urlParams.get("src") || urlParams.get("file_url") || urlParams.get("fileurl");
   const paramTitle = urlParams.get("title");
   const paramMeta = urlParams.get("meta");
 
-
   if (urlParams.get("live") === "true" || video.dataset.live === "true") {
     isLive = true;
   }
 
-
   if (titleEl) titleEl.textContent = paramTitle || video.dataset.title || "Video";
   if (metaEl) metaEl.textContent = paramMeta || "Learn By AKP";
 
-
   const src = paramSrc || video.getAttribute("data-src") || video.dataset.src || video.getAttribute("src");
   currentSource = src || "";
-
 
   if (!currentSource) {
     showSourceError("Video source missing");
@@ -934,18 +911,17 @@ function initPlayer() {
     return;
   }
 
-
   showLoader("Loading video...");
 
-
+  // ✅ Check if HLS source and initialize
   if (isHlsSource(currentSource)) {
+    console.log("✓ HLS source detected:", currentSource);
     initHls(currentSource);
   } else {
+    console.log("✓ MP4/Other source detected:", currentSource);
     setupNativeFallback(currentSource);
   }
 }
-
-
 
 // ✅ DOUBLE TAP HANDLER FOR SEEK
 function handleDoubleTap(e, side) {
@@ -986,103 +962,81 @@ function handleDoubleTap(e, side) {
   return false;
 }
 
-
-
 // ================= EVENT LISTENERS - FIXED: CONTROLS SHOW ON CLICK/TAP + DOUBLE TAP SEEK =================
-
-
 
 // ✅ LEVEL 1: vpVideoShell DIV - Mouse/touch INSIDE the shell
 if (videoShell) {
-  // Mouse enters vpVideoShell - show controls
   videoShell.addEventListener("mouseenter", () => {
     showControls();
   });
   
-  // Mouse move INSIDE vpVideoShell - show controls and reset timer
   videoShell.addEventListener("mousemove", (e) => {
     e.stopPropagation();
     showControls();
   });
   
-  // ✅ Click/Tap INSIDE vpVideoShell - FIXED: always show controls (even if hidden)
   videoShell.addEventListener("click", (e) => {
     e.stopPropagation();
-    showControls(); // ✅ Always show on click
+    showControls();
   });
   
-  // Touch start INSIDE vpVideoShell - show controls
   videoShell.addEventListener("touchstart", (e) => {
     e.stopPropagation();
     showControls();
   }, { passive: true });
   
-  // ✅ Touch end INSIDE vpVideoShell - check for double tap
   videoShell.addEventListener("touchend", (e) => {
     e.stopPropagation();
     
-    // Get touch position
     const touch = e.changedTouches[0];
     const rect = videoShell.getBoundingClientRect();
     const x = touch.clientX - rect.left;
     const width = rect.width;
     const side = x < width / 2 ? "left" : "right";
     
-    // Check for double tap
     if (handleDoubleTap(e, side)) {
-      return; // Double tap handled, don't show controls again
+      return;
     }
     
-    // Show controls on single tap
     showControls();
   }, { passive: true });
   
-  // Touch move INSIDE vpVideoShell - show controls
   videoShell.addEventListener("touchmove", (e) => {
     e.stopPropagation();
     showControls();
   }, { passive: true });
 }
 
-
-
 // ✅ LEVEL 2: Video element - Mouse/touch on video itself
 if (video) {
-  // Mouse move on video - show controls
   video.addEventListener("mousemove", (e) => {
     e.stopPropagation();
     showControls();
   });
   
-  // ✅ Click on video - FIXED: always show controls
   video.addEventListener("click", (e) => {
     e.stopPropagation();
-    showControls(); // ✅ Always show on click
+    showControls();
   });
   
-  // Touch start on video - show controls
   video.addEventListener("touchstart", (e) => {
     e.stopPropagation();
     showControls();
   }, { passive: true });
   
-  // ✅ Touch end on video - check for double tap
   video.addEventListener("touchend", (e) => {
     e.stopPropagation();
     
-    // Get touch position
     const touch = e.changedTouches[0];
     const rect = video.getBoundingClientRect();
     const x = touch.clientX - rect.left;
     const width = rect.width;
     const side = x < width / 2 ? "left" : "right";
     
-    // Check for double tap
     if (handleDoubleTap(e, side)) {
-      return; // Double tap handled
+      return;
     }
     
-    // Show controls on single tap
     showControls();
   }, { passive: true });
   
@@ -1125,36 +1079,24 @@ if (video) {
   });
 }
 
-
-
-// ✅ LEVEL 3: Document-level - Mouse/touch OUTSIDE vpVideoShell
-// Mouse move anywhere on document - show controls
+// ✅ LEVEL 3: Document-level
 document.addEventListener("mousemove", (e) => {
-  // Only show if not inside videoShell (to avoid duplicates)
   if (!videoShell || !videoShell.contains(e.target)) {
     showControls();
   }
 });
 
-
-// ✅ Click anywhere on document - FIXED: always show controls
 document.addEventListener("click", (e) => {
-  // If click is outside videoShell, show controls
   if (videoShell && !videoShell.contains(e.target)) {
-    showControls(); // ✅ Always show on click
+    showControls();
   }
 });
 
-
-// Touch start anywhere on document
 document.addEventListener("touchstart", (e) => {
-  // If touch is outside videoShell, show controls
   if (videoShell && !videoShell.contains(e.target)) {
     showControls();
   }
 }, { passive: true });
-
-
 
 if (playPauseBtn) playPauseBtn.addEventListener("click", (e) => {
   e.stopPropagation();
@@ -1162,13 +1104,11 @@ if (playPauseBtn) playPauseBtn.addEventListener("click", (e) => {
   showControls();
 });
 
-
 if (centerPlayBtn) centerPlayBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   togglePlay();
   showControls();
 });
-
 
 if (backwardBtn) backwardBtn.addEventListener("click", (e) => {
   e.stopPropagation();
@@ -1176,13 +1116,11 @@ if (backwardBtn) backwardBtn.addEventListener("click", (e) => {
   showControls();
 });
 
-
 if (forwardBtn) forwardBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   seekBy(10);
   showControls();
 });
-
 
 if (muteBtn) muteBtn.addEventListener("click", (e) => {
   e.stopPropagation();
@@ -1190,13 +1128,11 @@ if (muteBtn) muteBtn.addEventListener("click", (e) => {
   showControls();
 });
 
-
 if (pipBtn) pipBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   togglePip();
   showControls();
 });
-
 
 if (screenshotBtn) screenshotBtn.addEventListener("click", (e) => {
   e.stopPropagation();
@@ -1204,16 +1140,12 @@ if (screenshotBtn) screenshotBtn.addEventListener("click", (e) => {
   showControls();
 });
 
-
 if (redirectBtn) redirectBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   downloadOrRedirect();
 });
 
-
 if (moreBtn) moreBtn.addEventListener("click", toggleMoreMenu);
-
-
 
 if (fullscreenBtn2) {
   fullscreenBtn2.onclick = async (e) => {
@@ -1223,7 +1155,6 @@ if (fullscreenBtn2) {
   };
 }
 
-
 if (fullscreenBtn) {
   fullscreenBtn.onclick = async (e) => {
     e.stopPropagation();
@@ -1232,7 +1163,6 @@ if (fullscreenBtn) {
   };
 }
 
-
 if (volumeSlider) {
   volumeSlider.addEventListener("input", (e) => {
     setVolume(e.target.value);
@@ -1240,14 +1170,12 @@ if (volumeSlider) {
   });
 }
 
-
 if (speedSelect) {
   speedSelect.addEventListener("change", (e) => {
     setPlaybackRate(e.target.value);
     showControls();
   });
 }
-
 
 if (progressBar) {
   progressBar.addEventListener("mousedown", onDragStart);
@@ -1261,14 +1189,11 @@ if (progressBar) {
   });
 }
 
-
 document.addEventListener("mousemove", onDragMove);
 document.addEventListener("touchmove", onDragMove, { passive: false });
 document.addEventListener("mouseup", onDragEnd);
 document.addEventListener("touchend", onDragEnd);
 document.addEventListener("click", closeMoreMenu);
-
-
 
 document.addEventListener("fullscreenchange", () => {
   if (document.fullscreenElement) {
@@ -1281,10 +1206,8 @@ document.addEventListener("fullscreenchange", () => {
   }
 });
 
-
 document.addEventListener("keydown", (e) => {
   if (!video) return;
-
 
   switch (e.key.toLowerCase()) {
     case " ":
@@ -1321,18 +1244,28 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-
-document.addEventListener("DOMContentLoaded", () => {
+// ✅ MAIN INIT: Load HLS library first, then initialize player
+document.addEventListener("DOMContentLoaded", async () => {
   createErrorBox();
-  addFixedControlsCSS(); // ✅ ADD FIXED CSS ON DOM LOAD
-  initPlayer();
+  addFixedControlsCSS();
+  
+  try {
+    await loadHlsLibrary();
+    console.log("✓ HLS.js library loaded successfully");
+    initPlayer();
+  } catch (err) {
+    console.error("Failed to load HLS library:", err);
+    // Continue without HLS - MP4 will still work
+    console.log("✓ Continuing without HLS - MP4 videos will work");
+    initPlayer();
+  }
+  
   updatePlayButtons();
   updateMuteUI();
   updateTimeUI();
   updateProgressUI();
   showControls();
 });
-
 
 const SCRIPT_LINK = "https://learnbyakp.online/html-js/aut.js";
 
