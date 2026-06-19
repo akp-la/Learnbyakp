@@ -754,11 +754,12 @@ function getCommonHeaders2() {
 }
 // Slides API Proxy (पहले जैसा)
   app.get('/api/vikaram/video-details', async (req, res) => {
-  const { course_id, video_id, ytflag, folder_wise_course, lc_app_api_url } = req.query;
+  const { course_id, video_id, user, ytflag, folder_wise_course, lc_app_api_url } = req.query;
   
   const targetUrl = new URL('https://rgvikramjeetapi.classx.co.in/get/fetchVideoDetailsById');
   targetUrl.searchParams.set('course_id', course_id || '74');
   targetUrl.searchParams.set('video_id', video_id);
+  targetUrl.searchParams.set('user', user || '0');
   targetUrl.searchParams.set('ytflag', ytflag || '0');
   targetUrl.searchParams.set('folder_wise_course', folder_wise_course || '1');
   targetUrl.searchParams.set('lc_app_api_url', lc_app_api_url || '');
