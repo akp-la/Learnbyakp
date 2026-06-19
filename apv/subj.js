@@ -270,6 +270,10 @@
   ? Math.floor(new Date(item.startTime).getTime() / 1000) 
   : "";
 
+           const query2 =
+    `&batchId=${encodeURIComponent(targetBatchId)}` +
+    `&scheduleId=${encodeURIComponent(scheduleId)}` +
+    `&subjectId=${encodeURIComponent(subjectId)}` +
   // Fix: escapeHtml को साबिस्टेंड में इकॉनसिस्टेंसी ठीक करें
   const query =
     `video_id=${encodeURIComponent(videoId)}` +
@@ -282,10 +286,10 @@
 
   // Fix: recorded और live के लिए अलग URL होना चाहिए (अगर वाक़ई अलग हैं)
   if (topic.includes("recorded")) {
-    window.location.href = `/study-v2/player1?${query}`;
+    window.location.href = `https://stream.testuk.org/schedule-details?${query2}`;
   } else {
     // Live class - same URL अगर तुमके कोड में एक ही है, तो condition हटा सकते हो
-    window.location.href = `/study-v2/player1?${query}`;
+    window.location.href = `https://stream.testuk.org/schedule-details??${query2}`;
   }
 }
 
