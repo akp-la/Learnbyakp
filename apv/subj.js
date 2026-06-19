@@ -273,7 +273,7 @@
            const query2 =
     `&batchId=${encodeURIComponent(targetBatchId)}` +
     `&scheduleId=${encodeURIComponent(scheduleId)}` +
-    `&subjectId=${encodeURIComponent(subjectId)}` +
+    `&subjectId=${encodeURIComponent(subjectId)}` ;
   // Fix: escapeHtml को साबिस्टेंड में इकॉनसिस्टेंसी ठीक करें
   const query =
     `video_id=${encodeURIComponent(videoId)}` +
