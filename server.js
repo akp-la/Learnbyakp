@@ -489,37 +489,32 @@ function decryptVibrant(input) {
 // nexttoppers 
 const BASE_URL = process.env.COURSE_API_BASE || "https://course.nexttoppers.com";
 
-const defaultHeaders = {
+const fixedHeaders = {
   accept: "application/json, text/plain, */*",
   "content-type": "application/json",
-  origin: "https://nexttoppers.com",
+  origin: "https://learnbyakp.online",
+  authority: "course.nexttoppers.com",
   platform: "3",
-  referer: "https://nexttoppers.com/",
-  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-  version: "1",
-  app_id: "1770981347",
-  authorization:
-    "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxNDczMTEyLCJhcHBfaWQiOiIxNzcwOTgxMzQ3IiwiZGV2aWNlX2lkIjoiOTcwNjMzNTQtMGI3OS00ZTdhLThhMjgtNTJiMjI4YTllNDY2IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3ODE5NTMyMDIsImV4cCI6MTc4NDU0NTIwMn0.H5C1eUTuMTVi8LrT_Q3eNJnlX_19Y7PRySuf6SBgcyc",
-  user_id: "1473112",
+  Referer: "https://Leanbyakp.online/",
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+  Version: "1",
+  App_id: "1770981347",
+  Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo0MTYyOTIsImFwcF9pZCI6IjE3NzA5ODEzNDciLCJkZXZpY2VfaWQiOiJiOTQ0ZmRiZi0xOTI1LTQ3ZDAtYjg0My1mYjJkNDZiNjQ3ZTIiLCJwbGF0Zm9ybSI6IjMiLCJ1c2VyX3R5cGUiOjEsImlhdCI6MTc4MTA3MDY1MiwiZXhwIjoxNzgzNjYyNjUyfQ.MfkGR14ZwL62H46ahgEvdYOjs8Y03rQXhe-prs57zF8",
+  User_id: "4245913",
 };
 
 function buildHeaders(req) {
-  const headers = { ...defaultHeaders };
+  const headers = {
+    ...fixedHeaders,
+    Authorization: req.header("Authorization") || req.header("authorization") || fixedHeaders.Authorization,
+    user_id: req.header("user_id") || fixedHeaders.user_id,
+    platform: req.header("platform") || fixedHeaders.platform,
+    Version: req.header("Version") || req.header("version") || fixedHeaders.Version,
+    app_id: req.header("app_id") || fixedHeaders.app_id,
+  };
 
-  const auth = req.header("authorization") || req.header("Authorization");
-  if (auth) headers.authorization = auth;
-
-  const userId = req.header("user_id");
-  if (userId) headers.user_id = userId;
-
-  const platform = req.header("platform");
-  if (platform) headers.platform = platform;
-
-  const version = req.header("version") || req.header("Version");
-  if (version) headers.version = version;
-
-  const appId = req.header("app_id");
-  if (appId) headers.app_id = appId;
+  console.log("REQ HEADERS:", req.headers);
+  console.log("UPSTREAM HEADERS:", headers);
 
   return headers;
 }
@@ -532,17 +527,14 @@ app.get("/api/live-classes", async (req, res) => {
       limit: Number(req.query.limit || 50),
     };
 
-    const headers = buildHeaders(req);
-    console.log("UPSTREAM HEADERS:", headers);
-
     const upstream = await axios.post(
       `${BASE_URL}/course/classes`,
-      payload,
-      { headers }
+      { headers: buildHeaders(req) }
     );
 
     res.status(upstream.status).json(upstream.data);
   } catch (err) {
+    console.log("UPSTREAM ERROR:", err.response?.data || err.message);
     res.status(err.response?.status || 500).json(
       err.response?.data || { success: false, message: err.message }
     );
