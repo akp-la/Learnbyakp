@@ -455,35 +455,7 @@ function createApp() {
     res.json({ ok: true, env: process.env.NODE_ENV || "dev" });
   });
   //===========api start==
- app.get("/api/missionjeet/content-details", async (req, res) => {
-  try {
-    const entityId = req.query.content_id;
-    const courseId = req.query.courseid;
 
-    if (!entityId || !courseId) {
-      return res.status(400).json({ error: "Missing content_id or courseid" });
-    }
-
-    const url = `${BASE}/api/missionjeet/content-details?content_id=${entityId}&course_id=${courseId}`;
-
-    const response = await fetchfn(url);
-
-    // ✅ check response ok or not
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: `External API error: ${response.status}`
-      });
-    }
-
-    const data = await response.json();
-
-    res.json(data);
-
-  } catch (err) {
-    console.error("/api/missionjeet/content-details error:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
   //========ewrwerw===========
 const KEY = Buffer.from("638udh3829162018");
 const IV = Buffer.from("fedcba9876543210");
@@ -729,7 +701,7 @@ app.get('/api/previous-live-videos', async (req, res) => {
     });
   }
 });
-
+// vikaramjeet
   const AUTHORIZATION2 = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjE0OTQxMzgiLCJ0aW1lc3RhbXAiOjE3ODE4NDUzNTMsIml2X3ZlciI6Mywic2Vzc2lvbiI6ImV5SjBlWEFpT2lKS1YxUWlMQ0poYkdjaU9pSklVekkxTmlKOS5leUpwWkNJNklqRTBPVFF4TXpnaUxDSmxiV0ZwYkNJNkltTm9ZVzVrWVc1d2NtRnFZWEJoZEdrNU1UazRRR2R0WVdsc0xtTnZiU0lzSW01aGJXVWlPaUpqYUdGdVpHRnVJSEJ5WVdwaGNHRjBhU0lzSW5SbGJtRnVkRlI1Y0dVaU9pSjFjMlZ5SWl3aWRHVnVZVzUwVG1GdFpTSTZJbkpuZG1scmNtRnRhbVZsZEY5a1lpSXNJblJsYm1GdWRFbGtJam9pSWl3aVpHbHpjRzl6WVdKc1pTSTZabUZzYzJWOS5aaGpacUFiYXFuWlZUQkFBQTdYOHRtQ2ZpTWpMRjlLYloxYnNETHNIVWc4In0.aPfneNhOlCiI4aKqz6-a78RPMJ_tbvvonFw1S-Ozius";
 const USERID2 = "1494138";
 const AUTHTOKEN2 = "appxapi";
@@ -781,349 +753,16 @@ function getCommonHeaders2() {
 });
   //=====xdcfdsfsd
 
-  app.get("/api/science/previous-live", async (req, res) => {
-  try {
-    const courseid = req.query.course_id || req.query.c;
-
-    if (!courseid) {
-      return res.status(400).json({ error: "Missing courseid" });
-    }
-
-    // External API call
-    const url = `${BASE}/api/scienceandfun/previous-live?course_id=${courseid}`;
-    
-    const response = await fetchfn(url);
-
-if (!response.ok) {
-  return res.status(response.status).json({
-    error: "External API failed"
-  });
-}
-
-const data = await response.json();
-res.json(data);
-  } catch (err) {
-    console.error("/api/science/previous-live error:", err);
-    res.status(500).json({ error: err.toString() });
-  }
-});
 
 //=============454534534==========
-  app.post("/api/pw/login", async (req, res) => {
-  try {
-    const { phoneNumber, username } = req.body || {};
 
-    if (!phoneNumber || !username) {
-      return res.status(400).json({
-        success: false,
-        message: "phoneNumber and username are required"
-      });
-    }
-
-    const upstream1 = await fetch(`${BASE}/api/pw/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json, text/plain, */*"
-      },
-      body: JSON.stringify({
-        phoneNumber,
-        username
-      })
-    });
-
-    const text = await upstream1.text();
-
-    res.status(upstream1.status);
-    res.setHeader(
-      "Content-Type",
-      upstream1.headers.get("content-type") || "application/json"
-    );
-    return res.send(text);
-  } catch (error) {
-    console.error("PW LOGIN ERROR:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Proxy error in /api/pw/login"
-    });
-  }
-});
   //==========rty
 
 
-// ✅ 1. Science URL API (get encrypted URL)
-app.get('/api/science/url', async (req, res) => {
-  try {
-    const { url, key } = req.query;
 
-    if (!url || !key) {
-      return res.status(400).json({ error: 'url and key are required' });
-    }
-
-    const endpoint = `${BASE}/api/scienceandfun/url?url=${encodeURIComponent(url)}&key=${encodeURIComponent(key)}`;
-
-    const response = await axios.get(endpoint, {
-      timeout: 10000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json'
-      }
-    });
-
-    res.json(response.data);
-  } catch (error) {
-    console.error('Failed to fetch science URL:', error.message);
-    res.status(error.response?.status || 500).json({ 
-      error: 'Failed to fetch science URL',
-      details: error.message
-    });
-  }
-});
-
-// ✅ 2. Science Play API (play video)
-app.get('/api/science/play', async (req, res) => {
-  try {
-    const { url, key } = req.query;
-
-    if (!url || !key) {
-      return res.status(400).json({ error: 'url and key are required' });
-    }
-
-    const endpoint = `https://apiserver.deltastudy.site/api/scienceandfun/play?url=${encodeURIComponent(url)}&key=${encodeURIComponent(key)}`;
-
-    console.log('Proxying to:', endpoint);
-
-    // 1. Frontend se aane wale Range header ko capture karein
-    const headers = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'application/json, video/*',
-      'Accept-Language': 'en-US,en;q=0.9'
-    };
-
-    if (req.headers.range) {
-      headers['Range'] = req.headers.range; // Frontend ka range request yahan pass karein
-    }
-
-    const response = await axios.get(endpoint, {
-      timeout: 15000,
-      headers: headers,
-      responseType: 'stream' 
-    });
-
-    // 2. CORS headers set karein
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-    // 3. Original server ka status forward karein (Ye 200 ya 206 Partial Content ho sakta hai)
-    res.status(response.status);
-
-    // 4. Sabhi critical streaming headers ko frontend ko pass karein
-    const headersToForward = [
-      'content-type',
-      'content-length',
-      'content-range',
-      'accept-ranges'
-    ];
-
-    headersToForward.forEach(header => {
-      if (response.headers[header]) {
-        res.setHeader(header, response.headers[header]);
-      }
-    });
-
-    // Agar original server accept-ranges nahi bhej raha, toh manual set karein taaki browser skip allow kare
-    if (!res.getHeader('Accept-Ranges')) {
-      res.setHeader('Accept-Ranges', 'bytes');
-    }
-
-    // 5. Video stream frontend ko forward karein
-    response.data.pipe(res);
-
-  } catch (error) {
-    console.error('Failed to fetch science play:', error.message);
-    
-    if (error.code === 'ECONNABORTED') {
-      return res.status(504).json({ error: 'Request timeout' });
-    }
-    
-    res.status(error.response?.status || 500).json({ 
-      error: 'Failed to fetch science play',
-      details: error.message
-    });
-  }
-});
-
-  //==============dsadasda=============
- app.get('/api/rwa/batches/:batchId/topics/:subjectId', async (req, res) => {
-  try {
-    const { batchId, subjectId } = req.params;
-
-    const endpoint = `${BASE}/api/rwa/batches/${encodeURIComponent(batchId)}/topics/${encodeURIComponent(subjectId)}`;
-
-    const response = await axios.get(endpoint, {
-      timeout: 10000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
-
-    res.json(response.data);
-  } catch (error) {
-    console.error('Failed to fetch topics:', error.message);
-    res.status(error.response?.status || 500).json({ 
-      error: 'Failed to fetch topics' 
-    });
-  }
-});
-
-// ✅ 2. Get subjects by courseId
-app.get('/api/rwa/subjects/:courseId', async (req, res) => {
-  try {
-    const { courseId } = req.params;
-
-    const endpoint = `${BASE}/api/rwa/subjects/${encodeURIComponent(courseId)}`;
-
-    const response = await axios.get(endpoint, {
-      timeout: 10000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
-
-    res.json(response.data);
-  } catch (error) {
-    console.error('Failed to fetch subjects:', error.message);
-    res.status(error.response?.status || 500).json({ 
-      error: 'Failed to fetch subjects' 
-    });
-  }
-});
-
-// ✅ 3. Get topic by batchId, subjectId, and topicId
-app.get('/api/rwa/batches/:batchId/topics/:subjectId/:topicId', async (req, res) => {
-  try {
-    const { batchId, subjectId, topicId } = req.params;
-
-    const endpoint = `${BASE}/api/rwa/batches/${encodeURIComponent(batchId)}/topics/${encodeURIComponent(subjectId)}/${encodeURIComponent(topicId)}`;
-
-    const response = await axios.get(endpoint, {
-      timeout: 10000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
-
-    res.json(response.data);
-  } catch (error) {
-    console.error('Failed to fetch topic:', error.message);
-    res.status(error.response?.status || 500).json({ 
-      error: 'Failed to fetch topic' 
-    });
-  }
-});
-//===========rwa
-
-
-// ✅ Get contents by batchId, subjectId, topicId
-app.get('/api/rwa/contents/:batchId/:subjectId/:topicId', async (req, res) => {
-  try {
-    const { batchId, subjectId, topicId } = req.params;
-
-    const endpoint = `${BASE}/api/rwa/contents/${encodeURIComponent(batchId)}/${encodeURIComponent(subjectId)}/${encodeURIComponent(topicId)}`;
-
-    console.log('Calling:', endpoint); // Debug log
-
-    const response = await axios.get(endpoint, {
-      timeout: 10000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json'
-      }
-    });
-
-    res.json(response.data);
-  } catch (error) {
-    console.error('Failed to fetch contents:', error.message);
-    res.status(error.response?.status || 500).json({ 
-      error: 'Failed to fetch contents',
-      details: error.message
-    });
-  }
-});
-
-
-
-// ✅ 2. Get video URL by courseid and videoid
-app.get('/api/rwa/videourl', async (req, res) => {
-  try {
-    const { courseid, videoid } = req.query;
-
-    if (!courseid || !videoid) {
-      return res.status(400).json({ error: 'courseid and videoid are required' });
-    }
-
-    const endpoint = `${BASE}/api/rwa/videourl?courseid=${encodeURIComponent(courseid)}&videoid=${encodeURIComponent(videoid)}`;
-
-    const response = await axios.get(endpoint, {
-      timeout: 10000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
-
-    res.json(response.data);
-  } catch (error) {
-    console.error('Failed to fetch video URL:', error.message);
-    res.status(error.response?.status || 500).json({ 
-      error: 'Failed to fetch video URL' 
-    });
-  }
-});
 
 // PW VERIFY
-app.post("/api/pw/verify", async (req, res) => {
-  try {
-    const { otp, phoneNumber, username } = req.body || {};
 
-    if (!otp || !phoneNumber || !username) {
-      return res.status(400).json({
-        success: false,
-        message: "otp, phoneNumber and username are required"
-      });
-    }
-
-    const upstream1 = await fetch(`${BASE_URL}/api/pw/verify`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json, text/plain, */*"
-      },
-      body: JSON.stringify({
-        otp,
-        phoneNumber,
-        username
-      })
-    });
-
-    const text = await upstream1.text();
-
-    res.status(upstream1.status);
-    res.setHeader(
-      "Content-Type",
-      upstream.headers.get("content-type") || "application/json"
-    );
-    return res.send(text);
-  } catch (error) {
-    console.error("PW VERIFY ERROR:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Proxy error in /api/pw/verify"
-    });
-  }
-});
   // -==========temp mail ===========
   
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BBw7Jxh7FSFdTT2GrcXb9YFgcbCEKVoJWj4vSKu_pzkghrq3VgWznY7oNLxufJUrZWhkzJKIyTzTrXeSPlQgoLI";
@@ -1213,44 +852,7 @@ app.get("/api/subscriptions", (req, res) => {
   // ========= YOUR TWO PROXY ROUTES =========
 
   // Endpoint for /api/batches
-  app.get("/api/batches", async (req, res) => {
-    try {
-      const r = await fetchfn(
-        `${BASE}/api/pw/batches`
-      );
-      const data = await r.json();
-      res.json(data);
-    } catch (e) {
-      console.error("/api/batches error:", e);
-      res.json({ error: e.toString() });
-    }
-  });
-//===============ytryutuytyu======
-    app.get("/api/science/batches", async (req, res) => {
-    try {
-      const r = await fetchfn(
-        `${BASE}/api/scienceandfun/batches`
-      );
-      const data = await r.json();
-      res.json(data);
-    } catch (e) {
-      console.error("/api/batches error:", e);
-      res.json({ error: e.toString() });
-    }
-  });
-  //===================science====
-     app.get("/api/science/batches", async (req, res) => {
-    try {
-      const r = await fetchfn(
-        `${BASE}/api/scienceandfun/batches`
-      );
-      const data = await r.json();
-      res.json(data);
-    } catch (e) {
-      console.error("/api/science/batches error:", e);
-      res.json({ error: e.toString() });
-    }
-  });
+ 
 //==============
  app.get("/api/vibrant/content", async (req, res) => {
   try {
@@ -1407,32 +1009,7 @@ app.get("/api/vibrant/video-details", async (req, res) => {
   }
 });
   //ddfddfdfdf=======
-app.get("/api/nexttoppers/all-content", async (req, res) => {
-  try {
-    // Support both old (r/e) and new (courseid/id) param formats
-    const courseid = req.query.r || req.query.courseid;
-    const id = req.query.e || req.query.id;
 
-    if (!courseid) {
-      return res.status(400).json({ error: "Missing courseid (r or courseid)" });
-    }
-
-    const url = new URL(`${BASE}/api/nexttoppers/all-content`);
-    url.searchParams.set("courseid", courseid);
-
-    if (id) {
-      url.searchParams.set("id", id);
-    }
-
-    const response = await fetchfn(url.toString());
-    const data = await response.json();
-
-    res.json(data);
-  } catch (err) {
-    console.error("/api/nexttoppers/all-content error:", err);
-    res.status(500).json({ error: err.toString() });
-  }
-});
 //-===============00-99
 function buildCloudFrontUrl(pathOrUrl) {
   if (!pathOrUrl) return null;
@@ -1782,68 +1359,10 @@ app.get("/api/vibrant/live", async (req, res) => {
   }
 });
   //======live of mission jeet=====
-  app.get("/api/missionjeet/live", async (req, res) => {
-  try {
-    const response = await fetch(
-      `${BASE}/api/missionjeet/live`,
-      {
-        method: "GET",
-        headers: {
-          "User-Agent": "Mozilla/5.0",
-          "Accept": "application/json",
-          "Origin": "https://learnbyakp.onrender.com",
-          "Referer": "https://learnbyakp.onrender.com/"
-        }
-      }
-    );
-
-    const text = await response.text();
-
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Content-Type", "application/json");
-
-    res.status(response.status).send(text);
-
-  } catch (error) {
-    console.error("LIVE API ERROR:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch live classes"
-    });
-  }
-});
+ 
   
   //====================asdasdasd============
-app.get("/api/nexttoppers/live", async (req, res) => {
-  try {
-    const response = await fetch(
-      `${BASE}/api/nexttoppers/live`,
-      {
-        method: "GET",
-        headers: {
-          "User-Agent": "Mozilla/5.0",
-          "Accept": "application/json",
-          "Origin": "https://learnbyakp.onrender.com",
-          "Referer": "https://learnbyakp.onrender.com/"
-        }
-      }
-    );
 
-    const text = await response.text();
-
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Content-Type", "application/json");
-
-    res.status(response.status).send(text);
-
-  } catch (error) {
-    console.error("LIVE API ERROR:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch live classes"
-    });
-  }
-});
 //================fgdfg==========
 
   app.get('/api/pw/dpp-quiz-proxy', async (req, res) => {
@@ -2081,58 +1600,7 @@ app.get("/api/tempmail/health", (req, res) => {
   // Endpoint for /api/pw/li
 
 //=============pw batch details
-const UPSTREAM = `${BASE}`;
 
-app.post("/api/pw/live", async (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-  try {
-    const batchId = req.body?.batchId;
-
-    if (!batchId) {
-      return res.status(400).json({
-        success: false,
-        message: "batchId required",
-      });
-    }
-
-    const upstream = await fetchfn(`${BASE}/api/pw/live`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-      },
-      body: JSON.stringify({ batchId }),
-    });
-
-    const text = await upstream.text();
-
-    console.log("LIVE upstream status:", upstream.status);
-    console.log("LIVE upstream body:", text);
-
-    if (!upstream.ok) {
-      return res.status(upstream.status).send(text);
-    }
-
-    res.setHeader("Content-Type", "application/json");
-    return res.send(text);
-  } catch (err) {
-    console.error("live route error:", err);
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
-  }
-});
-
-app.options("/api/pw/live", (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  return res.sendStatus(204);
-});
 
 /**
  * 2) BATCH DETAILS API
@@ -2140,47 +1608,7 @@ app.options("/api/pw/live", (req, res) => {
  * POST /api/pw/batchdetails
  * body: { searchParams: { BatchId: "..." } }
  */
-app.post("/api/pw/batchdetails", async (req, res) => {
-  try {
-    const batchId = req.body?.searchParams?.BatchId;
 
-    if (!batchId) {
-      return res.status(400).json({
-        success: false,
-        message: "searchParams.BatchId required",
-      });
-    }
-
-    const upstream1 = await fetchfn(`${CHANGE}/api/pw/batchdetails`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        searchParams: {
-          BatchId: batchId,
-        },
-      }),
-    });
-
-    const text = await upstream1.text();
-
-    if (!upstream1.ok) {
-      console.error("batchdetails upstream error:", upstream1.status, text);
-      return res.status(upstream1.status).send(text);
-    }
-
-    res.setHeader("Content-Type", "application/json");
-    return res.send(text);
-  } catch (err) {
-    console.error("batchdetails route error:", err);
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
-  }
-});
 /**
  * Optional health check
  */
@@ -2200,333 +1628,28 @@ app.get("/api/pw/topics", async (req, res) => {
 
   
   //============dasdddd=====
-  async function proxyJson(req, res, targetUrl, extraHeaders = {}) {
-  try {
-    const upstream = await fetch(targetUrl, {
-      method: "GET",
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json, text/plain, */*",
-        ...extraHeaders,
-      },
-    });
-
-    const contentType = upstream.headers.get("content-type") || "";
-    const text = await upstream.text();
-
-    res.status(upstream.status);
-    if (contentType) res.setHeader("Content-Type", contentType);
-    return res.send(text);
-  } catch (err) {
-    console.error("Proxy error:", err);
-    return res.status(500).json({
-      success: false,
-      error: err.message || "Proxy request failed",
-    });
-  }
-}
 
   //=========eter========
- app.get("/api/pw/get-url", async (req, res) => {
-  const { batchId, subjectId, childId } = req.query;
-
-  if (!batchId || !subjectId || !childId) {
-    return res.status(400).json({
-      success: false,
-      error: "Missing batchId, subjectId, or childId",
-    });
-  }
-
-  const url =
-    `${CHANGE}/api/pw/get-url?batchId=${encodeURIComponent(batchId)}` +
-    `&subjectId=${encodeURIComponent(subjectId)}` +
-    `&childId=${encodeURIComponent(childId)}`;
-
-  return proxyJson(req, res, url);
-});
+ 
 
 /**
  * 4) /api/pw/attachments-url
  * frontend call:
  * /api/pw/attachments-url?BatchId=...&SubjectId=...&ContentId=...
  */
-app.get("/api/pw/attachment-link", async (req, res) => {
-  try {
-    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-    res.setHeader("Pragma", "no-cache");
-    res.setHeader("Expires", "0");
 
-    const batchId = req.query.batchId || req.query.BatchId;
-    const subjectId = req.query.subjectId || req.query.SubjectId;
-    const scheduleId = req.query.scheduleId || req.query.ContentId || req.query.contentId;
-
-    if (!batchId || !subjectId || !scheduleId) {
-      return res.status(400).json({
-        success: false,
-        error: "batchId, subjectId, and scheduleId are required",
-        received: {
-          batchId,
-          subjectId,
-          scheduleId,
-          query: req.query
-        }
-      });
-    }
-
-    const upstreamUrl =
-      `${CHANGE}/api/pw/attachment-link` +
-      `?batchId=${encodeURIComponent(batchId)}` +
-      `&subjectId=${encodeURIComponent(subjectId)}` +
-      `&scheduleId=${encodeURIComponent(scheduleId)}`;
-
-    const upstream = await fetch(upstreamUrl, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "Mozilla/5.0"
-      }
-    });
-
-    const text = await upstream.text();
-
-    let parsed;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      parsed = { data: text };
-    }
-
-    return res.status(200).json({
-      data: parsed?.data || parsed
-    });
-
-  } catch (error) {
-    console.error("attachment-link proxy error:", error);
-
-    return res.status(500).json({
-      success: false,
-      error: "Internal server error while fetching attachment-link",
-      details: error.message
-    });
-  }
-});
-app.get("/api/pw/attachment-url", async (req, res) => {
-  try {
-    const { BatchId, SubjectId, ContentId } = req.query;
-
-    if (!BatchId || !SubjectId || !ContentId) {
-      return res.status(400).json({
-        success: false,
-        error: "BatchId, SubjectId and ContentId are required"
-      });
-    }
-
-    const upstreamUrl =
-      `${CHANGE}/api/pw/attachments-url` +
-      `?BatchId=${encodeURIComponent(BatchId)}` +
-      `&SubjectId=${encodeURIComponent(SubjectId)}` +
-      `&ContentId=${encodeURIComponent(ContentId)}`;
-
-    const upstream = await fetch(upstreamUrl, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "Mozilla/5.0"
-      }
-    });
-
-    const text = await upstream.text();
-
-    let parsed;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      parsed = { data: text };
-    }
-
-    return res.status(200).json({
-      success: true,
-      upstreamStatus: upstream.status,
-      data: parsed?.data || parsed
-    });
-
-  } catch (error) {
-    console.error("attachments-url proxy error:", error);
-
-    return res.status(500).json({
-      success: false,
-      error: "Internal server error while fetching attachment-url",
-      details: error.message
-    });
-  }
-});
-
-  
 /**
  * 5) /api/pw/kid
  * frontend call:
  * /api/pw/kid?mpdUrl=...
  */
-app.get("/api/pw/kid", async (req, res) => {
-  const { mpdUrl } = req.query;
 
-  if (!mpdUrl) {
-    return res.status(400).json({
-      success: false,
-      error: "Missing mpdUrl",
-    });
-  }
-
-  const url = `${CHANGE}/api/pw/kid?mpdUrl=${encodeURIComponent(mpdUrl)}`;
-  return proxyJson(req, res, url);
-});
-  
 
 /**
  * 6) /api/pw/otp
  * frontend call:
  * /api/pw/otp?kid=...
  */
-app.get("/api/pw/otp", async (req, res) => {
-  const { kid } = req.query;
-
-  if (!kid) {
-    return res.status(400).json({
-      success: false,
-      error: "Missing kid",
-    });
-  }
-
-  const url = `${BASE}/api/pw/otp?kid=${encodeURIComponent(kid)}`;
-  return proxyJson(req, res, url);
-});
-
-
-//===========corckes====
-  function setCors(res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-}
-
-app.options("*", (req, res) => {
-  setCors(res);
-  res.sendStatus(204);
-});
-
-async function proxyGet(req, res, upstreamPath, queryMap = null) {
-  try {
-    setCors(res);
-
-    const params = new URLSearchParams();
-
-    if (queryMap) {
-      for (const [from, to] of Object.entries(queryMap)) {
-        const value = req.query[from];
-        if (value !== undefined && value !== null && value !== "") {
-          params.set(to, value);
-        }
-      }
-    } else {
-      for (const [key, value] of Object.entries(req.query)) {
-        if (value !== undefined && value !== null && value !== "") {
-          params.set(key, value);
-        }
-      }
-    }
-
-    const url = `${BASE}${upstreamPath}?${params.toString()}`;
-    const upstream = await fetchfn(url, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "Mozilla/5.0",
-      },
-    });
-
-    const contentType = upstream.headers.get("content-type") || "application/json";
-    const text = await upstream.text();
-
-    if (!upstream.ok) {
-      return res.status(upstream.status).type(contentType).send(text);
-    }
-
-    return res.status(200).type(contentType).send(text);
-  } catch (err) {
-    console.error(`Proxy error for ${upstreamPath}:`, err);
-    return res.status(500).json({ success: false, message: err.message });
-  }
-}
-  
-//===========656567============
-app.get("/api/pw/datacontent", async (req, res) => {
-  return proxyGet(req, res, "/api/pw/datacontent", {
-    batchId: "batchId",
-    subjectSlug: "subjectSlug",
-    topicSlug: "topicSlug",
-    contentType: "contentType",
-  });
-});
-// ================= HELPER =================
-const safeFetch = async (url) => {
-  const res = await fetchfn(url);
-  if (!res.ok) throw new Error(`API Error: ${res.status}`);
-  return res.json();
-};
-// ==========343=============
-
-  
-// ================= DATACONTENT =================
-app.get("/api/pw/videoneasdw", async (req, res) => {
-  return proxyGet(req, res, "/api/pw/videonew", {
-    batchId: "batchId",
-    subjectId: "subjectId",
-    childId: "childId",
-  });
-});
-// ================= VIDEO COMBINED =================
-app.get("/api/pw/videosupadser", async (req, res) => {
-  return proxyGet(req, res, "/api/pw/videosuper", {
-    batchId: "batchId",
-    childId: "childId",
-  });
-});
-
-// ================= VIDEO PLAY =================
-
-// ================= VIEW =================
-app.get("/api/pw/view", async (req, res) => {
-  try {
-    setCors(res);
-
-    const { url, filename } = req.query;
-    if (!url) {
-      return res.status(400).send("Missing url");
-    }
-
-    const upstream = await fetchfn(url, {
-      method: "GET",
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        Accept: "*/*",
-      },
-    });
-
-    const contentType =
-      upstream.headers.get("content-type") || "application/octet-stream";
-
-    const buffer = await upstream.arrayBuffer();
-
-    res.setHeader("Content-Type", contentType);
-    if (filename) {
-      res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
-    }
-    return res.send(Buffer.from(buffer));
-  } catch (err) {
-    console.error("view error:", err);
-    return res.status(500).send(err.message);
-  }
-});
 
 // ================= DOWNLOAD =================
 app.get("/api/pw/download", async (req, res) => {
