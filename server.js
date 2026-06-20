@@ -505,23 +505,19 @@ const headersnt = {
 };
 
 // Proxy endpoint
-app.all('/api/nexttoppers/live', async (req, res) => {
+app.get('/api/nexttoppers/live', async (req, res) => {
   try {
-    // Make request to target API with all headers in one object
     const response = await axios({
-      method: req.method,
+      method: 'get',
       url: TARGET_URL,
       headers: headersnt,
-      data: req.body,
       timeout: 10000
     });
 
-    // Send response back to client
     res.status(response.status).json(response.data);
-    
   } catch (error) {
     console.error('Proxy error:', error.message);
-    
+
     if (error.response) {
       res.status(error.response.status).json(error.response.data);
     } else {
@@ -547,23 +543,19 @@ const headersmj = {
   'user_id': '3652828'
 };
   
-app.all('/api/missionjeet/live', async (req, res) => {
+app.get('/api/missionjeet/live', async (req, res) => {
   try {
-    // Make request to target API with all headers in one object
     const response = await axios({
-      method: req.method,
+      method: 'get',
       url: TARGET_URL,
       headers: headersmj,
-      data: req.body,
       timeout: 10000
     });
 
-    // Send response back to client
     res.status(response.status).json(response.data);
-    
   } catch (error) {
     console.error('Proxy error:', error.message);
-    
+
     if (error.response) {
       res.status(error.response.status).json(error.response.data);
     } else {
