@@ -486,11 +486,94 @@ function decryptVibrant(input) {
 }
 
 // 🎬 PLAY API
+// nexttoppers 
 
+const TARGET_URL = 'https://course.nexttoppers.com/course/classes';
 
+// All headers in ONE object (including app_id, authorization, user_id)
+const headersnt = {
+  'accept': 'application/json, text/plain, */*',
+  'content-type': 'application/json',
+  'origin': 'https://nexttoppers.com',
+  'platform': '3',
+  'referer': 'https://nexttoppers.com/',
+  'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+  'version': '1',
+  'app_id': '1770981347',
+  'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo0MTc4MTQ4LCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiYWQxY2FlODMtODc1YS00MmE5LWEwZjQtNjkwZDM2MTNmZTNkIiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzg4NjI5NDksImV4cCI6MTc4MTQ1NDk0OX0.4nwzl8l_wMjMFKihpXSkLq45bEVNqIBt5LtFem22vws',
+  'user_id': '3652828'
+};
 
-//=============weqewqe==========
+// Proxy endpoint
+app.all('/api/nexttoppers/live', async (req, res) => {
+  try {
+    // Make request to target API with all headers in one object
+    const response = await axios({
+      method: req.method,
+      url: TARGET_URL,
+      headers: headersnt,
+      data: req.body,
+      timeout: 10000
+    });
 
+    // Send response back to client
+    res.status(response.status).json(response.data);
+    
+  } catch (error) {
+    console.error('Proxy error:', error.message);
+    
+    if (error.response) {
+      res.status(error.response.status).json(error.response.data);
+    } else {
+      res.status(500).json({
+        error: 'Proxy server error',
+        message: error.message
+      });
+    }
+  }
+});
+
+//=============missionjeet==========
+const headersmj = {
+  'accept': 'application/json, text/plain, */*',
+  'content-type': 'application/json',
+  'origin': 'https://nexttoppers.com',
+  'platform': '3',
+  'referer': 'https://nexttoppers.com/',
+  'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+  'version': '1',
+  'app_id': '1772100600',
+  'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozNjUyODI4LCJhcHBfaWQiOiIxNzcwOTgxMzQ3IiwiZGV2aWNlX2lkIjoiYzZmZTNjYWYtOWRkMS00ZTE0LTgyMGEtNGIyZDVjMjJjNDViIiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3ODAxMjEwNjQsImV4cCI6MTc4MjcxMzA2NF0.sFVc3OuVvIfZfLkyDWbkQNmV92oRIzycNh7e-bMMck8',
+  'user_id': '3652828'
+};
+  
+app.all('/api/missionjeet/live', async (req, res) => {
+  try {
+    // Make request to target API with all headers in one object
+    const response = await axios({
+      method: req.method,
+      url: TARGET_URL,
+      headers: headersmj,
+      data: req.body,
+      timeout: 10000
+    });
+
+    // Send response back to client
+    res.status(response.status).json(response.data);
+    
+  } catch (error) {
+    console.error('Proxy error:', error.message);
+    
+    if (error.response) {
+      res.status(error.response.status).json(error.response.data);
+    } else {
+      res.status(500).json({
+        error: 'Proxy server error',
+        message: error.message
+      });
+    }
+  }
+});
 //======== rtrtrrttt=====
 app.get("/api/vibrant/previous-live", async (req, res) => {
   try {
