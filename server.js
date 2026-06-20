@@ -499,8 +499,8 @@ const headersnt = {
   version: "1",
   app_id: "1770981347",
   authorization:
-    "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo0MTc4MTQ4LCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiYWQxY2FlODMtODc1YS00MmE5LWEwZjQtNjkwZDM2MTNmZTNkIiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzg4NjI5NDksImV4cCI6MTc4MTQ1NDk0OX0.4nwzl8l_wMjMFKihpXSkLq45bEVNqIBt5LtFem22vws",
-  user_id: "3652828"
+    "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxNDczMTEyLCJhcHBfaWQiOiIxNzcwOTgxMzQ3IiwiZGV2aWNlX2lkIjoiOTcwNjMzNTQtMGI3OS00ZTdhLThhMjgtNTJiMjI4YTllNDY2IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3ODE3NjgzNzIsImV4cCI6MTc4NDM2MDM3Mn0.OV9DlUnBVKO7KfJ6zvvylI6qWmqJNRiLh7I-vYMTN_4",
+  user_id: "1473112"
 };
 
 function buildHeaders(req) {
@@ -550,27 +550,37 @@ const headersmj = {
   'user_id': '3652828'
 };
   
-app.get('/api/missionjeet/live', async (req, res) => {
+function buildHeaders(req) {
+  return {
+    ...headersmj,
+    authorization: req.header("authorization") || req.header("Authorization") || headersnt.authorization,
+    user_id: req.header("user_id") || headersnt.user_id,
+    platform: req.header("platform") || headersnt.platform,
+    version: req.header("version") || req.header("Version") || headersnt.version,
+    app_id: req.header("app_id") || headersnt.app_id,
+  };
+}
+
+app.get("/api/missionjeet/live", async (req, res) => {
   try {
-    const response = await axios({
-      method: 'get',
-      url: TARGET_URL,
-      headers: headersmj,
-      timeout: 10000
-    });
+    const payload = {
+      type: req.query.type || "1",
+      page: Number(req.query.page || 1),
+      limit: Number(req.query.limit || 50),
+    };
 
-    res.status(response.status).json(response.data);
-  } catch (error) {
-    console.error('Proxy error:', error.message);
+    const upstream = await axios.post(
+      `${BASE_URL}/course/classes`,
+      payload,
+      { headers: buildHeaders(req) }
+    );
 
-    if (error.response) {
-      res.status(error.response.status).json(error.response.data);
-    } else {
-      res.status(500).json({
-        error: 'Proxy server error',
-        message: error.message
-      });
-    }
+    res.status(upstream.status).json(upstream.data);
+  } catch (err) {
+    const status = err.response?.status || 500;
+    res.status(status).json(
+      err.response?.data || { success: false, message: err.message }
+    );
   }
 });
 //======== rtrtrrttt=====
