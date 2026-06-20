@@ -487,48 +487,55 @@ function decryptVibrant(input) {
 
 // 🎬 PLAY API
 // nexttoppers 
+const BASE_URL = process.env.COURSE_API_BASE || "https://course.nexttoppers.com";
 
-const TARGET_URL = 'https://course.nexttoppers.com/course/classes';
-
-// All headers in ONE object (including app_id, authorization, user_id)
 const headersnt = {
-  'accept': 'application/json, text/plain, */*',
-  'content-type': 'application/json',
-  'origin': 'https://nexttoppers.com',
-  'platform': '3',
-  'referer': 'https://nexttoppers.com/',
-  'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-  'version': '1',
-  'app_id': '1770981347',
-  'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo0MTc4MTQ4LCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiYWQxY2FlODMtODc1YS00MmE5LWEwZjQtNjkwZDM2MTNmZTNkIiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzg4NjI5NDksImV4cCI6MTc4MTQ1NDk0OX0.4nwzl8l_wMjMFKihpXSkLq45bEVNqIBt5LtFem22vws',
-  'user_id': '3652828'
+  accept: "application/json, text/plain, */*",
+  "content-type": "application/json",
+  origin: "https://nexttoppers.com",
+  platform: "3",
+  referer: "https://nexttoppers.com/",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+  version: "1",
+  app_id: "1770981347",
+  authorization:
+    "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo0MTc4MTQ4LCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiYWQxY2FlODMtODc1YS00MmE5LWEwZjQtNjkwZDM2MTNmZTNkIiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzg4NjI5NDksImV4cCI6MTc4MTQ1NDk0OX0.4nwzl8l_wMjMFKihpXSkLq45bEVNqIBt5LtFem22vws",
+  user_id: "3652828"
 };
 
-// Proxy endpoint
-app.get('/api/nexttoppers/live', async (req, res) => {
+function buildHeaders(req) {
+  return {
+    ...headersnt,
+    authorization: req.header("authorization") || req.header("Authorization") || headersnt.authorization,
+    user_id: req.header("user_id") || headersnt.user_id,
+    platform: req.header("platform") || headersnt.platform,
+    version: req.header("version") || req.header("Version") || headersnt.version,
+    app_id: req.header("app_id") || headersnt.app_id,
+  };
+}
+
+app.get("/api/nexttoppers/live", async (req, res) => {
   try {
-    const response = await axios({
-      method: 'get',
-      url: TARGET_URL,
-      headers: headersnt,
-      timeout: 10000
-    });
+    const payload = {
+      type: req.query.type || "1",
+      page: Number(req.query.page || 1),
+      limit: Number(req.query.limit || 50),
+    };
 
-    res.status(response.status).json(response.data);
-  } catch (error) {
-    console.error('Proxy error:', error.message);
+    const upstream = await axios.post(
+      `${BASE_URL}/course/classes`,
+      payload,
+      { headers: buildHeaders(req) }
+    );
 
-    if (error.response) {
-      res.status(error.response.status).json(error.response.data);
-    } else {
-      res.status(500).json({
-        error: 'Proxy server error',
-        message: error.message
-      });
-    }
+    res.status(upstream.status).json(upstream.data);
+  } catch (err) {
+    const status = err.response?.status || 500;
+    res.status(status).json(
+      err.response?.data || { success: false, message: err.message }
+    );
   }
 });
-
 //=============missionjeet==========
 const headersmj = {
   'accept': 'application/json, text/plain, */*',
