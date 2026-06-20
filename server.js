@@ -489,7 +489,7 @@ function decryptVibrant(input) {
 // nexttoppers 
 const BASE_URL = process.env.COURSE_API_BASE || "https://course.nexttoppers.com";
 
-const headersnt = {
+const defaultHeaders = {
   accept: "application/json, text/plain, */*",
   "content-type": "application/json",
   origin: "https://nexttoppers.com",
@@ -499,22 +499,32 @@ const headersnt = {
   version: "1",
   app_id: "1770981347",
   authorization:
-    "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxNDczMTEyLCJhcHBfaWQiOiIxNzcwOTgxMzQ3IiwiZGV2aWNlX2lkIjoiOTcwNjMzNTQtMGI3OS00ZTdhLThhMjgtNTJiMjI4YTllNDY2IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3ODE3NjgzNzIsImV4cCI6MTc4NDM2MDM3Mn0.OV9DlUnBVKO7KfJ6zvvylI6qWmqJNRiLh7I-vYMTN_4",
-  user_id: "1473112"
+    "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxNDczMTEyLCJhcHBfaWQiOiIxNzcwOTgxMzQ3IiwiZGV2aWNlX2lkIjoiOTcwNjMzNTQtMGI3OS00ZTdhLThhMjgtNTJiMjI4YTllNDY2IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3ODE5NTMyMDIsImV4cCI6MTc4NDU0NTIwMn0.H5C1eUTuMTVi8LrT_Q3eNJnlX_19Y7PRySuf6SBgcyc",
+  user_id: "1473112",
 };
 
 function buildHeaders(req) {
-  return {
-    ...headersnt,
-    authorization: req.header("authorization") || req.header("Authorization") || headersnt.authorization,
-    user_id: req.header("user_id") || headersnt.user_id,
-    platform: req.header("platform") || headersnt.platform,
-    version: req.header("version") || req.header("Version") || headersnt.version,
-    app_id: req.header("app_id") || headersnt.app_id,
-  };
+  const headers = { ...defaultHeaders };
+
+  const auth = req.header("authorization") || req.header("Authorization");
+  if (auth) headers.authorization = auth;
+
+  const userId = req.header("user_id");
+  if (userId) headers.user_id = userId;
+
+  const platform = req.header("platform");
+  if (platform) headers.platform = platform;
+
+  const version = req.header("version") || req.header("Version");
+  if (version) headers.version = version;
+
+  const appId = req.header("app_id");
+  if (appId) headers.app_id = appId;
+
+  return headers;
 }
 
-app.get("/api/nexttoppers/live", async (req, res) => {
+app.get("/api/live-classes", async (req, res) => {
   try {
     const payload = {
       type: req.query.type || "1",
@@ -522,16 +532,18 @@ app.get("/api/nexttoppers/live", async (req, res) => {
       limit: Number(req.query.limit || 50),
     };
 
+    const headers = buildHeaders(req);
+    console.log("UPSTREAM HEADERS:", headers);
+
     const upstream = await axios.post(
       `${BASE_URL}/course/classes`,
       payload,
-      { headers: buildHeaders(req) }
+      { headers }
     );
 
     res.status(upstream.status).json(upstream.data);
   } catch (err) {
-    const status = err.response?.status || 500;
-    res.status(status).json(
+    res.status(err.response?.status || 500).json(
       err.response?.data || { success: false, message: err.message }
     );
   }
