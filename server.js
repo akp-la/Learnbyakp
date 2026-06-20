@@ -7,7 +7,7 @@ const jwt = require("jsonwebtoken");
 
 
 const cloudscraper = require('cloudscraper');
-
+const { createProxyMiddleware } = require('http-proxy-middleware');
 const webpush = require("web-push");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
@@ -484,6 +484,18 @@ function decryptVibrant(input) {
     return null;
   }
 }
+//===============
+  app.use(
+  '/api/nexttoppers/live',
+  createProxyMiddleware({
+    target: 'https://apiserver.deltastudy.site',
+    changeOrigin: true,
+    secure: true,
+    pathRewrite: {
+      '^/api/nexttoppers/live': '/api/nexttoppers/live',
+    },
+  })
+);
 
 // 🎬 PLAY API
 // nexttoppers 
