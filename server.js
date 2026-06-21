@@ -485,120 +485,7 @@ function decryptVibrant(input) {
   }
 }
 //===============
-  app.use(
-  '/api/nexttoppers/live',
-  createProxyMiddleware({
-    target: 'https://apiserver.deltastudy.site',
-    changeOrigin: true,
-    secure: true,
-    pathRewrite: {
-      '^/api/nexttoppers/live': '/api/nexttoppers/live',
-    },
-  })
-);
-
-// 🎬 PLAY API
-// nexttoppers 
-const BASE_URL = process.env.COURSE_API_BASE || "https://course.nexttoppers.com";
-
-const fixedHeaders = {
-  accept: "application/json, text/plain, */*",
-  "content-type": "application/json",
-  origin: "https://learnbyakp.online",
-  authority: "course.nexttoppers.com",
-  platform: "3",
-  Referer: "https://Leanbyakp.online/",
-  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
-  Version: "1",
-  App_id: "1770981347",
-  Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo0MTYyOTIsImFwcF9pZCI6IjE3NzA5ODEzNDciLCJkZXZpY2VfaWQiOiJiOTQ0ZmRiZi0xOTI1LTQ3ZDAtYjg0My1mYjJkNDZiNjQ3ZTIiLCJwbGF0Zm9ybSI6IjMiLCJ1c2VyX3R5cGUiOjEsImlhdCI6MTc4MTA3MDY1MiwiZXhwIjoxNzgzNjYyNjUyfQ.MfkGR14ZwL62H46ahgEvdYOjs8Y03rQXhe-prs57zF8",
-  User_id: "4245913",
-};
-
-function buildHeaders(req) {
-  const headers = {
-    ...fixedHeaders,
-    Authorization: req.header("Authorization") || req.header("authorization") || fixedHeaders.Authorization,
-    user_id: req.header("user_id") || fixedHeaders.user_id,
-    platform: req.header("platform") || fixedHeaders.platform,
-    Version: req.header("Version") || req.header("version") || fixedHeaders.Version,
-    app_id: req.header("app_id") || fixedHeaders.app_id,
-  };
-
-  console.log("REQ HEADERS:", req.headers);
-  console.log("UPSTREAM HEADERS:", headers);
-
-  return headers;
-}
-
-app.get("/api/live-classes", async (req, res) => {
-  try {
-    const payload = {
-      type: req.query.type || "1",
-      page: Number(req.query.page || 1),
-      limit: Number(req.query.limit || 50),
-    };
-
-    const upstream = await axios.post(
-      `${BASE_URL}/course/classes`,
-      { headers: buildHeaders(req) }
-    );
-
-    res.status(upstream.status).json(upstream.data);
-  } catch (err) {
-    console.log("UPSTREAM ERROR:", err.response?.data || err.message);
-    res.status(err.response?.status || 500).json(
-      err.response?.data || { success: false, message: err.message }
-    );
-  }
-});
-//=============missionjeet==========
-const headersmj = {
-  'accept': 'application/json, text/plain, */*',
-  'content-type': 'application/json',
-  'origin': 'https://nexttoppers.com',
-  'platform': '3',
-  'referer': 'https://nexttoppers.com/',
-  'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-  'version': '1',
-  'app_id': '1772100600',
-  'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozNjUyODI4LCJhcHBfaWQiOiIxNzcwOTgxMzQ3IiwiZGV2aWNlX2lkIjoiYzZmZTNjYWYtOWRkMS00ZTE0LTgyMGEtNGIyZDVjMjJjNDViIiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3ODAxMjEwNjQsImV4cCI6MTc4MjcxMzA2NF0.sFVc3OuVvIfZfLkyDWbkQNmV92oRIzycNh7e-bMMck8',
-  'user_id': '3652828'
-};
   
-function buildHeaders(req) {
-  return {
-    ...headersmj,
-    authorization: req.header("authorization") || req.header("Authorization") || headersnt.authorization,
-    user_id: req.header("user_id") || headersnt.user_id,
-    platform: req.header("platform") || headersnt.platform,
-    version: req.header("version") || req.header("Version") || headersnt.version,
-    app_id: req.header("app_id") || headersnt.app_id,
-  };
-}
-
-app.get("/api/missionjeet/live", async (req, res) => {
-  try {
-    const payload = {
-      type: req.query.type || "1",
-      page: Number(req.query.page || 1),
-      limit: Number(req.query.limit || 50),
-    };
-
-    const upstream = await axios.post(
-      `${BASE_URL}/course/classes`,
-      payload,
-      { headers: buildHeaders(req) }
-    );
-
-    res.status(upstream.status).json(upstream.data);
-  } catch (err) {
-    const status = err.response?.status || 500;
-    res.status(status).json(
-      err.response?.data || { success: false, message: err.message }
-    );
-  }
-});
 //======== rtrtrrttt=====
 app.get("/api/vibrant/previous-live", async (req, res) => {
   try {
@@ -1724,13 +1611,7 @@ app.get("/api/test", (req, res) => {
   res.json({ ok: true });
 });
 
-  // Endpoint for /api/pw/topics
-app.get("/api/pw/topics", async (req, res) => {
-  return proxyGet(req, res, "/api/pw/topics", {
-    BatchId: "BatchId",
-    SubjectId: "SubjectId",
-  });
-});
+
 
   //================mobile otp====
 
