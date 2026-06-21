@@ -392,74 +392,79 @@ function isLiveLectureItem(item) {
 
 // ---------- Open content (with live redirect) ----------
 
-async function openContent(item) {
-  try {
-    // Test item
-    if (isTestItem(item)) {
-      openTestById(item.entity_id);
-      return;
-    }
+async function openContent(item) { 
+  try { 
+    // 1) Test item → test flow
+    if (isTestItem(item)) { 
+      openTestById(item.entity_id); 
+      return; 
+    } 
 
-    // Live lecture item → MissionJeet live page
-    if (isLiveLectureItem(item)) {
-      const courseId = String(item.course_id || state.courseId || '');
-      if (courseId) {
-        // Important: missionjeet/live?id=course_id
-        location.href = `/missionjeet/live?id=${encodeURIComponent(courseId)}`;
-        return;
-      }
-    }
+    // 2) Live lecture ya normal content → sabka flow yahi hai
+    const url = new URL(API.contentDetails); 
+    url.searchParams.set("content_id", String(item.entity_id)); 
+    url.searchParams.set("course_id", String(item.course_id)); 
+    
+    const json = await apiFetch(url.toString(), { method: "GET" }); 
+    if (!json.success || !json.data) return; 
+    
+    const { file_url, vdc_id, file_type, video_type, video_id, is_live } = json.data; 
 
-    // Normal content flow
-    const url = new URL(API.contentDetails);
-    url.searchParams.set('content_id', String(item.entity_id));
-    url.searchParams.set('course_id', String(item.course_id));
+    // Live lecture detect (optional: API se bhi आवा सकता है)
+    const isLive = isLiveLectureItem(item) || Number(is_live) === 1;
 
-    const json = await apiFetch(url.toString(), { method: 'GET' });
-    if (!json.success || !json.data) return;
+    if (file_url && file_url.trim()) { 
+      const clean = file_url.trim(); 
+      const title = item?.title ? encodeURIComponent(item.title) : ""; 
+      // created_at ko fetch karo (item se ya API response se)
+      const createdAt = item?.created_at || json?.data?.created_at || "";
 
-    const { file_url, vdc_id, file_type, video_type, video_id } = json.data;
+      if (Number(file_type) === 2 && Number(video_type) === 1) { 
+        window.open(`https://www.youtube.com/watch?v=${clean}`, "_blank"); 
+      } else if (/\.(mpd|m3u8|mp4)(\?|$)/i.test(clean)) { 
+        // Live ho → start param add karo, normal ho → bina start
+        const startParam = isLive && createdAt ? `?start=${encodeURIComponent(createdAt)}` : "";
+        location.href = `/videoplayer?file_url=${encodeURIComponent(clean)}${startParam}&title=${title}`; 
+      } else { 
+        window.open(clean, "_blank"); 
+      } 
+    } else { 
+      const finalVideoId = video_id || vdc_id || json?.data?.id || ""; 
+      if (String(finalVideoId).trim()) { 
+        setDrmLoader(true, item?.title || ""); 
+        try { 
+          const drmRes = await fetch( 
+            `https://learnbyakp.onrender.com/api/nexttoppers/drm?videoid=${encodeURIComponent(
+              String(finalVideoId).trim()
+            )}` 
+          ); 
+          const drmJson = await drmRes.json(); 
+          const drmFileUrl = drmJson?.data?.link?.file_url || drmJson?.file_url || ""; 
 
-    if (file_url && file_url.trim()) {
-      const clean = file_url.trim();
-      const title = item?.title ? encodeURIComponent(item.title) : '';
-
-      if (Number(file_type) === 2 && Number(video_type) === 1) {
-        window.open(`https://www.youtube.com/watch?v=${clean}`, '_blank');
-      } else if (/\.(mpd|m3u8|mp4)(\?|$)/i.test(clean)) {
-        location.href = `/videoplayer?file_url=${encodeURIComponent(clean)}&title=${title}`;
-      } else {
-        window.open(clean, '_blank');
-      }
-    } else {
-      const finalVideoId = video_id || vdc_id || json?.data?.id || '';
-
-      if (String(finalVideoId).trim()) {
-        try {
-          const drmRes = await fetch(
-            `https://learnbyakp.onrender.com/api/nexttoppers/drm?videoid=${encodeURIComponent(String(finalVideoId).trim())}`
-          );
-          const drmJson = await drmRes.json();
-
-          const drmFileUrl = drmJson?.data?.link?.file_url || drmJson?.file_url || '';
-
-          if (drmFileUrl && String(drmFileUrl).trim()) {
-            location.href =
-              `/videoplayer?file_url=${encodeURIComponent(String(drmFileUrl).trim())}` +
-              `&title=${encodeURIComponent(item?.title || '')}`;
-          } else {
-            console.warn('No DRM file_url found for video:', finalVideoId, drmJson);
-          }
-        } catch (err) {
-          console.error('Failed to fetch DRM video details:', err);
-        }
-      } else {
-        console.warn('No file_url, video_id or vdc_id found for content:', item.entity_id);
-      }
-    }
-  } catch (err) {
-    console.error('Content details fetch failed:', err);
-  }
+          if (drmFileUrl && String(drmFileUrl).trim()) { 
+            const createdAt = item?.created_at || json?.data?.created_at || "";
+            // Live ho → start param add karo, normal ho → bina start
+            const startParam = isLive && createdAt ? `&start=${encodeURIComponent(createdAt)}` : "";
+            redirectToVideoPlayer( 
+              `/videoplayer?file_url=${encodeURIComponent(
+                String(drmFileUrl).trim()
+              )}&title=${encodeURIComponent(item?.title || "")}${startParam}` 
+            ); 
+          } else { 
+            console.warn("No DRM file_url found for video:", finalVideoId, drmJson); 
+            setDrmLoader(false); 
+          } 
+        } catch (err) { 
+          console.error("Failed to fetch DRM video details:", err); 
+          setDrmLoader(false); 
+        } 
+      } else { 
+        console.warn("No file_url, video_id or vdc_id found for content:", item.entity_id); 
+      } 
+    } 
+  } catch (err) { 
+    console.error("Content details fetch failed:", err); 
+  } 
 }
 
 // ---------- Tabs & search ----------
