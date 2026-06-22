@@ -5,7 +5,7 @@ const SUBJECT_ID=QS.get('subjectId')||'';
 const BATCH_NAME=QS.get('batchName')||'';
 const SUBJECT_NAME=QS.get('subjectName')||'';
 
-if(!BATCH_ID||!SUBJECT_ID)location.href='/batches';
+if(!BATCH_ID||!SUBJECT_ID)location.href='/study-v2/batches';
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function ep(v){return encodeURIComponent(v||'')}
@@ -48,7 +48,7 @@ themeToggle.addEventListener('click',()=>{
 const PW_HDR={
   "Accept-Encoding":"gzip",
   "User-Agent":"Dalvik/2.1.0 (Linux; U; Android 11; SM-A707F Build/RP1A.200720.012)",
-  "authorization":"Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODEzNTA5ODMuNTg3LCJkYXRhIjp7Il9pZCI6IjY0YWQ4ODM5ZmU5ZTZhMDAxODRjMGI1ZSIsInVzZXJuYW1lIjoiOTU1OTk3NTM3MCIsImZpcnN0TmFtZSI6IkFrdWwiLCJsYXN0TmFtZSI6IlByYWphcGF0aSIsIm9yZ2FuaXphdGlvbiI6eyJfaWQiOiI1ZWIzOTNlZTk1ZmFiNzQ2OGE3OWQxODkiLCJ3ZWJzaXRlIjoicGh5c2ljc3dhbGxhaC5jb20iLCJuYW1lIjoiUGh5c2ljc3dhbGxhaCJ9LCJlbWFpbCI6ImFrdWxwcmFqYXBhdGkwMEBnbWFpbC5jb20iLCJyb2xlcyI6WyI1YjI3YmQ5NjU4NDJmOTUwYTc3OGM2ZWYiXSwiY291bnRyeUdyb3VwIjoiSU4iLCJ0eXBlIjoiVVNFUiJ9LCJqdGkiOiJzZjRjb0djclR3U0IzYVp0eDVsZDlBXzY0YWQ4ODM5ZmU5ZTZhMDAxODRjMGI1ZSIsImlhdCI6MTc4MDc0NjE4M30.JjJJUgZcESOST6W-oc2bPBaTuxLexIoYl8mA8SInze4",
+  "authorization":"Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODI3Mjk3NjcuMTgxLCJkYXRhIjp7Il9pZCI6IjY0YWQ4ODM5ZmU5ZTZhMDAxODRjMGI1ZSIsInVzZXJuYW1lIjoiOTU1OTk3NTM3MCIsImZpcnN0TmFtZSI6IkFrdWwiLCJsYXN0TmFtZSI6IlByYWphcGF0aSIsIm9yZ2FuaXphdGlvbiI6eyJfaWQiOiI1ZWIzOTNlZTk1ZmFiNzQ2OGE3OWQxODkiLCJ3ZWJzaXRlIjoicGh5c2ljc3dhbGxhaC5jb20iLCJuYW1lIjoiUGh5c2ljc3dhbGxhaCJ9LCJlbWFpbCI6ImFrdWxwcmFqYXBhdGkwMEBnbWFpbC5jb20iLCJyb2xlcyI6WyI1YjI3YmQ5NjU4NDJmOTUwYTc3OGM2ZWYiXSwiY291bnRyeUdyb3VwIjoiSU4iLCJvbmVSb2xlcyI6W10sInR5cGUiOiJVU0VSIn0sImp0aSI6IjkwQU53cU83U01TZXhEZzRpT3Y4TXdfNjRhZDg4MzlmZTllNmEwMDE4NGMwYjVlIiwiaWF0IjoxNzgyMTI0OTY3fQ.4-pDG_5osbx8bpv3clPlRNxwg3YZuyd6ajiarpCcbdI",
   "client-id":"ADMIN",
   "client-type":"MOBILE",
   "client-version":"538",
@@ -106,7 +106,7 @@ async function loadPage(){
       const li=document.createElement('li');
       li.className='chapter-item';
       li.innerHTML=
-        `<a class="chapter-link" href="type2?batchId=${ep(BATCH_ID)}&subjectId=${ep(SUBJECT_ID)}&chapterId=${ep(ch._id)}&batchName=${ep(BATCH_NAME)}&subjectName=${ep(SUBJECT_NAME)}&chapterName=${ep(ch.name)}&section=videos">
+        `<a class="chapter-link" href="type?batchId=${ep(BATCH_ID)}&subjectId=${ep(SUBJECT_ID)}&chapterId=${ep(ch._id)}&batchName=${ep(BATCH_NAME)}&subjectName=${ep(SUBJECT_NAME)}&chapterName=${ep(ch.name)}&section=videos">
           <div class="chapter-content">
             <div class="chapter-name">${esc(ch.name)}</div>
             <div class="chapter-counts">
