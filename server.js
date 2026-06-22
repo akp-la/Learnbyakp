@@ -518,14 +518,14 @@ res.json(data);
   const PW_HEADERS = {
     "Accept-Encoding": "gzip",
     "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 11; SM-A707F Build/RP1A.200720.012)",
-    "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODE3OTg1NTIuNjk5LCJkYXRhIjp7Il9pZCI6IjY1ZTA0MDBjYjllNmRjYjZhYTM0YjQxYSIsInVzZXJuYW1lIjoiOTM0MTc5Mzg5OSIsImZpcnN0TmFtZSI6IlByaXlhbnNodSIsImxhc3ROYW1lIjoiS3VtYXIgVXBhZGhheWF5Iiwib3JnYW5pemF0aW9uIjp7Il9pZCI6IjVlYjM5M2VlOTVmYWI3NDY4YTc5ZDE4OSIsIndlYnNpdGUiOiJwaHlzaWNzd2FsbGFoLmNvbSIsIm5hbWUiOiJQaHlzaWNzd2FsbGFoIn0sImVtYWlsIjoiYW51ai51cGFkaHlheTM2OUBnbWFpbC5jb20iLCJyb2xlcyI6WyI1YjI3YmQ5NjU4NDJmOTUwYTc3OGM2ZWYiXSwiY291bnRyeUdyb3VwIjoiSU4iLCJvbmVSb2xlcyI6W10sInR5cGUiOiJVU0VSIn0sImp0aSI6IlZTX01pdkdyUlZhdnBqUmZWV2pWUVFfNjVlMDQwMGNiOWU2ZGNiNmFhMzRiNDFhIiwiaWF0IjoxNzgxMTkzNzUyfQ.yCow88dcTVSa7vYyj3yyGRf8S22BKU5bVWiIj-I5fk4",
-    "client-id": "5eb393ee95fab7468a79d189",
+    "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODI3MzY5MjQuNTU2LCJkYXRhIjp7Il9pZCI6IjY0NDE4NWU2MzBjYmM2MDAxOGY4ZDcxYSIsInVzZXJuYW1lIjoiOTEyMjE2MzAxMyIsImZpcnN0TmFtZSI6Ik1vbnUgS3VtYXIiLCJsYXN0TmFtZSI6IkJyYW5kIiwib3JnYW5pemF0aW9uIjp7Il9pZCI6IjVlYjM5M2VlOTVmYWI3NDY4YTc5ZDE4OSIsIndlYnNpdGUiOiJwaHlzaWNzd2FsbGFoLmNvbSIsIm5hbWUiOiJQaHlzaWNzd2FsbGFoIn0sImVtYWlsIjoibml0aXNoa3VtYXJ5YWRhdjkyNjQyNkBnbWFpbC5jb20iLCJyb2xlcyI6WyI1YjI3YmQ5NjU4NDJmOTUwYTc3OGM2ZWYiXSwiY291bnRyeUdyb3VwIjoiSU4iLCJ0eXBlIjoiVVNFUiJ9LCJqdGkiOiIwSlV5aWFFaVNUSzJKTUM2YXhDZkJBXzY0NDE4NWU2MzBjYmM2MDAxOGY4ZDcxYSIsImlhdCI6MTc4MjEzMjEyNH0.qPz2ipIxEMYYcld9cgSE5HnXpvEdSvcUnSjfirFhlpQ",
+    "client-id": "ADMIN",
     "client-type": "MOBILE",
     "client-version": "538",
     "content-type": "application/json",
     "device-meta": "{\"APP_VERSION\":\"538\",\"APP_VERSION_NAME\":\"15.32.0\",\"DEVICE_MAKE\":\"Samsung\",\"DEVICE_MODEL\":\"SM-A707F\",\"OS_VERSION\":\"11\",\"PACKAGE_NAME\":\"xyz.penpencil.physicswala\",\"network\":\"wifi_data\",\"carrier\":\"UNDEFINED\"}",
-    "randomid": "10ce1775-42ad-4dfd-9895-83fcdee23a9e",
-    "referer": "https://android.pw.live"
+    "randomid": "3d3b49f068728fa3",
+    "referer": "https://learnbyakp.online"
 };
 
 // ✅ Dynamic slides endpoint with query parameters
