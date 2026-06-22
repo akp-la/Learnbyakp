@@ -5,7 +5,7 @@ const BATCH_NAME=QS.get('name')||'';
 if(!BATCH_ID)location.href='/study-v2/batches';
 document.getElementById('back-label').textContent=BATCH_NAME||'Batches';
 const TEACHER_BG='https://study-mf.pw.live/static/image/teacherbg.807b2b2f.png';
-const PW_HDR={"Accept-Encoding": "gzip", "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 11; SM-A707F Build/RP1A.200720.012)", "authorization": "Bearer yJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODI3Mjk3NjcuMTgxLCJkYXRhIjp7Il9pZCI6IjY0YWQ4ODM5ZmU5ZTZhMDAxODRjMGI1ZSIsInVzZXJuYW1lIjoiOTU1OTk3NTM3MCIsImZpcnN0TmFtZSI6IkFrdWwiLCJsYXN0TmFtZSI6IlByYWphcGF0aSIsIm9yZ2FuaXphdGlvbiI6eyJfaWQiOiI1ZWIzOTNlZTk1ZmFiNzQ2OGE3OWQxODkiLCJ3ZWJzaXRlIjoicGh5c2ljc3dhbGxhaC5jb20iLCJuYW1lIjoiUGh5c2ljc3dhbGxhaCJ9LCJlbWFpbCI6ImFrdWxwcmFqYXBhdGkwMEBnbWFpbC5jb20iLCJyb2xlcyI6WyI1YjI3YmQ5NjU4NDJmOTUwYTc3OGM2ZWYiXSwiY291bnRyeUdyb3VwIjoiSU4iLCJvbmVSb2xlcyI6W10sInR5cGUiOiJVU0VSIn0sImp0aSI6IjkwQU53cU83U01TZXhEZzRpT3Y4TXdfNjRhZDg4MzlmZTllNmEwMDE4NGMwYjVlIiwiaWF0IjoxNzgyMTI0OTY3fQ.4-pDG_5osbx8bpv3clPlRNxwg3YZuyd6ajiarpCcbdI", "client-id": "ADMIN", "client-type": "MOBILE", "client-version": "538", "content-type": "application/json", "device-meta": "{\"APP_VERSION\":\"538\",\"APP_VERSION_NAME\":\"15.32.0\",\"DEVICE_MAKE\":\"Samsung\",\"DEVICE_MODEL\":\"SM-A707F\",\"OS_VERSION\":\"11\",\"PACKAGE_NAME\":\"xyz.penpencil.physicswala\",\"network\":\"wifi_data\",\"carrier\":\"UNDEFINED\"}", "randomid": "f5f8dda2-33c4-40df-9a04-7cfee74953dc", "referer": "https://android.pw.live"};
+const PW_HDR={"Accept-Encoding": "gzip", "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 11; SM-A707F Build/RP1A.200720.012)", "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODI3Mjk3NjcuMTgxLCJkYXRhIjp7Il9pZCI6IjY0YWQ4ODM5ZmU5ZTZhMDAxODRjMGI1ZSIsInVzZXJuYW1lIjoiOTU1OTk3NTM3MCIsImZpcnN0TmFtZSI6IkFrdWwiLCJsYXN0TmFtZSI6IlByYWphcGF0aSIsIm9yZ2FuaXphdGlvbiI6eyJfaWQiOiI1ZWIzOTNlZTk1ZmFiNzQ2OGE3OWQxODkiLCJ3ZWJzaXRlIjoicGh5c2ljc3dhbGxhaC5jb20iLCJuYW1lIjoiUGh5c2ljc3dhbGxhaCJ9LCJlbWFpbCI6ImFrdWxwcmFqYXBhdGkwMEBnbWFpbC5jb20iLCJyb2xlcyI6WyI1YjI3YmQ5NjU4NDJmOTUwYTc3OGM2ZWYiXSwiY291bnRyeUdyb3VwIjoiSU4iLCJvbmVSb2xlcyI6W10sInR5cGUiOiJVU0VSIn0sImp0aSI6IjkwQU53cU83U01TZXhEZzRpT3Y4TXdfNjRhZDg4MzlmZTllNmEwMDE4NGMwYjVlIiwiaWF0IjoxNzgyMTI0OTY3fQ.4-pDG_5osbx8bpv3clPlRNxwg3YZuyd6ajiarpCcbdI", "client-id": "ADMIN", "client-type": "MOBILE", "client-version": "538", "content-type": "application/json", "device-meta": "{\"APP_VERSION\":\"538\",\"APP_VERSION_NAME\":\"15.32.0\",\"DEVICE_MAKE\":\"Samsung\",\"DEVICE_MODEL\":\"SM-A707F\",\"OS_VERSION\":\"11\",\"PACKAGE_NAME\":\"xyz.penpencil.physicswala\",\"network\":\"wifi_data\",\"carrier\":\"UNDEFINED\"}", "randomid": "f5f8dda2-33c4-40df-9a04-7cfee74953dc", "referer": "https://android.pw.live"};
 async function pw(url){return fetch(url,{headers:PW_HDR}).then(r=>r.json());}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function ep(v){return encodeURIComponent(v||'')}
@@ -89,7 +89,7 @@ if(isVideoClass(item)){
 any=true;
 const a=document.createElement('a');
 a.className='sc';
-a.href=`https://stream.testuk.org/schedule-details?batchId=${ep(BATCH_ID)}&subjectId=${ep(sid)}&scheduleId=${ep(schId)}&tap=video`;
+a.href=`https://rarestudy.in/schedule-details?batchId=${ep(BATCH_ID)}&subjectId=${ep(sid)}&scheduleId=${ep(schId)}&tap=video`;
 if(tagL==='upcoming'){
 a.onclick=ev=>{ev.preventDefault();showMsg(`Class not started yet. Begins at ${st}.`);};
 }
