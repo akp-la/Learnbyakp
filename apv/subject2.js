@@ -1,11 +1,11 @@
 
 const QS=new URLSearchParams(location.search);
-const BATCH_ID=QS.get('batchId')||'';
-const BATCH_NAME=QS.get('batchName')||'';
-if(!BATCH_ID)location.href='/batches';
+const BATCH_ID=QS.get('batchid')||'';
+const BATCH_NAME=QS.get('name')||'';
+if(!BATCH_ID)location.href='/study-v2/batches';
 document.getElementById('back-label').textContent=BATCH_NAME||'Batches';
 const TEACHER_BG='https://study-mf.pw.live/static/image/teacherbg.807b2b2f.png';
-const PW_HDR={"Accept-Encoding": "gzip", "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 11; SM-A707F Build/RP1A.200720.012)", "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODEzNTA5ODMuNTg3LCJkYXRhIjp7Il9pZCI6IjY0YWQ4ODM5ZmU5ZTZhMDAxODRjMGI1ZSIsInVzZXJuYW1lIjoiOTU1OTk3NTM3MCIsImZpcnN0TmFtZSI6IkFrdWwiLCJsYXN0TmFtZSI6IlByYWphcGF0aSIsIm9yZ2FuaXphdGlvbiI6eyJfaWQiOiI1ZWIzOTNlZTk1ZmFiNzQ2OGE3OWQxODkiLCJ3ZWJzaXRlIjoicGh5c2ljc3dhbGxhaC5jb20iLCJuYW1lIjoiUGh5c2ljc3dhbGxhaCJ9LCJlbWFpbCI6ImFrdWxwcmFqYXBhdGkwMEBnbWFpbC5jb20iLCJyb2xlcyI6WyI1YjI3YmQ5NjU4NDJmOTUwYTc3OGM2ZWYiXSwiY291bnRyeUdyb3VwIjoiSU4iLCJ0eXBlIjoiVVNFUiJ9LCJqdGkiOiJzZjRjb0djclR3U0IzYVp0eDVsZDlBXzY0YWQ4ODM5ZmU5ZTZhMDAxODRjMGI1ZSIsImlhdCI6MTc4MDc0NjE4M30.JjJJUgZcESOST6W-oc2bPBaTuxLexIoYl8mA8SInze4", "client-id": "ADMIN", "client-type": "MOBILE", "client-version": "538", "content-type": "application/json", "device-meta": "{\"APP_VERSION\":\"538\",\"APP_VERSION_NAME\":\"15.32.0\",\"DEVICE_MAKE\":\"Samsung\",\"DEVICE_MODEL\":\"SM-A707F\",\"OS_VERSION\":\"11\",\"PACKAGE_NAME\":\"xyz.penpencil.physicswala\",\"network\":\"wifi_data\",\"carrier\":\"UNDEFINED\"}", "randomid": "f5f8dda2-33c4-40df-9a04-7cfee74953dc", "referer": "https://android.pw.live"};
+const PW_HDR={"Accept-Encoding": "gzip", "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 11; SM-A707F Build/RP1A.200720.012)", "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODIzNzAxOTUuNzk1LCJkYXRhIjp7Il9pZCI6IjY5NmNjOTVjYjhhNGJlMGEwMDkyNzMzNiIsInVzZXJuYW1lIjoiOTMzMjcwMjIyMCIsImZpcnN0TmFtZSI6Ilh5eiIsIm9yZ2FuaXphdGlvbiI6eyJfaWQiOiI1ZWIzOTNlZTk1ZmFiNzQ2OGE3OWQxODkiLCJ3ZWJzaXRlIjoicGh5c2ljc3dhbGxhaC5jb20iLCJuYW1lIjoiUGh5c2ljc3dhbGxhaCJ9LCJyb2xlcyI6WyI1YjI3YmQ5NjU4NDJmOTUwYTc3OGM2ZWYiXSwiY291bnRyeUdyb3VwIjoiSU4iLCJ0eXBlIjoiVVNFUiJ9LCJqdGkiOiJPTm1zXy1aSVFYMnVTcmhwU3k3eThBXzY5NmNjOTVjYjhhNGJlMGEwMDkyNzMzNiIsImlhdCI6MTc4MTc2NTM5NX0.apJ66_z0t9gYJdD9ZpUBoXoyuxAw_MDsjLuYAumIzrk", "client-id": "ADMIN", "client-type": "MOBILE", "client-version": "538", "content-type": "application/json", "device-meta": "{\"APP_VERSION\":\"538\",\"APP_VERSION_NAME\":\"15.32.0\",\"DEVICE_MAKE\":\"Samsung\",\"DEVICE_MODEL\":\"SM-A707F\",\"OS_VERSION\":\"11\",\"PACKAGE_NAME\":\"xyz.penpencil.physicswala\",\"network\":\"wifi_data\",\"carrier\":\"UNDEFINED\"}", "randomid": "f5f8dda2-33c4-40df-9a04-7cfee74953dc", "referer": "https://android.pw.live"};
 async function pw(url){return fetch(url,{headers:PW_HDR}).then(r=>r.json());}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function ep(v){return encodeURIComponent(v||'')}
@@ -165,7 +165,7 @@ if(!subs.length){list.innerHTML='<li style="text-align:center;padding:40px;color
 subs.forEach(sub=>{
 const img=sub.imageId?sub.imageId.baseUrl+sub.imageId.key:'https://cdn-icons-png.flaticon.com/512/5780/5780875.png';
 const li=document.createElement('li');li.className='subj-item';
-li.innerHTML=`<a class="subj-link" href="content2?batchId=${ep(BATCH_ID)}&subjectId=${ep(sub._id)}&batchName=${ep(BATCH_NAME)}&subjectName=${ep(sub.subject)}"><img class="subj-img" src="${esc(img)}" alt="${esc(sub.subject)}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/5780/5780875.png'"><div class="subj-cnt"><div class="subj-info"><div class="subj-name">${esc(sub.subject)}</div><div class="subj-count">${sub.tagCount||0} Chapters</div></div><span class="subj-arr"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span></div></a>`;
+li.innerHTML=`<a class="subj-link" href="content?batchId=${ep(BATCH_ID)}&subjectId=${ep(sub._id)}&batchName=${ep(BATCH_NAME)}&subjectName=${ep(sub.subject)}"><img class="subj-img" src="${esc(img)}" alt="${esc(sub.subject)}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/5780/5780875.png'"><div class="subj-cnt"><div class="subj-info"><div class="subj-name">${esc(sub.subject)}</div><div class="subj-count">${sub.tagCount||0} Chapters</div></div><span class="subj-arr"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span></div></a>`;
 list.appendChild(li);
 });
 }catch{document.getElementById('subj-list').innerHTML='<li style="text-align:center;padding:40px;color:#64748b">Failed to load</li>';}
