@@ -1,4 +1,3 @@
-
 const QS = new URLSearchParams(location.search);
 const BATCH_ID = QS.get('batchId') || '';
 const SUBJECT_ID = QS.get('subjectId') || '';
@@ -8,15 +7,97 @@ const SUBJECT_NAME = QS.get('subjectName') || '';
 const CHAPTER_NAME = QS.get('chapterName') || '';
 const INIT_SEC = QS.get('section') || 'videos';
 
-if(!BATCH_ID || !SUBJECT_ID || !CHAPTER_ID) location.href = '/batches';
+
+if(!BATCH_ID || !SUBJECT_ID || !CHAPTER_ID) location.href = '/study-v2/batches';
 document.getElementById('back-label').textContent = CHAPTER_NAME || 'Chapters';
-const SITE_NAME = 'rarestudy';
+const SITE_NAME = 'LearnByAKP';
 document.title = (CHAPTER_NAME || 'Content') + ' — ' + SITE_NAME;
+
+
+// ========== LOADER FEATURE ==========
+const LOADER_HTML = `
+  <div id="page-loader" class="loader-overlay">
+    <div class="loader-content">
+      <div class="loader-spinner"></div>
+      <div class="loader-text">Loading...</div>
+    </div>
+  </div>
+`;
+
+function showLoader() {
+  if (!document.getElementById('page-loader')) {
+    document.body.insertAdjacentHTML('beforeend', LOADER_HTML);
+  }
+  document.getElementById('page-loader').classList.add('show');
+}
+
+function hideLoader() {
+  const loader = document.getElementById('page-loader');
+  if (loader) {
+    loader.classList.remove('show');
+    setTimeout(() => loader.remove(), 300);
+  }
+}
+
+const LOADER_CSS = `
+  <style id="loader-css">
+    .loader-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+    }
+    
+    .loader-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .loader-content {
+      text-align: center;
+      color: white;
+    }
+    
+    .loader-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid #4CAF50;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .loader-text {
+      font-size: 16px;
+      font-weight: 500;
+    }
+  </style>
+`;
+
+// Insert CSS on page load
+document.head.insertAdjacentHTML('beforeend', LOADER_CSS);
+// ========== END LOADER FEATURE ==========
+
 
 const PW_HDR = {
     "Accept-Encoding": "gzip", 
     "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 11; SM-A707F Build/RP1A.200720.012)", 
-    "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODE2NjI2MDcuMTc0LCJkYXRhIjp7Il9pZCI6IjY3YzQyNDQxYTM2NWIxZjNmMzc3NjIxMCIsInVzZXJuYW1lIjoiOTA1NDAxMzQ5MiIsImZpcnN0TmFtZSI6Ik1rIE1vbWluIiwib3JnYW5pemF0aW9uIjp7Il9pZCI6IjVlYjM5M2VlOTVmYWI3NDY4YTc5ZDE4OSIsIndlYnNpdGUiOiJwaHlzaWNzd2FsbGFoLmNvbSIsIm5hbWUiOiJQaHlzaWNzd2FsbGFoIn0sImVtYWlsIjoiTUtNS0BHTUFJTC5DT00iLCJyb2xlcyI6WyI1YjI3YmQ5NjU4NDJmOTUwYTc3OGM2ZWYiXSwiY291bnRyeUdyb3VwIjoiSU4iLCJ0eXBlIjoiVVNFUiJ9LCJqdGkiOiJpbG80QUllVVJwaVI3Zml2NmctblJ3XzY3YzQyNDQxYTM2NWIxZjNmMzc3NjIxMCIsImlhdCI6MTc4MTA1NzgwN30.3nt7ycWz_vENkCVzhnegTZFGNUGgRP9fH7A2yNEzyIo", 
+    "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODI3Mjk3NjcuMTgxLCJkYXRhIjp7Il9pZCI6IjY0YWQ4ODM5ZmU5ZTZhMDAxODRjMGI1ZSIsInVzZXJuYW1lIjoiOTU1OTk3NTM3MCIsImZpcnN0TmFtZSI6IkFrdWwiLCJsYXN0TmFtZSI6IlByYWphcGF0aSIsIm9yZ2FuaXphdGlvbiI6eyJfaWQiOiI1ZWIzOTNlZTk1ZmFiNzQ2OGE3OWQxODkiLCJ3ZWJzaXRlIjoicGh5c2ljc3dhbGxhaC5jb20iLCJuYW1lIjoiUGh5c2ljc3dhbGxhaCJ9LCJlbWFpbCI6ImFrdWxwcmFqYXBhdGkwMEBnbWFpbC5jb20iLCJyb2xlcyI6WyI1YjI3YmQ5NjU4NDJmOTUwYTc3OGM2ZWYiXSwiY291bnRyeUdyb3VwIjoiSU4iLCJvbmVSb2xlcyI6W10sInR5cGUiOiJVU0VSIn0sImp0aSI6IjkwQU53cU83U01TZXhEZzRpT3Y4TXdfNjRhZDg4MzlmZTllNmEwMDE4NGMwYjVlIiwiaWF0IjoxNzgyMTI0OTY3fQ.4-pDG_5osbx8bpv3clPlRNxwg3YZuyd6ajiarpCcbdI", 
     "client-id": "ADMIN", 
     "client-type": "MOBILE", 
     "client-version": "538", 
@@ -26,25 +107,30 @@ const PW_HDR = {
     "referer": "https://android.pw.live"
 };
 
+
 async function pw(url) {
     return fetch(url, {headers: PW_HDR}).then(r => r.json());
 }
+
 
 function esc(s) {
     return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+
 function ep(v) {
     return encodeURIComponent(v || '');
 }
+
 
 function fmtDate(iso) {
     if(!iso) return '';
     try {
         const d = new Date(iso), M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        return `${d.getUTCDate()} ${M[d.getUTCMonth()]}, ${d.getUTCFullYear()}`;
+        return `${d.getUTCDate()} ${M[d.getUTCMonth()]}, ${d.getUTCMonth()}`;
     } catch { return ''; }
 }
+
 
 function showMsg(t) {
     const p = document.getElementById('popup');
@@ -53,7 +139,8 @@ function showMsg(t) {
     setTimeout(() => p.classList.remove('show'), 3000);
 }
 
-const CK = 'rarestudy_completed';
+
+const CK = 'LearnByAKP_completed';
 function getC() {
     try { return JSON.parse(localStorage.getItem(CK) || '{}'); }
     catch { return {}; }
@@ -83,11 +170,14 @@ function initComplete(panel) {
     });
 }
 
+
 const TABS = ['videos','notes','dpp','DppNotes','DppVideos'];
 const tabState = {};
 TABS.forEach(t => tabState[t] = {page:1, loading:false, done:false, loaded:false});
 
+
 let activeTab = INIT_SEC;
+
 
 function skelCount(h) {
     return Math.max(3, Math.floor((window.innerHeight - 152) / (h + 12)));
@@ -105,9 +195,11 @@ function removeBottomSkels(panel) {
     panel.querySelectorAll('.bskels').forEach(e => e.remove());
 }
 
+
 function showComingSoon(panel) {
     panel.innerHTML = `<div class="coming-soon"><div class="cs-icon">🚀</div><div class="cs-text">Coming Soon</div><div class="cs-sub">Content will be available soon!</div></div>`;
 }
+
 
 function buildVideoItem(item) {
     const vd = item.videoDetails || {};
@@ -120,7 +212,7 @@ function buildVideoItem(item) {
     const href = `https://stream.testuk.org/schedule-details?batchId=${ep(BATCH_ID)}&subjectId=${ep(SUBJECT_ID)}&scheduleId=${ep(id_)}&tap=video`;
     const li = document.createElement('li');
     li.className = 'content-item';
-    li.innerHTML = `<a class="content-link" href="${esc(href)}">
+    li.innerHTML = `<a class="content-link" href="${esc(href)}" onclick="showLoader();">
         <div class="thumb-box">
             <img data-src="${esc(thumb) || '/static/site_thumbnail.png'}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="" class="lazy-img" onerror="this.src='/static/site_thumbnail.png'">
             ${dur ? `<div class="duration-badge">${esc(dur)}</div>` : ''}
@@ -133,6 +225,7 @@ function buildVideoItem(item) {
     </a>`;
     return li;
 }
+
 
 function buildNoteItems(item, isDpp) {
     const frags = [];
@@ -160,6 +253,7 @@ function buildNoteItems(item, isDpp) {
     return frags;
 }
 
+
 function buildDppItem(item) {
     const test = item.test || {};
     const isFree = item.isFree === true;
@@ -176,6 +270,7 @@ function buildDppItem(item) {
     return li;
 }
 
+
 async function loadContent(tab, page) {
     const st = tabState[tab];
     if(st.loading || st.done) return;
@@ -185,6 +280,7 @@ async function loadContent(tab, page) {
     const isDppNotes = (tab === 'DppNotes');
     const isDpp = (tab === 'dpp');
     const cardH = isDpp ? 82 : 88;
+
 
     if(page === 1) {
         if(isVid) {
@@ -198,6 +294,7 @@ async function loadContent(tab, page) {
         if(!isVid && tab !== 'notes' && tab !== 'DppNotes') bottomSkels(panel, cardH);
     }
 
+
     try {
         let data;
         if(isDpp) {
@@ -206,15 +303,18 @@ async function loadContent(tab, page) {
             data = await pw(`https://api.penpencil.co/v2/batches/${BATCH_ID}/subject/${SUBJECT_ID}/contents?page=${page}&contentType=${tab}&tag=${CHAPTER_ID}`);
         }
 
+
         removeBottomSkels(panel);
         
         if(page === 1 && !isVid && tab !== 'notes' && tab !== 'DppNotes') panel.innerHTML = '';
+
 
         if(!data.success || !data.data?.length) {
             st.done = true;
             if(page === 1) showComingSoon(panel);
             return;
         }
+
 
         let container;
         if(isVid) {
@@ -229,6 +329,7 @@ async function loadContent(tab, page) {
                 panel.appendChild(container);
             }
         }
+
 
         if(isDpp) {
             data.data.forEach(item => container.appendChild(buildDppItem(item)));
@@ -246,6 +347,7 @@ async function loadContent(tab, page) {
             else st.page = page + 1;
         }
 
+
         initComplete(panel);
         initLazyImages(panel);
     } catch {
@@ -255,6 +357,7 @@ async function loadContent(tab, page) {
         st.loading = false;
     }
 }
+
 
 function switchTab(tab, btn) {
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -270,12 +373,14 @@ function switchTab(tab, btn) {
     }
 }
 
+
 window.addEventListener('scroll', () => {
     if(window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 180) {
         const st = tabState[activeTab];
         if(st.loaded && !st.loading && !st.done) loadContent(activeTab, st.page);
     }
 });
+
 
 (function() {
     const btn = document.querySelector(`.nav-tab[data-sec="${INIT_SEC}"]`) || document.querySelector('.nav-tab');
@@ -294,6 +399,7 @@ window.addEventListener('scroll', () => {
         }
     });
 })();
+
 
 function initLazyImages(root) {
     if(!('IntersectionObserver' in window)) {
