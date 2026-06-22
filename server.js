@@ -519,12 +519,12 @@ res.json(data);
     "Accept-Encoding": "gzip",
     "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 11; SM-A707F Build/RP1A.200720.012)",
     "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODE3OTg1NTIuNjk5LCJkYXRhIjp7Il9pZCI6IjY1ZTA0MDBjYjllNmRjYjZhYTM0YjQxYSIsInVzZXJuYW1lIjoiOTM0MTc5Mzg5OSIsImZpcnN0TmFtZSI6IlByaXlhbnNodSIsImxhc3ROYW1lIjoiS3VtYXIgVXBhZGhheWF5Iiwib3JnYW5pemF0aW9uIjp7Il9pZCI6IjVlYjM5M2VlOTVmYWI3NDY4YTc5ZDE4OSIsIndlYnNpdGUiOiJwaHlzaWNzd2FsbGFoLmNvbSIsIm5hbWUiOiJQaHlzaWNzd2FsbGFoIn0sImVtYWlsIjoiYW51ai51cGFkaHlheTM2OUBnbWFpbC5jb20iLCJyb2xlcyI6WyI1YjI3YmQ5NjU4NDJmOTUwYTc3OGM2ZWYiXSwiY291bnRyeUdyb3VwIjoiSU4iLCJvbmVSb2xlcyI6W10sInR5cGUiOiJVU0VSIn0sImp0aSI6IlZTX01pdkdyUlZhdnBqUmZWV2pWUVFfNjVlMDQwMGNiOWU2ZGNiNmFhMzRiNDFhIiwiaWF0IjoxNzgxMTkzNzUyfQ.yCow88dcTVSa7vYyj3yyGRf8S22BKU5bVWiIj-I5fk4",
-    "client-id": "ADMIN",
+    "client-id": "5eb393ee95fab7468a79d189",
     "client-type": "MOBILE",
     "client-version": "538",
     "content-type": "application/json",
     "device-meta": "{\"APP_VERSION\":\"538\",\"APP_VERSION_NAME\":\"15.32.0\",\"DEVICE_MAKE\":\"Samsung\",\"DEVICE_MODEL\":\"SM-A707F\",\"OS_VERSION\":\"11\",\"PACKAGE_NAME\":\"xyz.penpencil.physicswala\",\"network\":\"wifi_data\",\"carrier\":\"UNDEFINED\"}",
-    "randomid": "d054aefb-8a77-4ae1-bbf6-77c0e1931374",
+    "randomid": "10ce1775-42ad-4dfd-9895-83fcdee23a9e",
     "referer": "https://android.pw.live"
 };
 
@@ -546,6 +546,90 @@ app.get('/slides', async (req, res) => {
 
     // Dynamic API URL build करें
     const apiUrl = `https://api.penpencil.co/v1/batches/${batchId}/subject/${subjectId}/schedule/${scheduleId}/${type}`;
+
+    console.log('📡 Calling API:', apiUrl);
+
+    try {
+        const response = await axios.get(apiUrl, {
+            headers: PW_HEADERS,
+            timeout: 10000,
+        });
+
+        res.status(200).json(response.data);
+    } catch (error) {
+        console.error('API Error:', error.message);
+        
+        const errorStatus = error.response?.status || 500;
+        const errorData = error.response?.data || { message: error.message };
+        
+        res.status(errorStatus).json({
+            error: errorData.message || error.message,
+            status: errorStatus,
+            details: errorData,
+            api_url: apiUrl
+        });
+    }
+});
+
+  app.get('/video-url', async (req, res) => {
+    // Query parameters से data ले
+    const batchId = req.query.batch_id;
+   
+    const scheduleId = req.query.schedule_id;
+    const type = req.query.type
+    // Validation - सभी parameters ज़रूरी हैं
+    if (!batchId || !scheduleId) {
+        return res.status(400).json({
+            error: 'Missing required parameters',
+            required: ['batch_id', 'schedule_id'],
+            example: '/get-slides?batch_id=6920510a70e5cf316c9e3000&subject_id=6926c4dadef5ac36c3b2c108&schedule_id=6a19aefc5a7d6b0adfbd1c2b'
+        });
+    }
+
+    // Dynamic API URL build करें
+    const apiUrl = `https://api.penpencil.co/v1/videos/video-url-details?type=BATCHES&videoContainerType=DASH&reqType=query&childId=${scheduleId}&parentId=${batchId}&clientVersion=201`;
+
+    console.log('📡 Calling API:', apiUrl);
+
+    try {
+        const response = await axios.get(apiUrl, {
+            headers: PW_HEADERS,
+            timeout: 10000,
+        });
+
+        res.status(200).json(response.data);
+    } catch (error) {
+        console.error('API Error:', error.message);
+        
+        const errorStatus = error.response?.status || 500;
+        const errorData = error.response?.data || { message: error.message };
+        
+        res.status(errorStatus).json({
+            error: errorData.message || error.message,
+            status: errorStatus,
+            details: errorData,
+            api_url: apiUrl
+        });
+    }
+});
+
+    app.get('/schedule', async (req, res) => {
+     // Query parameters से data ले
+    const batchId = req.query.batch_id;
+    const subjectId = req.query.subject_id;
+    const scheduleId = req.query.schedule_id;
+    const type = req.query.type
+    // Validation - सभी parameters ज़रूरी हैं
+    if (!batchId || !subjectId || !scheduleId) {
+        return res.status(400).json({
+            error: 'Missing required parameters',
+            required: ['batch_id', 'subject_id', 'schedule_id'],
+            example: '/get-slides?batch_id=6920510a70e5cf316c9e3000&subject_id=6926c4dadef5ac36c3b2c108&schedule_id=6a19aefc5a7d6b0adfbd1c2b'
+        });
+    }
+
+    // Dynamic API URL build करें
+    const apiUrl = `https://api.penpencil.co/v1/batches/${batchId}/subject/${subjectId}/schedule/${scheduleId}/schedule-details`;
 
     console.log('📡 Calling API:', apiUrl);
 
