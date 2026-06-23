@@ -209,7 +209,7 @@ function buildVideoItem(item) {
     const id_ = item._id || '';
     const name = item.topic || vd.name || '';
     const done = getC()[id_] ? 'done' : '';
-    const href = `https://pwthor.live/watch?batchId=${ep(BATCH_ID)}&SubjectId=${ep(SUBJECT_ID)}&ChildId=${ep(id_)}&Type=penpencilvdo&VideoUrl=&isLocked=true`;
+    const href = `https://lite.pw4free.in/player?batchid=${ep(BATCH_ID)}&subjectid=${ep(SUBJECT_ID)}&lectureid=${ep(id_)}&title=${ep(name)}`;
     const li = document.createElement('li');
     li.className = 'content-item';
     li.innerHTML = `<a class="content-link" href="${esc(href)}" onclick="showLoader();">
