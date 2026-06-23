@@ -1162,7 +1162,7 @@ app.get("/api/vibrant/live-proxy", async (req, res) => {
   }
 });
 //========dsdfd===
- const allowedSites = ["learnbyakp.online","localhost:5600", "www.notjitu.in", "notjitu.in","jitu-test.vercel.app"];
+ const allowedSites = ["learnbyakp.online","localhost:5600", "www.notjitu.in", "notjitu.in","jitu-test.vercel.app","https://learnbyakp.learnbyakp.workers.dev"];
 app.get("/apv/:file", (req, res) => {
 
     try {
