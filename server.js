@@ -42,7 +42,8 @@ const allowedOrigins = [
   "https://learnbyakp.online",
   "https://studyakp-d8cfa.web.app",
   "https://pw.notjitu.in",
-  "https://notjitu.in"
+  "https://notjitu.in",
+  "https://learnbyakp.learnbyakp.workers.dev"
 ];
 
 const corsOptions = {
