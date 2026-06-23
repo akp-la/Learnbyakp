@@ -209,7 +209,7 @@ function buildVideoItem(item) {
     const id_ = item._id || '';
     const name = item.topic || vd.name || '';
     const done = getC()[id_] ? 'done' : '';
-    const href = `https://rarestudy.in/schedule-details?batchId=${ep(BATCH_ID)}&subjectId=${ep(SUBJECT_ID)}&scheduleId=${ep(id_)}&tap=video`;
+    const href = `https://pwthor.live/watch?batchId=${ep(BATCH_ID)}&SubjectId=${ep(SUBJECT_ID)}&ChildId=${ep(id_)}&Type=penpencilvdo&VideoUrl=&isLocked=true`;
     const li = document.createElement('li');
     li.className = 'content-item';
     li.innerHTML = `<a class="content-link" href="${esc(href)}" onclick="showLoader();">
