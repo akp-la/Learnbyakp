@@ -89,7 +89,7 @@ if(isVideoClass(item)){
 any=true;
 const a=document.createElement('a');
 a.className='sc';
-a.href=`https://pwthor.live/watch?batchId=${ep(BATCH_ID)}&SubjectId=reasoning-603700&ChildId=${ep(schId)}&Type=penpencilvdo&VideoUrl=&isLocked=true`;
+a.href=`https://lite.pw4free.in/player?batchid=${ep(BATCH_ID)}&subjectid=${ep(sid)}&lectureid=${ep(schId)}`;
 if(tagL==='upcoming'){
 a.onclick=ev=>{ev.preventDefault();showMsg(`Class not started yet. Begins at ${st}.`);};
 }
