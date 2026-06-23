@@ -89,7 +89,7 @@ if(isVideoClass(item)){
 any=true;
 const a=document.createElement('a');
 a.className='sc';
-a.href=`https://rarestudy.in/schedule-details?batchId=${ep(BATCH_ID)}&subjectId=${ep(sid)}&scheduleId=${ep(schId)}&tap=video`;
+a.href=`https://pwthor.live/watch?batchId=${ep(BATCH_ID)}&SubjectId=reasoning-603700&ChildId=${ep(schId)}&Type=penpencilvdo&VideoUrl=&isLocked=true`;
 if(tagL==='upcoming'){
 a.onclick=ev=>{ev.preventDefault();showMsg(`Class not started yet. Begins at ${st}.`);};
 }
