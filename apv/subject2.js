@@ -127,7 +127,7 @@ let idx=0;
 const i=idx++,isDpp=hw.note==='DPP';
 const a=document.createElement('a');
 a.className='sc';
-a.href=`https://stream.testuk.org/schedule-details?batchId=${ep(BATCH_ID)}&subjectId=${ep(sid)}&scheduleId=${ep(schId)}&tap=note&noteIndex=${i}&isDpp=${isDpp}`;
+a.href=`https://learnbyakp.onrender.com/slides?batch_id=${(BATCH_ID)}&subject_id=${(sid)}&schedule_id=${(schId)}&type=schedule-details&tap=note&noteIndex=${gIdx}&isDpp=${isDpp ? 'true' : 'false'}`;
 a.target='_self';
 const body=document.createElement('div');
 body.className='sc-body';
