@@ -519,13 +519,13 @@ res.json(data);
   const PW_HEADERS = {
     "Accept-Encoding": "gzip",
     "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 11; SM-A707F Build/RP1A.200720.012)",
-    "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODI3MzY5MjQuNTU2LCJkYXRhIjp7Il9pZCI6IjY0NDE4NWU2MzBjYmM2MDAxOGY4ZDcxYSIsInVzZXJuYW1lIjoiOTEyMjE2MzAxMyIsImZpcnN0TmFtZSI6Ik1vbnUgS3VtYXIiLCJsYXN0TmFtZSI6IkJyYW5kIiwib3JnYW5pemF0aW9uIjp7Il9pZCI6IjVlYjM5M2VlOTVmYWI3NDY4YTc5ZDE4OSIsIndlYnNpdGUiOiJwaHlzaWNzd2FsbGFoLmNvbSIsIm5hbWUiOiJQaHlzaWNzd2FsbGFoIn0sImVtYWlsIjoibml0aXNoa3VtYXJ5YWRhdjkyNjQyNkBnbWFpbC5jb20iLCJyb2xlcyI6WyI1YjI3YmQ5NjU4NDJmOTUwYTc3OGM2ZWYiXSwiY291bnRyeUdyb3VwIjoiSU4iLCJ0eXBlIjoiVVNFUiJ9LCJqdGkiOiIwSlV5aWFFaVNUSzJKTUM2YXhDZkJBXzY0NDE4NWU2MzBjYmM2MDAxOGY4ZDcxYSIsImlhdCI6MTc4MjEzMjEyNH0.qPz2ipIxEMYYcld9cgSE5HnXpvEdSvcUnSjfirFhlpQ",
+    "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3ODI3Mjk3NjcuMTgxLCJkYXRhIjp7Il9pZCI6IjY0YWQ4ODM5ZmU5ZTZhMDAxODRjMGI1ZSIsInVzZXJuYW1lIjoiOTU1OTk3NTM3MCIsImZpcnN0TmFtZSI6IkFrdWwiLCJsYXN0TmFtZSI6IlByYWphcGF0aSIsIm9yZ2FuaXphdGlvbiI6eyJfaWQiOiI1ZWIzOTNlZTk1ZmFiNzQ2OGE3OWQxODkiLCJ3ZWJzaXRlIjoicGh5c2ljc3dhbGxhaC5jb20iLCJuYW1lIjoiUGh5c2ljc3dhbGxhaCJ9LCJlbWFpbCI6ImFrdWxwcmFqYXBhdGkwMEBnbWFpbC5jb20iLCJyb2xlcyI6WyI1YjI3YmQ5NjU4NDJmOTUwYTc3OGM2ZWYiXSwiY291bnRyeUdyb3VwIjoiSU4iLCJvbmVSb2xlcyI6W10sInR5cGUiOiJVU0VSIn0sImp0aSI6IjkwQU53cU83U01TZXhEZzRpT3Y4TXdfNjRhZDg4MzlmZTllNmEwMDE4NGMwYjVlIiwiaWF0IjoxNzgyMTI0OTY3fQ.4-pDG_5osbx8bpv3clPlRNxwg3YZuyd6ajiarpCcbdI",
     "client-id": "ADMIN",
     "client-type": "MOBILE",
     "client-version": "538",
     "content-type": "application/json",
     "device-meta": "{\"APP_VERSION\":\"538\",\"APP_VERSION_NAME\":\"15.32.0\",\"DEVICE_MAKE\":\"Samsung\",\"DEVICE_MODEL\":\"SM-A707F\",\"OS_VERSION\":\"11\",\"PACKAGE_NAME\":\"xyz.penpencil.physicswala\",\"network\":\"wifi_data\",\"carrier\":\"UNDEFINED\"}",
-    "randomid": "3d3b49f068728fa3",
+    "randomid": "060652e3-316e-449c-a5de-848cf2e9ef72",
     "referer": "https://learnbyakp.online"
 };
 
@@ -572,47 +572,7 @@ app.get('/slides', async (req, res) => {
     }
 });
 
-  app.get('/video-url', async (req, res) => {
-    // Query parameters से data ले
-    const batchId = req.query.batch_id;
-   
-    const scheduleId = req.query.schedule_id;
-    const type = req.query.type
-    // Validation - सभी parameters ज़रूरी हैं
-    if (!batchId || !scheduleId) {
-        return res.status(400).json({
-            error: 'Missing required parameters',
-            required: ['batch_id', 'schedule_id'],
-            example: '/get-slides?batch_id=6920510a70e5cf316c9e3000&subject_id=6926c4dadef5ac36c3b2c108&schedule_id=6a19aefc5a7d6b0adfbd1c2b'
-        });
-    }
-
-    // Dynamic API URL build करें
-    const apiUrl = `https://api.penpencil.co/v1/videos/video-url-details?type=BATCHES&videoContainerType=DASH&reqType=query&childId=${scheduleId}&parentId=${batchId}&clientVersion=201`;
-
-    console.log('📡 Calling API:', apiUrl);
-
-    try {
-        const response = await axios.get(apiUrl, {
-            headers: PW_HEADERS,
-            timeout: 10000,
-        });
-
-        res.status(200).json(response.data);
-    } catch (error) {
-        console.error('API Error:', error.message);
-        
-        const errorStatus = error.response?.status || 500;
-        const errorData = error.response?.data || { message: error.message };
-        
-        res.status(errorStatus).json({
-            error: errorData.message || error.message,
-            status: errorStatus,
-            details: errorData,
-            api_url: apiUrl
-        });
-    }
-});
+  
 
   
 
