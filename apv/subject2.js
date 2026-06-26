@@ -89,7 +89,7 @@ if(isVideoClass(item)){
 any=true;
 const a=document.createElement('a');
 a.className='sc';
-a.href=`https://lite.pw4free.in/player?batchid=${ep(BATCH_ID)}&subjectid=${ep(sid)}&lectureid=${ep(schId)}`;
+a.href=`/study-v2/player.html?batch_id=${ep(BATCH_ID)}&subject_id=${ep(SUBJECT_ID)}&video_id=${ep(id_)}&schedule_id=${ep(id_)}&title=${ep(name)}`;
 if(tagL==='upcoming'){
 a.onclick=ev=>{ev.preventDefault();showMsg(`Class not started yet. Begins at ${st}.`);};
 }
