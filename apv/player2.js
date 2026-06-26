@@ -9,7 +9,6 @@ const time = params.get('time');
 
 
 
-const VIDEO_DETAILS_URL = `https://learnbyakp.onrender.com/api/get-video?batchId=${encodeURIComponent(batch_id)}&lectureId=${encodeURIComponent(schedule_id)}&subjectId=${encodeURIComponent(subject_id)}`;
 const SLIDES_URL = `https://learnbyakp.onrender.com/slides?batch_id=${encodeURIComponent(batch_id)}&subject_id=${encodeURIComponent(subject_id)}&schedule_id=${encodeURIComponent(schedule_id)}&type=slides`;
 const SCHEDULE_URL = `https://learnbyakp.onrender.com/slides?batch_id=${encodeURIComponent(batch_id)}&subject_id=${encodeURIComponent(subject_id)}&schedule_id=${encodeURIComponent(schedule_id)}&type=schedule-details`;
 
