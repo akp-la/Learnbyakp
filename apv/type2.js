@@ -209,7 +209,7 @@ function buildVideoItem(item) {
     const id_ = item._id || '';
     const name = item.topic || vd.name || '';
     const done = getC()[id_] ? 'done' : '';
-    const href = `https://lite.pw4free.in/study-v2/player.html?batch_id=${ep(BATCH_ID)}&subject_id=${ep(SUBJECT_ID)}&video_id=${ep(id_)}&schedule_id=${ep(id_)}&title=${ep(name)}`;
+    const href = `/study-v2/player.html?batch_id=${ep(BATCH_ID)}&subject_id=${ep(SUBJECT_ID)}&video_id=${ep(id_)}&schedule_id=${ep(id_)}&title=${ep(name)}`;
     const li = document.createElement('li');
     li.className = 'content-item';
     li.innerHTML = `<a class="content-link" href="${esc(href)}" onclick="showLoader();">
@@ -236,7 +236,7 @@ function buildNoteItems(item, isDpp) {
             let gIdx = 0;
             for(let i = 0; i < hwIdx; i++) gIdx += (item.homeworkIds[i].attachmentIds || []).length;
             gIdx += attIdx;
-            const href = `https://learnbyakp.onrender.com/slides?batch_id=${(BATCH_ID)}&subject_id=${encodeURIComponent(SUBJECT_ID)}&schedule_id=${encodeURIComponent(ITEM._id)}&type=schedule-details&tap=note&noteIndex=${gIdx}&isDpp=${isDpp ? 'true' : 'false'}`;
+            const href = `https://learnbyakp.onrender.com/slides?batch_id=${(BATCH_ID)}&subject_id=${(SUBJECT_ID)}&schedule_id=${(ITEM._id)}&type=schedule-details&tap=note&noteIndex=${gIdx}&isDpp=${isDpp ? 'true' : 'false'}`;
             const li = document.createElement('li');
             li.className = 'content-item';
             li.style.display = 'flex';
