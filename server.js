@@ -1206,6 +1206,47 @@ if (!allowedSites.some(site => referer.includes(site))) {
 
 });
 
+  //pw server
+  app.get("/api/get-video", async (req, res) => {
+  try {
+    const { batchId, lectureId, subjectId } = req.query;
+
+    if (!batchId || !lectureId || !subjectId) {
+      return res.status(400).json({
+        error: "Missing required query params",
+        required: ["batchId", "lectureId", "subjectId"],
+      });
+    }
+
+    const targetUrl =
+      `https://pw.modgalaxy.in/api/get-video` +
+      `?batchId=${encodeURIComponent(batchId)}` +
+      `&lectureId=${encodeURIComponent(lectureId)}` +
+      `&subjectId=${encodeURIComponent(subjectId)}`;
+
+    const upstream = await fetch(targetUrl, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        // Forward token if your upstream needs it
+        ...(req.headers["x-pw-token"] ? { "X-PW-Token": req.headers["x-pw-token"] } : {}),
+      },
+    });
+
+    const contentType = upstream.headers.get("content-type") || "application/json";
+    res.status(upstream.status);
+    res.setHeader("Content-Type", contentType);
+
+    const body = await upstream.text();
+    res.send(body);
+  } catch (err) {
+    res.status(500).json({
+      error: "Proxy failed",
+      message: err.message,
+    });
+  }
+});
+
 /**
  * SEGMENT / NESTED PLAYLIST / KEY FILE / ABSOLUTE URL
  * Example:
