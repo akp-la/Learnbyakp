@@ -64,87 +64,136 @@ function isVideoClass(item){
 }
 
 async function loadSchedule(){
-const row=document.getElementById('sched-row');
-try{
-const data=await pw(`https://api.penpencil.co/v1/batches/${BATCH_ID}/todays-schedule`);
-row.innerHTML='';
-if(!data.success||!data.data?.length){
-row.innerHTML='<p style="font-style:italic;color:#94a3b8;padding:12px 0;font-size:13px">No classes scheduled for today.</p>';
-return;
-}
-const allTeacherIds=[];
-data.data.forEach(item=>{
-if(isVideoClass(item))(item.teachers||[]).forEach(tid=>{if(tid)allTeacherIds.push(tid);});
-});
-const teacherMap=await fetchTeacherMap(allTeacherIds);
-let any=false;
-data.data.forEach(item=>{
-const sid=item.batchSubjectId||'',schId=item._id||'';
-const tag=item.tag||'',tagL=tag.toLowerCase();
-const st=fmtIST(item.startTime),subN=item.subjectId?.name||'',topic=item.topic||'';
-const teachers=item.teachers||[];
-const thumb=(item.videoDetails&&item.videoDetails.image)||'';
+  const row = document.getElementById('sched-row');
+  if(!row) return;
 
-if(isVideoClass(item)){
-any=true;
-const a=document.createElement('a');
-a.className='sc';
-a.href=`/study-v2/player.html?batch_id=${ep(BATCH_ID)}&subject_id=${ep(SUBJECT_ID)}&video_id=${ep(id_)}&schedule_id=${ep(id_)}&title=${ep(name)}`;
-if(tagL==='upcoming'){
-a.onclick=ev=>{ev.preventDefault();showMsg(`Class not started yet. Begins at ${st}.`);};
-}
-if(thumb){
-const ti=document.createElement('img');
-ti.className='sc-thumb';
-ti.src=thumb;
-ti.alt='';
-ti.onerror=function(){
-const tc=mkTeacherCard(teachers,teacherMap);
-a.insertBefore(tc,this);
-this.remove();
-};
-a.appendChild(ti);
-}else{
-a.appendChild(mkTeacherCard(teachers,teacherMap));
-}
-const body=document.createElement('div');
-body.className='sc-body';
-const top=document.createElement('div');top.className='sc-top';
-if(tag){const sp=document.createElement('span');sp.className='tag '+tagL;sp.textContent=tag;top.appendChild(sp);}
-if(st){const tm=document.createElement('div');tm.className='sc-time';tm.innerHTML=`<span class="clk"></span><span>${esc(st)}</span>`;top.appendChild(tm);}
-const sn=document.createElement('div');sn.className='sc-sub';sn.textContent=subN;
-const tp=document.createElement('div');tp.className='sc-topic';tp.textContent=topic;
-body.appendChild(top);body.appendChild(sn);body.appendChild(tp);
-a.appendChild(body);
-row.appendChild(a);
-}
+  try{
+    const data = await pw(`https://api.penpencil.co/v1/batches/${BATCH_ID}/todays-schedule`);
+    row.innerHTML='';
 
-if(item.hasAttachment){
-any=true;
-let idx=0;
-(item.homeworkIds||[]).forEach(hw=>{
-(hw.attachmentIds||[]).forEach(()=>{
-const i=idx++,isDpp=hw.note==='DPP';
-const a=document.createElement('a');
-a.className='sc';
-a.href=`https://learnbyakp.onrender.com/slides?batch_id=${(BATCH_ID)}&subject_id=${(sid)}&schedule_id=${(schId)}&type=schedule-details&tap=note&noteIndex=${gIdx}&isDpp=${isDpp ? 'true' : 'false'}`;
-a.target='_self';
-const body=document.createElement('div');
-body.className='sc-body';
-body.style.cssText='justify-content:flex-start;padding-top:14px';
-const nt=document.createElement('div');nt.className='note-t';nt.textContent=hw.topic||'Note';
-const ns=document.createElement('div');ns.className='note-s';ns.textContent=subN;
-body.appendChild(nt);body.appendChild(ns);
-a.appendChild(body);
-row.appendChild(a);
-});
-});
-}
-});
-if(!any)row.innerHTML='<p style="font-style:italic;color:#94a3b8;padding:12px 0;font-size:13px">No classes scheduled for today.</p>';
-}catch(e){
-row.innerHTML='<p style="font-style:italic;color:#94a3b8;padding:12px 0;font-size:13px">Failed to load.</p>';
-}
+    if(!data.success || !data.data?.length){
+      row.innerHTML='<p style="font-style:italic;color:#94a3b8;padding:12px 0;font-size:13px">No classes scheduled for today.</p>';
+      return;
+    }
+
+    const allTeacherIds=[];
+    data.data.forEach(item=>{
+      if(isVideoClass(item)) (item.teachers||[]).forEach(tid=>{ if(tid) allTeacherIds.push(tid); });
+    });
+
+    const teacherMap = await fetchTeacherMap(allTeacherIds);
+    let any=false;
+
+    data.data.forEach((item, index)=>{
+      const sid = item.batchSubjectId || '';
+      const schId = item._id || '';
+      const videoId = item.videoDetails?.id || schId;
+      const title = item.topic || item.videoDetails?.name || item.subjectId?.name || '';
+      const subjectId = item.subjectId?._id || sid;
+
+      const tag = item.tag || '';
+      const tagL = tag.toLowerCase();
+      const st = fmtIST(item.startTime);
+      const subN = item.subjectId?.name || '';
+      const topic = item.topic || '';
+      const teachers = item.teachers || [];
+      const thumb = item.videoDetails?.image || '';
+
+      if(isVideoClass(item)){
+        any = true;
+        const a = document.createElement('a');
+        a.className = 'sc';
+        a.href = `/study-v2/player.html?batch_id=${ep(BATCH_ID)}&subject_id=${ep(subjectId)}&video_id=${ep(videoId)}&schedule_id=${ep(schId)}&title=${ep(title)}`;
+
+        if(tagL === 'upcoming'){
+          a.onclick = ev => { ev.preventDefault(); showMsg(`Class not started yet. Begins at ${st}.`); };
+        }
+
+        if(thumb){
+          const ti = document.createElement('img');
+          ti.className = 'sc-thumb';
+          ti.src = thumb;
+          ti.alt = '';
+          ti.onerror = function(){
+            const tc = mkTeacherCard(teachers, teacherMap);
+            a.insertBefore(tc, this);
+            this.remove();
+          };
+          a.appendChild(ti);
+        }else{
+          a.appendChild(mkTeacherCard(teachers, teacherMap));
+        }
+
+        const body = document.createElement('div');
+        body.className = 'sc-body';
+        const top = document.createElement('div');
+        top.className = 'sc-top';
+
+        if(tag){
+          const sp = document.createElement('span');
+          sp.className = 'tag ' + tagL;
+          sp.textContent = tag;
+          top.appendChild(sp);
+        }
+
+        if(st){
+          const tm = document.createElement('div');
+          tm.className = 'sc-time';
+          tm.innerHTML = `<span class="clk"></span><span>${esc(st)}</span>`;
+          top.appendChild(tm);
+        }
+
+        const sn = document.createElement('div');
+        sn.className = 'sc-sub';
+        sn.textContent = subN;
+
+        const tp = document.createElement('div');
+        tp.className = 'sc-topic';
+        tp.textContent = topic;
+
+        body.appendChild(top);
+        body.appendChild(sn);
+        body.appendChild(tp);
+        a.appendChild(body);
+        row.appendChild(a);
+      }
+
+      if(item.hasAttachment){
+        any = true;
+        (item.homeworkIds || []).forEach(hw=>{
+          (hw.attachmentIds || []).forEach(()=>{
+            const isDpp = hw.note === 'DPP';
+            const a = document.createElement('a');
+            a.className = 'sc';
+            a.href = `https://learnbyakp.onrender.com/slides?batch_id=${ep(BATCH_ID)}&subject_id=${ep(sid)}&schedule_id=${ep(schId)}&type=schedule-details&tap=note&noteIndex=${index}&isDpp=${isDpp ? 'true' : 'false'}`;
+            a.target = '_self';
+
+            const body = document.createElement('div');
+            body.className = 'sc-body';
+            body.style.cssText = 'justify-content:flex-start;padding-top:14px';
+
+            const nt = document.createElement('div');
+            nt.className = 'note-t';
+            nt.textContent = hw.topic || 'Note';
+
+            const ns = document.createElement('div');
+            ns.className = 'note-s';
+            ns.textContent = subN;
+
+            body.appendChild(nt);
+            body.appendChild(ns);
+            a.appendChild(body);
+            row.appendChild(a);
+          });
+        });
+      }
+    });
+
+    if(!any) row.innerHTML='<p style="font-style:italic;color:#94a3b8;padding:12px 0;font-size:13px">No classes scheduled for today.</p>';
+  }catch(e){
+    console.error('loadSchedule error:', e);
+    row.innerHTML = `<p style="font-style:italic;color:#94a3b8;padding:12px 0;font-size:13px">Failed to load: ${esc(e.message || e)}</p>`;
+  }
 }
 
 let khazanaId=null,subjectsLoaded=false;
