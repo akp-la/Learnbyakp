@@ -368,10 +368,8 @@ async function openNotePage({ batchId, sid, schId, index, isDpp }) {
   const apiUrl =
     `https://learnbyakp.onrender.com/slides?batch_id=${ep(batchId)}&subject_id=${ep(sid)}&schedule_id=${ep(schId)}&type=schedule-details&tap=note&noteIndex=${index}&isDpp=${isDpp ? 'true' : 'false'}`;
 
-  const res = await fetch(apiUrl, {
-    method: 'GET',
-    credentials: 'include'
-  });
+  // SAME as initScheduleData: no credentials
+  const res = await fetch(apiUrl); // <-- credentials: 'include' hata do
 
   const json = await res.json();
   if (!json?.success || !json?.data) return;
