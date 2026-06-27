@@ -226,7 +226,7 @@ function buildNoteItems(item, isDpp) {
             let gIdx = 0;
             for(let i = 0; i < hwIdx; i++) gIdx += (item.homeworkIds[i].attachmentIds || []).length;
             gIdx += attIdx;
-            const href = `https://learnbyakp.onrender.com/slides?batch_id=${(BATCH_ID)}&subject_id=${(SUBJECT_ID)}&schedule_id=${(ITEM._id)}&type=schedule-details&tap=note&noteIndex=${gIdx}&isDpp=${isDpp ? 'true' : 'false'}`;
+            const href = `https://learnbyakp.onrender.com/slides?batch_id=${(BATCH_ID)}&subject_id=${(SUBJECT_ID)}&schedule_id=${(item._id)}&type=schedule-details&tap=note&noteIndex=${gIdx}&isDpp=${isDpp ? 'true' : 'false'}`;
             const li = document.createElement('li');
             li.className = 'content-item';
             li.style.display = 'flex';
