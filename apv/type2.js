@@ -285,7 +285,23 @@ async function openNotePage({ batchId, sid, schId, index, isDpp }) {
   window.location.href = url;
 }
 
+function getAttachmentUrl(hw) {
+  if (!hw) {
+    throw new Error('No homework data found for note');
+  }
 
+  const att = (hw.attachmentIds || [])[0];
+
+  if (!att) {
+    throw new Error('No attachment found for this note');
+  }
+
+  if (!att.baseUrl || !att.key) {
+    throw new Error('Attachment URL is incomplete');
+  }
+
+  return att.baseUrl + att.key;
+}
 function buildDppItem(item) {
     const test = item.test || {};
     const isFree = item.isFree === true;
