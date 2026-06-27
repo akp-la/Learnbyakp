@@ -355,7 +355,7 @@ async function loadSchedule() {
 }
 
 let khazanaId = null, subjectsLoaded = false;
-const NOTES_FALLBACK = '/notes.png';
+const NOTES_FALLBACK = 'https://static.vecteezy.com/system/resources/thumbnails/023/492/712/small/3d-notes-icon-png.png';
 
 function getAttachmentUrl(hw) {
   const att = (hw?.attachmentIds || [])[0];
