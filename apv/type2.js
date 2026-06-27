@@ -218,29 +218,71 @@ function buildVideoItem(item) {
 
 
 function buildNoteItems(item, isDpp) {
-    const frags = [];
-    const date = fmtDate(item.date || item.startTime || '');
-    (item.homeworkIds || []).forEach((hw, hwIdx) => {
-        (hw.attachmentIds || []).forEach((att, attIdx) => {
-            const name = hw.topic || att.name || 'Note';
-            let gIdx = 0;
-            for(let i = 0; i < hwIdx; i++) gIdx += (item.homeworkIds[i].attachmentIds || []).length;
-            gIdx += attIdx;
-            const href = `https://learnbyakp.onrender.com/slides?batch_id=${(BATCH_ID)}&subject_id=${(SUBJECT_ID)}&schedule_id=${(item._id)}&type=schedule-details&tap=note&noteIndex=${gIdx}&isDpp=${isDpp ? 'true' : 'false'}`;
-            const li = document.createElement('li');
-            li.className = 'content-item';
-            li.style.display = 'flex';
-            li.innerHTML = `<a class="content-link" href="${esc(href)}">
-                <div class="pdf-box">📄</div>
-                <div class="content-details">
-                    <div class="content-name">${esc(name)}</div>
-                    <div class="content-meta">${date ? `<span>${esc(date)}</span>` : ''}</div>
-                </div>
-            </a>`;
-            frags.push(li);
+  const frags = [];
+  const date = fmtDate(item.date || item.startTime || '');
+
+  (item.homeworkIds || []).forEach((hw, hwIdx) => {
+    (hw.attachmentIds || []).forEach((att, attIdx) => {
+      const name = hw.topic || att.name || 'Note';
+
+      // global note index (same logic as tumhara gIdx)
+      let gIdx = 0;
+      for (let i = 0; i < hwIdx; i++) {
+        gIdx += (item.homeworkIds[i].attachmentIds || []).length;
+      }
+      gIdx += attIdx;
+
+      const li = document.createElement('li');
+      li.className = 'content-item';
+      li.style.display = 'flex';
+
+      const a = document.createElement('a');
+      a.className = 'content-link';
+      a.href = 'javascript:void(0)';   // direct slides URL mat do
+      a.target = '_self';
+
+      a.addEventListener('click', async (e) => {
+        e.preventDefault();
+        // same flow as openNotePage: API call + redirect
+        await openNotePage({
+          batchId: BATCH_ID,
+          sid: SUBJECT_ID,
+          schId: item._id,
+          index: gIdx,
+          isDpp
         });
+      });
+
+      a.innerHTML = `
+        <div class="pdf-box">📄</div>
+        <div class="content-details">
+          <div class="content-name">${esc(name)}</div>
+          <div class="content-meta">${date ? `<span>${esc(date)}</span>` : ''}</div>
+        </div>
+      `;
+
+      li.appendChild(a);
+      frags.push(li);
     });
-    return frags;
+  });
+
+  return frags;
+}
+async function openNotePage({ batchId, sid, schId, index, isDpp }) {
+  const apiUrl =
+    `https://learnbyakp.onrender.com/slides?batch_id=${ep(batchId)}&subject_id=${ep(sid)}&schedule_id=${ep(schId)}&type=schedule-details&tap=note&noteIndex=${index}&isDpp=${isDpp ? 'true' : 'false'}`;
+
+  // same as initScheduleData: no credentials
+  const res = await fetch(apiUrl);
+
+  const json = await res.json();
+  if (!json?.success || !json?.data) return;
+
+  const data = json.data;
+  const hw = (data.homeworkIds || [])[index] || (data.homeworkIds || [])[0];
+  const url = getAttachmentUrl(hw);
+
+  window.location.href = url;
 }
 
 
