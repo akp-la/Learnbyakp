@@ -18,7 +18,7 @@
           return false;
         }
         // Exact value check: sirf "arolinks" accept hoga
-        if (source === "ipasasasfgdfgd") {
+        if (source === "akppy") {
           return true;
         }
         return false;
