@@ -627,36 +627,41 @@ app.get('/api/folder-contents', async (req, res) => {
 });
 
 
-  app.get('/api/scienceandfun/url', (req, res) => {
-  const rawUrlParam = req.query.url;   // encrypted string
-  const rawKeyParam = req.query.key;   // encrypted string
+function safeBase64Decode(value) {
+  if (!value || typeof value !== 'string') return null;
+  try {
+    return Buffer.from(decodeURIComponent(value), 'base64').toString('utf8');
+  } catch (e) {
+    return null;
+  }
+}
 
-  // 1) URL decode first (because %2B, %3D, etc aa rahe hain)
-  const urlParamDecoded = decodeURIComponent(rawUrlParam);
-  const keyParamDecoded = decodeURIComponent(rawKeyParam);
+app.get('/api/scienceandfun/url', (req, res) => {
+  try {
+    const intermediateUrl = safeBase64Decode(req.query.url);
+    const intermediateKey = safeBase64Decode(req.query.key);
 
-  // 2) Agar Base64 layer ho
-  const bufUrl = Buffer.from(urlParamDecoded, 'base64');
-  const bufKey = Buffer.from(keyParamDecoded, 'base64');
-
-  const intermediateUrl = bufUrl.toString('utf8');
-  const intermediateKey = bufKey.toString('utf8');
-
-  // 3) Agar custom encryption ho (AES, etc.), yahan decrypt karte hain
-  // const finalUrl = decryptCustom(intermediateUrl);
-  // const finalKey = decryptCustom(intermediateKey);
-
-  // For example: video id + quality se URL build
-  const finalUrl = buildVideoUrlFromPayload(intermediateUrl);
-  const finalKey = extractKeyFromPayload(intermediateKey);
-
-  res.json({
-    success: true,
-    data: {
-      url: finalUrl,
-      key: finalKey
+    if (!intermediateUrl || !intermediateKey) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid url or key'
+      });
     }
-  });
+
+    const finalUrl = buildVideoUrlFromPayload(intermediateUrl);
+    const finalKey = extractKeyFromPayload(intermediateKey);
+
+    return res.json({
+      success: true,
+      data: { url: finalUrl, key: finalKey }
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal Server Error'
+    });
+  }
 });
 // 2. Proxy course_contents_by_live_status
 app.get('/api/live-courses', async (req, res) => {
