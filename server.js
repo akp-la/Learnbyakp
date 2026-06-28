@@ -626,6 +626,38 @@ app.get('/api/folder-contents', async (req, res) => {
   }
 });
 
+
+  app.get('/api/scienceandfun/url', (req, res) => {
+  const rawUrlParam = req.query.url;   // encrypted string
+  const rawKeyParam = req.query.key;   // encrypted string
+
+  // 1) URL decode first (because %2B, %3D, etc aa rahe hain)
+  const urlParamDecoded = decodeURIComponent(rawUrlParam);
+  const keyParamDecoded = decodeURIComponent(rawKeyParam);
+
+  // 2) Agar Base64 layer ho
+  const bufUrl = Buffer.from(urlParamDecoded, 'base64');
+  const bufKey = Buffer.from(keyParamDecoded, 'base64');
+
+  const intermediateUrl = bufUrl.toString('utf8');
+  const intermediateKey = bufKey.toString('utf8');
+
+  // 3) Agar custom encryption ho (AES, etc.), yahan decrypt karte hain
+  // const finalUrl = decryptCustom(intermediateUrl);
+  // const finalKey = decryptCustom(intermediateKey);
+
+  // For example: video id + quality se URL build
+  const finalUrl = buildVideoUrlFromPayload(intermediateUrl);
+  const finalKey = extractKeyFromPayload(intermediateKey);
+
+  res.json({
+    success: true,
+    data: {
+      url: finalUrl,
+      key: finalKey
+    }
+  });
+});
 // 2. Proxy course_contents_by_live_status
 app.get('/api/live-courses', async (req, res) => {
   const { course_id, start, live_status } = req.query;
