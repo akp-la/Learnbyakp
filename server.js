@@ -4,7 +4,7 @@ const admin = require("firebase-admin");
 const cors = require("cors");
 const express = require("express");
 const jwt = require("jsonwebtoken");
-
+const { request } = require('undici');
 
 const cloudscraper = require('cloudscraper');
 const { createProxyMiddleware } = require('http-proxy-middleware');
@@ -512,6 +512,42 @@ res.json(data);
   } catch (err) {
     console.error("/api/vibrant/previous-live error:", err);
     res.status(500).json({ error: err.toString() });
+  }
+});
+  app.set('trust proxy', true);
+
+app.get('/api/scienceandfun/url', async (req, res) => {
+  try {
+    const targetUrl = 'https://apiserver.deltastudy.site/api/scienceandfun/url';
+
+    const searchParams = new URLSearchParams();
+    if (req.query.url) searchParams.set('url', String(req.query.url));
+    if (req.query.key) searchParams.set('key', String(req.query.key));
+
+    const upstreamUrl = `${targetUrl}?${searchParams.toString()}`;
+
+    const upstream = await request(upstreamUrl, {
+      method: 'GET',
+      headers: {
+        'user-agent': req.headers['user-agent'] || 'Mozilla/5.0',
+        accept: req.headers.accept || 'application/json',
+        referer: req.headers.referer || '',
+        origin: req.headers.origin || ''
+      }
+    });
+
+    const body = await upstream.body.text();
+
+    res.status(upstream.statusCode);
+    res.setHeader('content-type', upstream.headers['content-type'] || 'application/json');
+    return res.send(body);
+  } catch (err) {
+    console.error('Proxy error:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Proxy failed',
+      error: err.message
+    });
   }
 });
 //frytdrtdtsdf
