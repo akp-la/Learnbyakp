@@ -626,6 +626,60 @@ app.get('/slides', async (req, res) => {
 });
 
 
+     const PW_HEADERS2 = {
+    "Accept-Encoding": "gzip",
+    "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 11; SM-A707F Build/RP1A.200720.012)",
+    "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTQyYTFjNTNhZDYyODYzZDZhZDdhOWUiLCJuYW1lIjoiQWtwICIsInRlbGVncmFtSWQiOm51bGwsIlBob3RvVXJsIjoiaHR0cHM6Ly9jZG4taWNvbnMtcG5nLmZsYXRpY29uLmNvbS81MTIvMzYwNy8zNjA3NDQ0LnBuZyIsImlhdCI6MTc4Mjc1OTA3NiwiZXhwIjoxNzg0MDU1MDc2fQ.AbbYgHo6PkEh-QqZl8Lu_O_g_mjf6y2sNeNAryslepI",
+    "client-id": "ADMIN",
+    "client-type": "MOBILE",
+    "client-version": "538",
+    "content-type": "application/json",
+    "device-meta": "{\"APP_VERSION\":\"538\",\"APP_VERSION_NAME\":\"15.32.0\",\"DEVICE_MAKE\":\"Samsung\",\"DEVICE_MODEL\":\"SM-A707F\",\"OS_VERSION\":\"11\",\"PACKAGE_NAME\":\"xyz.penpencil.physicswala\",\"network\":\"wifi_data\",\"carrier\":\"UNDEFINED\"}",
+    "randomid": "Skp",
+    "referer": "https://learnbyakp.online"
+};
+
+ app.get('/pw/video-url2', async (req, res) => {
+    // Query parameters से data ले
+    const batchId = req.query.batch_id;
+    const scheduleId = req.query.schedule_id;
+    // Validation - सभी parameters ज़रूरी हैं
+    if (!batchId || !scheduleId) {
+        return res.status(400).json({
+            error: 'Missing required parameters',
+            required: ['batch_id', 'subject_id', 'schedule_id'],
+            example: '/get-slides?batch_id=6920510a70e5cf316c9e3000&subject_id=6926c4dadef5ac36c3b2c108&schedule_id=6a19aefc5a7d6b0adfbd1c2b'
+        });
+    }
+
+    // Dynamic API URL build करें
+    const apiUrl = `https://api.penpencil.co/v1/videos/video-url-details?type=BATCHES&videoContainerType=DASH&reqType=query&clientVersion=201&childId=${scheduled}&parentId=${batchId}`;
+
+    console.log('📡 Calling API:', apiUrl);
+
+    try {
+        const response = await axios.get(apiUrl, {
+            headers: PW_HEADERS2,
+            timeout: 10000,
+        });
+
+        res.status(200).json(response.data);
+    } catch (error) {
+        console.error('API Error:', error.message);
+        
+        const errorStatus = error.response?.status || 500;
+        const errorData = error.response?.data || { message: error.message };
+        
+        res.status(errorStatus).json({
+            error: errorData.message || error.message,
+            status: errorStatus,
+            details: errorData,
+            api_url: apiUrl
+        });
+    }
+});
+
+
  // PW Headers constant - आपके दिए headers use कर रहे हैं
 const AUTHORIZATION = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjEyODc2MDAiLCJ0aW1lc3RhbXAiOjE3ODE0MDk4OTEsIml2X3ZlciI6Miwic2Vzc2lvbiI6ImV5SjBlWEFpT2lKS1YxUWlMQ0poYkdjaU9pSklVekkxTmlKOS5leUpwWkNJNklqRXlPRGMyTURBaUxDSmxiV0ZwYkNJNklqazFOVGs1TnpVek56QkFaMjFoYVd3dVkyOXRJaXdpYm1GdFpTSTZJaUlzSW5SbGJtRnVkRlI1Y0dVaU9pSjFjMlZ5SWl3aWRHVnVZVzUwVG1GdFpTSTZJbUZ5YldGMGFITmZaR0lpTENKMFpXNWhiblJKWkNJNklpSXNJbVJwYzNCdmMyRmliR1VpT21aaGJITmxmUS5EbmNwSzhSWWd6ZzJsSHUxVkZKaVluYjVGMjlwTk52eW1ZdUZqUkxIV004In0.ftduhO--p4Ku0CHqlfbstlPH9PezVtGmWYKaBmSv5UI";
 const USERID = "1287600";
