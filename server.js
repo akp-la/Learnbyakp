@@ -1203,8 +1203,96 @@ if (!allowedSites.some(site => referer.includes(site))) {
 
 });
 
+  app.get("/proxy-m3u8", async (req, res) => {
+  try {
+    const vid = req.query.vid;
+
+    if (!vid) {
+      return res.status(400).json({ error: "vid query param required" });
+    }
+
+    const upstreamUrl = `https://stream.pimaxer.in/${encodeURIComponent(vid)}/master.m3u8`;
+
+    const upstream = await fetch(upstreamUrl, {
+      method: "GET",
+      headers: {
+        "User-Agent": req.headers["user-agent"] || "Mozilla/5.0",
+        "Accept": req.headers["accept"] || "*/*",
+        "Referer": req.headers["referer"] || "https://stream.pimaxer.in/",
+        "Origin": "https://stream.pimaxer.in"
+      }
+    });
+
+    res.status(upstream.status);
+
+    upstream.headers.forEach((value, key) => {
+      const k = key.toLowerCase();
+      if (!["content-encoding", "transfer-encoding", "content-length", "connection"].includes(k)) {
+        res.setHeader(key, value);
+      }
+    });
+
+    res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
+
+    if (!upstream.body) {
+      return res.end();
+    }
+
+    const reader = upstream.body.getReader();
+    const encoder = new TextDecoder();
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      res.write(value);
+    }
+
+    res.end();
+  } catch (err) {
+    res.status(500).json({ error: "Proxy failed", details: err.message });
+  }
+});
+   app.get("/api/get-video", async (req, res) => {
+  try {
+    const { batchId, lectureId, subjectId } = req.query;
+
+    if (!batchId || !lectureId || !subjectId) {
+      return res.status(400).json({
+        error: "Missing required query params",
+        required: ["batchId", "lectureId", "subjectId"],
+      });
+    }
+
+    const targetUrl =
+      `https://videos.iownprince5.workers.dev/` +
+      `?batchId=${encodeURIComponent(batchId)}` +
+      `&childId=${encodeURIComponent(lectureId)}`;
+
+    const upstream = await fetch(targetUrl, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        // Forward token if your upstream needs it
+        ...(req.headers["x-pw-token"] ? { "X-PW-Token": req.headers["x-pw-token"] } : {}),
+      },
+    });
+
+    const contentType = upstream.headers.get("content-type") || "application/json";
+    res.status(upstream.status);
+    res.setHeader("Content-Type", contentType);
+
+    const body = await upstream.text();
+    res.send(body);
+  } catch (err) {
+    res.status(500).json({
+      error: "Proxy failed",
+      message: err.message,
+    });
+  }
+});
+
   //pw server
-  app.get("/api/get-video", async (req, res) => {
+  app.get("/api/get-video1", async (req, res) => {
   try {
     const { batchId, lectureId, subjectId } = req.query;
 
