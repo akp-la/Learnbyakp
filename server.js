@@ -574,7 +574,61 @@ app.get('/slides', async (req, res) => {
 
   
 
-  
+  const TARGET = "https://pw.studypanda.site";
+
+function buildForwardHeaders(req) {
+  const allowed = [
+    "accept",
+    "accept-language",
+    "authorization",
+    "cookie",
+    "referer",
+    "user-agent",
+    "sec-ch-ua",
+    "sec-ch-ua-mobile",
+    "sec-ch-ua-platform",
+    "sec-fetch-dest",
+    "sec-fetch-mode",
+    "sec-fetch-site",
+    "sec-fetch-user"
+  ];
+
+  const headers = {};
+  for (const key of allowed) {
+    if (req.headers[key]) headers[key] = req.headers[key];
+  }
+
+  headers["accept"] ||= "application/json, text/plain, */*";
+  headers["user-agent"] ||= "Mozilla/5.0";
+  headers["referer"] ||= `${TARGET}/`;
+  headers["origin"] = TARGET;
+
+  return headers;
+}
+
+app.get("/api/get-video-url", async (req, res) => {
+  try {
+    const url = new URL("/api/get-video-url", TARGET);
+    for (const [k, v] of Object.entries(req.query)) {
+      if (v !== undefined) url.searchParams.set(k, String(v));
+    }
+
+    const upstream = await fetch(url, {
+      method: "GET",
+      headers: buildForwardHeaders(req),
+      redirect: "follow"
+    });
+
+    res.status(upstream.status);
+    res.set("content-type", upstream.headers.get("content-type") || "application/json");
+
+    const body = await upstream.text();
+    res.send(body);
+  } catch (err) {
+    res.status(500).json({ error: "Proxy failed", message: err.message });
+  }
+});
+
 
  // PW Headers constant - आपके दिए headers use कर रहे हैं
 const AUTHORIZATION = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjEyODc2MDAiLCJ0aW1lc3RhbXAiOjE3ODE0MDk4OTEsIml2X3ZlciI6Miwic2Vzc2lvbiI6ImV5SjBlWEFpT2lKS1YxUWlMQ0poYkdjaU9pSklVekkxTmlKOS5leUpwWkNJNklqRXlPRGMyTURBaUxDSmxiV0ZwYkNJNklqazFOVGs1TnpVek56QkFaMjFoYVd3dVkyOXRJaXdpYm1GdFpTSTZJaUlzSW5SbGJtRnVkRlI1Y0dVaU9pSjFjMlZ5SWl3aWRHVnVZVzUwVG1GdFpTSTZJbUZ5YldGMGFITmZaR0lpTENKMFpXNWhiblJKWkNJNklpSXNJbVJwYzNCdmMyRmliR1VpT21aaGJITmxmUS5EbmNwSzhSWWd6ZzJsSHUxVkZKaVluYjVGMjlwTk52eW1ZdUZqUkxIV004In0.ftduhO--p4Ku0CHqlfbstlPH9PezVtGmWYKaBmSv5UI";
