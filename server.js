@@ -599,7 +599,7 @@ app.get('/slides', async (req, res) => {
     }
 
     // Dynamic API URL build करें
-    const apiUrl = `https://api.penpencil.co/v1/videos/video-url-details?type=BATCHES&videoContainerType=DASH&reqType=query&clientVersion=201&childId=${scheduled}&parentId=${batchId}`;
+    const apiUrl = `https://api.penpencil.co/v1/videos/video-url-details?type=BATCHES&videoContainerType=DASH&reqType=query&clientVersion=201&childId=${scheduleId}&parentId=${batchId}`;
 
     console.log('📡 Calling API:', apiUrl);
 
