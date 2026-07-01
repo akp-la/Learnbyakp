@@ -604,7 +604,7 @@ app.post("/api/content-details", async (req, res) => {
 });
 
 // OPTIONS preflight
-app.options("/api/content-details", (req, res) => {
+app.get("/api/content-details", (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
     "Access-Control-Allow-Headers",
