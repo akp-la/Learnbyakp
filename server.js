@@ -486,7 +486,7 @@ function decryptVibrant(input) {
 //===============
   
   const dec = "Ch@tS3cr3tK3y!16";
-const IV = "Ch@tIV#16Bytes!!";
+const kiv = "Ch@tIV#16Bytes!!";
 
 /**
  * Encrypted Base64 -> decrypted JSON object
@@ -495,7 +495,7 @@ function decryptApiResponse(encryptedBase64) {
   const decipher = crypto.createDecipheriv(
     "aes-128-cbc",
     Buffer.from(dec, "utf8"),
-    Buffer.from(IV, "utf8")
+    Buffer.from(kiv, "utf8")
   );
 
   let decrypted = decipher.update(
