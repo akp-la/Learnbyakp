@@ -4,7 +4,7 @@ const NOTES_DPP_THUMB = 'https://dulae92u7241v.cloudfront.net/1772100600/admin_v
 const API = {
   details: 'https://course.nexttoppers.com/course/course-details',
   allContent: 'https://course.nexttoppers.com/course/all-content',
-  contentDetails: 'https://course.nexttoppers.com/course/content-details'
+  contentDetails: 'https://learnbyakp.onrender.com/api/content-details'
 };
 
 const DEFAULT_HEADERS = window.APP_CREDENTIALS.getHeaders('missionjeetBatch', {
