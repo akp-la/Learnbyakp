@@ -19,7 +19,7 @@ const TEST_THUMB =
 const API = {
   details: "https://course.nexttoppers.com/course/course-details",
   allContent: "https://course.nexttoppers.com/course/all-content",
-  contentDetails: "https://course.nexttoppers.com/course/content-details"
+  contentDetails: "https://learnbyakp.onrender.com/api/content-details"
 };
 
 const DEFAULT_HEADERS = window.APP_CREDENTIALS.getHeaders("nexttoppersBatch", {
