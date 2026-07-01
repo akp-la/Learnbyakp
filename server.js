@@ -4,8 +4,6 @@ const admin = require("firebase-admin");
 const cors = require("cors");
 const express = require("express");
 const jwt = require("jsonwebtoken");
-const crypto = require("crypto");
-
 const cloudscraper = require('cloudscraper');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const webpush = require("web-push");
