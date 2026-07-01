@@ -485,7 +485,138 @@ function decryptVibrant(input) {
   }
 }
 //===============
-  
+  const KEY = "Ch@tS3cr3tK3y!16";
+const IV = "Ch@tIV#16Bytes!!";
+
+/**
+ * Encrypted Base64 -> decrypted JSON object
+ */
+function decryptApiResponse(encryptedBase64) {
+  const decipher = crypto.createDecipheriv(
+    "aes-128-cbc",
+    Buffer.from(KEY, "utf8"),
+    Buffer.from(IV, "utf8")
+  );
+
+  let decrypted = decipher.update(
+    Buffer.from(encryptedBase64, "base64"),
+    undefined,
+    "utf8"
+  );
+  decrypted += decipher.final("utf8");
+
+  return JSON.parse(decrypted);
+}
+
+/**
+ * Helper: upstream ko call karo same headers ke saath
+ * Aur decrypted data return karo
+ */
+async function fetchAndDecryptContentDetails(reqHeaders, content_id, course_id) {
+  const url = new URL("https://course.nexttoppers.com/course/content-details");
+  url.searchParams.set("content_id", String(content_id));
+  url.searchParams.set("course_id", String(course_id));
+
+  // Jo headers aapke request me aaye, unko forward karna
+  const forwardHeaders = {};
+  for (const [key, value] of Object.entries(reqHeaders)) {
+    const lower = key.toLowerCase();
+    if (lower === "host" || lower === "connection" || lower === "content-length") {
+      continue;
+    }
+    forwardHeaders[key] = value;
+  }
+
+  const res = await fetch(url.toString(), {
+    method: "GET",
+    headers: forwardHeaders,
+  });
+
+  if (!res.ok) {
+    throw new Error(`Upstream error: ${res.status} ${res.statusText}`);
+  }
+
+  const json = await res.json();
+
+  // Format assume: { success: true, data: "<encrypted base64>" } 
+  // ya { success: true, data: { ... } }
+  if (!json || json.success !== true || !json.data) {
+    return json; // maybe already decrypted / different format
+  }
+
+  let decryptedData;
+  if (typeof json.data === "string") {
+    decryptedData = decryptApiResponse(json.data);
+  } else {
+    decryptedData = json.data;
+  }
+
+  return {
+    success: true,
+    data: decryptedData,
+  };
+}
+
+/**
+ * Main endpoint – frontend iss ko call karega
+ *
+ * POST /api/content-details
+ * body: { content_id, course_id }
+ */
+app.post("/api/content-details", async (req, res) => {
+  try {
+    const { content_id, course_id } = req.body || {};
+
+    if (!content_id || !course_id) {
+      return res.status(400).json({
+        success: false,
+        error: "content_id and course_id required",
+      });
+    }
+
+    const reqHeaders = req.headers;
+
+    const decrypted = await fetchAndDecryptContentDetails(
+      reqHeaders,
+      content_id,
+      course_id
+    );
+
+    // CORS
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, Cookie, X-Requested-With"
+    );
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      "GET, POST, OPTIONS"
+    );
+
+    return res.json(decrypted);
+  } catch (err) {
+    console.error("Backend decrypt error:", err);
+    return res.status(500).json({
+      success: false,
+      error: String(err.message || err),
+    });
+  }
+});
+
+// OPTIONS preflight
+app.options("/api/content-details", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, Cookie, X-Requested-With"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, OPTIONS"
+  );
+  res.status(204).end();
+});
+
 //======== rtrtrrttt=====
 app.get("/api/vibrant/previous-live", async (req, res) => {
   try {
