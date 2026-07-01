@@ -604,17 +604,45 @@ app.post("/api/content-details", async (req, res) => {
 });
 
 // OPTIONS preflight
-app.get("/api/content-details", (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, Cookie, X-Requested-With"
-  );
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, OPTIONS"
-  );
-  res.status(204).end();
+// GET /api/content-details?content_id=...&course_id=...
+app.get("/api/content-details", async (req, res) => {
+  try {
+    const content_id = req.query.content_id;
+    const course_id = req.query.course_id;
+
+    if (!content_id || !course_id) {
+      return res.status(400).json({
+        success: false,
+        error: "content_id and course_id required",
+      });
+    }
+
+    const reqHeaders = req.headers;
+
+    const decrypted = await fetchAndDecryptContentDetails(
+      reqHeaders,
+      content_id,
+      course_id
+    );
+
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, Cookie, X-Requested-With"
+    );
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      "GET, POST, OPTIONS"
+    );
+
+    return res.json(decrypted);
+  } catch (err) {
+    console.error("Backend decrypt error (GET):", err);
+    return res.status(500).json({
+      success: false,
+      error: String(err.message || err),
+    });
+  }
 });
 
 //======== rtrtrrttt=====
