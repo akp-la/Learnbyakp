@@ -4,6 +4,7 @@ const admin = require("firebase-admin");
 const cors = require("cors");
 const express = require("express");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 
 const cloudscraper = require('cloudscraper');
 const { createProxyMiddleware } = require('http-proxy-middleware');
@@ -485,7 +486,8 @@ function decryptVibrant(input) {
   }
 }
 //===============
-  const KEY = "Ch@tS3cr3tK3y!16";
+  
+  const dec = "Ch@tS3cr3tK3y!16";
 const IV = "Ch@tIV#16Bytes!!";
 
 /**
@@ -494,7 +496,7 @@ const IV = "Ch@tIV#16Bytes!!";
 function decryptApiResponse(encryptedBase64) {
   const decipher = crypto.createDecipheriv(
     "aes-128-cbc",
-    Buffer.from(KEY, "utf8"),
+    Buffer.from(dec, "utf8"),
     Buffer.from(IV, "utf8")
   );
 
